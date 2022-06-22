@@ -1,0 +1,1 @@
+Last component accepts the original incoming message and instrument data, normalize the intrument represenation and repackages the original message. As a final step route the message to the `downstreams` via a `gPRC` call to the `TE engine`.

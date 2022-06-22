@@ -1,0 +1,28 @@
+plugins {
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+}
+repositories {
+    maven { url 'https://repo.spring.io/milestone' }
+}
+dependencies {
+    implementation 'org.apache.kafka:kafka-clients:3.1.0'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'org.slf4j:slf4j-simple:1.7.36'
+
+
+    implementation project(":core")
+    implementation 'org.springframework.kafka:spring-kafka:3.0.0-M4'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:3.0.0-M3'
+    implementation 'io.micrometer:micrometer-registry-prometheus:1.10.0-M2'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.0.0-M3'
+}
+
+ext {
+    set('springCloudVersion', "2022.0.0-M2")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}

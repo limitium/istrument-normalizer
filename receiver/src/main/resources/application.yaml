@@ -1,0 +1,8 @@
+spring:
+  application.name: "instrument.normalizer.receiver"
+  main.web-application-type: NONE
+
+server.port: 9001
+management:
+  server.port: 9001
+  endpoints.web.exposure.include: "*"

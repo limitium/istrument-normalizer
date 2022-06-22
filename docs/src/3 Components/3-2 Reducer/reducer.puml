@@ -1,0 +1,26 @@
+@startuml
+
+title Reducer sequence diagram
+
+
+box "Instrument normalizer"
+participant Receiver order 20 
+participant Reducer order 30 
+participant Seeker order 40 
+end box
+== Processing ==
+Receiver -> Reducer : onReceive(missingInstrumentMessage)
+activate Reducer
+Reducer -> Reducer : getStoredInstrument(instrument)
+alt#Gold #LightBlue Instrument last usage less THROTTLE_TIME
+Reducer -> Seeker : publish(instrumentLookupRequest)  
+end
+Reducer -> Reducer : upsertInstrumentLastUsage(instrument)
+deactivate Reducer
+== Scheduling ==
+Reducer -> Reducer : getThrottledInstruments()
+activate Reducer
+Reducer -> Reducer : cleanUpOld()
+deactivate Reducer
+
+@enduml

@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        maven { url 'https://repo.spring.io/milestone' }
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'instrument-normalizer'
+
+include 'core'
+include 'receiver'
+include 'reducer'
+include 'seeker'
+include 'combiner'
+
+
+include 'stubs'
+

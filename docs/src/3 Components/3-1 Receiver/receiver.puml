@@ -1,0 +1,29 @@
+@startuml
+
+title Receiver sequence diagram
+
+
+control Upstream order 10
+box "Instrument normalizer"
+participant Receiver order 20 
+participant Router order 30 
+participant Reducer order 35 
+participant Combiner order 40 
+end box
+database InstrumentsKeeper order 50
+
+Upstream -> Receiver: onReceive(message)
+activate Receiver
+Receiver -> InstrumentsKeeper : getInstrumentData(message.instrumentId, message.instrumentIdSource)
+activate InstrumentsKeeper
+InstrumentsKeeper -> Receiver : instrumentData
+deactivate InstrumentsKeeper
+Receiver -> Receiver : isInstumentStatic(instrumentData)
+alt#Gold #LightBlue True
+Receiver -> Router: {message + instrumentData}
+else #Pink else
+Receiver -> Reducer: {missing instrument}
+Receiver -> Combiner: {message}
+end
+deactivate Receiver
+@enduml

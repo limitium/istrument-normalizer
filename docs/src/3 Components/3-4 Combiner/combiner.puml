@@ -1,0 +1,32 @@
+@startuml
+
+title Combiner sequence diagram
+
+
+box "Instrument normalizer"
+participant Receiver order 9
+participant Seeker order 10
+participant Drainer order 30 
+participant Router order 40 
+
+end box
+
+Receiver -> Drainer : onReceive(message)
+activate Drainer
+Drainer -> Drainer : isInstrumentDataAvailable()
+alt#Gold #LightBlue true
+Drainer -> Router : {message + instrumentData}
+else #Pink else
+Drainer -> Drainer : store(message)
+end
+deactivate Drainer
+Seeker -> Drainer : onReceive(instrument)
+activate Drainer
+Drainer -> Drainer : areMessagesStoredForInstrument()
+alt#Gold #LightBlue true
+Drainer -> Router : {message + instrumentData}
+end
+Drainer -> Drainer : cleanUpMessages()
+deactivate Drainer
+
+@enduml

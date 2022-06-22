@@ -1,0 +1,13 @@
+@startuml
+title Principal action diagram of instrument normalization
+start
+:Accept message;
+if (Instrument exists?) then (no)
+    :Shelve message;
+    :Lookup instrument;
+    :Notify downstreams about new instrument;
+    :Unshelve message;
+endif
+:Normalize incoming message;
+STOP
+@enduml
