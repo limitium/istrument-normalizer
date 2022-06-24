@@ -1,6 +1,6 @@
 package extb.gba.sequencer;
 
-public enum SequencerType {
+public enum Namespace {
     TRACE,
     SPAN;
 }

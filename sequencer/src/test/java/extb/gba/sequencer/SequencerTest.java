@@ -12,7 +12,7 @@ class SequencerTest {
 
     @Test
     void basicTest() {
-        Sequencer sequencer = new Sequencer(() -> EPOCH_RESET + 1, SequencerType.SPAN, 1);
+        Sequencer sequencer = new Sequencer(() -> EPOCH_RESET + 1, Namespace.SPAN, 1);
 
         String bits = String.format("%064d", new BigInteger(Long.toBinaryString(sequencer.getNext())));
         assertEquals("0000000000000000000000000000000000000000100000010000010000000000", bits);

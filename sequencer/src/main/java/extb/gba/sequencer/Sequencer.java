@@ -17,24 +17,23 @@ public class Sequencer {
      * Sun May 22 2022 11:46:40
      */
     public static final long EPOCH_RESET = 1653220000000L;
-    public static final int MILLIS_BITS = 40;
-    public static final int PARTITION_BITS = 6;
-    public static final int SEQUENCE_BITS = 10;
-    public static final int SEQUENCER_TYPE_BITS = 7;
-
-    final Clock clock;
-    private final long sequenceMask = ~(-1L << SEQUENCE_BITS);
-    private final long millisMask = ~(-1L << MILLIS_BITS);
+    private static final int MILLIS_BITS = 40;
+    private static final int PARTITION_BITS = 6;
+    private static final int SEQUENCE_BITS = 10;
+    private static final int SEQUENCER_TYPE_BITS = 7;
+    private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
+    private static final long MILLIS_MASK = ~(-1L << MILLIS_BITS);
+    private final Clock clock;
+    private final long sequencerBits;
     private long sequence = 0L;
     private long prevMillis;
-    private final long sequencerBits;
 
-    public Sequencer(Clock clock, SequencerType sequencerType, int partition) {
+    public Sequencer(Clock clock, Namespace namespace, int partition) {
         if (partition < 0 || partition > 63) {
             throw new IllegalArgumentException("Partition must be >= 0 and < 64, current value is " + partition);
         }
-        if (sequencerType.ordinal() > 127) {
-            throw new IllegalArgumentException("Sequencer type must be < 128, current value is " + sequencerType.ordinal());
+        if (namespace.ordinal() > 127) {
+            throw new IllegalArgumentException("Sequencer type must be < 128, current value is " + namespace.ordinal());
         }
 
         this.clock = clock;
@@ -43,7 +42,7 @@ public class Sequencer {
 
         long partitionMask = ~(-1L << PARTITION_BITS);
 
-        this.sequencerBits = (sequencerTypeMask & sequencerType.ordinal()) << (PARTITION_BITS + SEQUENCE_BITS)
+        this.sequencerBits = (sequencerTypeMask & namespace.ordinal()) << (PARTITION_BITS + SEQUENCE_BITS)
                 | (partition & partitionMask) << SEQUENCE_BITS;
     }
 
@@ -58,7 +57,7 @@ public class Sequencer {
         if (millis > prevMillis) {
             sequence = 0L;
         } else if (millis == prevMillis) {
-            sequence = (sequence + 1) & sequenceMask;
+            sequence = (sequence + 1) & SEQUENCE_MASK;
             if (sequence == 0) {
                 millis = waitForNextMillis(prevMillis);
             }
@@ -68,7 +67,7 @@ public class Sequencer {
 
         prevMillis = millis;
 
-        long millisBits = ((millis - EPOCH_RESET) & millisMask) << (SEQUENCER_TYPE_BITS + PARTITION_BITS + SEQUENCE_BITS);
+        long millisBits = ((millis - EPOCH_RESET) & MILLIS_MASK) << (SEQUENCER_TYPE_BITS + PARTITION_BITS + SEQUENCE_BITS);
         return millisBits | sequencerBits | sequence;
     }
 
