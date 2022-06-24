@@ -2,11 +2,13 @@ package extb.gba.sequencer;
 
 import org.junit.jupiter.api.Test;
 
+import static extb.gba.sequencer.Sequencer.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigInteger;
-
-import static extb.gba.sequencer.Sequencer.EPOCH_RESET;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 class SequencerTest {
 
@@ -21,5 +23,18 @@ class SequencerTest {
         bits = String.format("%064d", new BigInteger(Long.toBinaryString(sequencer.getNext())));
         assertEquals("0000000000000000000000000000000000000000100000010000010000000010", bits);
     }
+
     //todo: test overflow
+    @Test
+    void parseTest() {
+        long currentTimeMillis = System.currentTimeMillis();
+        String formattedTime = DateTimeFormatter.ofPattern(TIME_PATTERN).format(ZonedDateTime.ofInstant(Instant.ofEpochMilli(currentTimeMillis), ZONE_OFFSET));
+
+        Sequencer sequencer = new Sequencer(() -> currentTimeMillis, Namespace.SPAN, 3);
+        assertEquals("{time:\"" + formattedTime + "\",namespace:\"1\",partition:\"3\", sequence:\"0\"}", Sequencer.parse(sequencer.getNext()));
+
+        sequencer = new Sequencer(() -> currentTimeMillis, Namespace.TRACE, 2);
+        assertEquals("{time:\"" + formattedTime + "\",namespace:\"0\",partition:\"2\", sequence:\"0\"}", Sequencer.parse(sequencer.getNext()));
+        assertEquals("{time:\"" + formattedTime + "\",namespace:\"0\",partition:\"2\", sequence:\"1\"}", Sequencer.parse(sequencer.getNext()));
+    }
 }

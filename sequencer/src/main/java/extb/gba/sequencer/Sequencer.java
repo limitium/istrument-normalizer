@@ -1,6 +1,12 @@
 package extb.gba.sequencer;
 
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+
 /**
  * Sequencer layout for 64bit long storage.
  * <p>
@@ -19,10 +25,14 @@ public class Sequencer {
     public static final long EPOCH_RESET = 1653220000000L;
     private static final int MILLIS_BITS = 40;
     private static final int PARTITION_BITS = 6;
+    public static final long PARTITION_MASK = ~(-1L << PARTITION_BITS);
     private static final int SEQUENCE_BITS = 10;
-    private static final int SEQUENCER_TYPE_BITS = 7;
+    private static final int NAMESPACE_BITS = 7;
+    public static final long NAMESPACE_MASK = ~(-1L << NAMESPACE_BITS);
     private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
     private static final long MILLIS_MASK = ~(-1L << MILLIS_BITS);
+    public static final String TIME_PATTERN = "yyyy:MM:dd-HH:mm:ss:SSS";
+    public static final ZoneOffset ZONE_OFFSET = ZoneOffset.UTC;
     private final Clock clock;
     private final long sequencerBits;
     private long sequence = 0L;
@@ -38,12 +48,8 @@ public class Sequencer {
 
         this.clock = clock;
 
-        long sequencerTypeMask = ~(-1L << SEQUENCER_TYPE_BITS);
-
-        long partitionMask = ~(-1L << PARTITION_BITS);
-
-        this.sequencerBits = (sequencerTypeMask & namespace.ordinal()) << (PARTITION_BITS + SEQUENCE_BITS)
-                | (partition & partitionMask) << SEQUENCE_BITS;
+        this.sequencerBits = (NAMESPACE_MASK & namespace.ordinal()) << (PARTITION_BITS + SEQUENCE_BITS)
+                | (partition & PARTITION_MASK) << SEQUENCE_BITS;
     }
 
     /**
@@ -67,7 +73,7 @@ public class Sequencer {
 
         prevMillis = millis;
 
-        long millisBits = ((millis - EPOCH_RESET) & MILLIS_MASK) << (SEQUENCER_TYPE_BITS + PARTITION_BITS + SEQUENCE_BITS);
+        long millisBits = ((millis - EPOCH_RESET) & MILLIS_MASK) << (NAMESPACE_BITS + PARTITION_BITS + SEQUENCE_BITS);
         return millisBits | sequencerBits | sequence;
     }
 
@@ -77,6 +83,14 @@ public class Sequencer {
             millis = clock.millis();
         }
         return millis;
+    }
+
+    public static String parse(long sequence) {
+        Instant epochMilli = Instant.ofEpochMilli((sequence >> (SEQUENCE_BITS + PARTITION_BITS + NAMESPACE_BITS) & MILLIS_MASK) + EPOCH_RESET);
+        return "{time:\"" + DateTimeFormatter.ofPattern(TIME_PATTERN).format(ZonedDateTime.ofInstant(epochMilli, ZONE_OFFSET)) + "\"," +
+                "namespace:\"" + (sequence >> (SEQUENCE_BITS + PARTITION_BITS) & NAMESPACE_MASK) + "\"," +
+                "partition:\"" + (sequence >> SEQUENCE_BITS & PARTITION_MASK) + "\", " +
+                "sequence:\"" + (sequence & SEQUENCE_MASK) + "\"}";
     }
 
     public static class SystemClock implements Clock {
