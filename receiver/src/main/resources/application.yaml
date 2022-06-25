@@ -1,6 +1,6 @@
 spring:
   application.name: "instrument.normalizer.receiver"
-  main.web-application-type: NONE
+  main.web-application-type: SERVLET
 
 server.port: 9001
 management:
