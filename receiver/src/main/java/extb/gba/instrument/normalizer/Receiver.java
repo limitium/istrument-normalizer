@@ -5,13 +5,15 @@ import extb.gba.instrument.normalizer.external.InstrumentKeeper;
 import extb.gba.kscore.kstreamcore.KStreamInfraCustomizer;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.kstream.Branched;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.Named;
+import org.apache.kafka.streams.kstream.Produced;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+
 
 @Component
 public class Receiver implements KStreamInfraCustomizer.KStreamDSLBuilder {
@@ -26,7 +28,7 @@ public class Receiver implements KStreamInfraCustomizer.KStreamDSLBuilder {
                 //todo: as entry point of component meta for tracing should be added to headers
                 .stream(Topics.UPSTREAM.topic, Consumed.with(Topics.UPSTREAM.keySerde, Topics.UPSTREAM.valueSerde))
                 //Enriches instrumentId via gRPC to Instrument keeper
-                .peek((securityId, instrumental) -> instrumentKeeper.enrichInstrument(instrumental))
+                .peek((securityId, instrumental) -> instrumentKeeper.enrichInstrument(instrumental), Named.as("enrich_instrument"))
                 .split()
                 //Empty enrichment goes to instrument seeker
                 .branch((securityId, instrumental) -> instrumental.instrumentId == 0,
