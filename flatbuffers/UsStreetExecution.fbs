@@ -67,7 +67,7 @@ table ExecutionSystem {
 /**
 Representation of FO for concrete execution. Some parts can be missed.
 */
-table FrontOffice{
+table FrontOffice{ //todo: merge of US flow?
     client_system: ClientSystem;
     accept_system: AcceptSystem;
     order_manament_system: OrderManagmentSystem;
@@ -83,6 +83,7 @@ table Order {
     security_id: string; // FO or client instrument identifier. Can ber RIC, ISIN etc
     instrument_id: long; // gba instrument public identifier
 
+    portfolio_code: string; // FO representation of client AVP group
     book_id: long; // gba book public identifier
 }
 
