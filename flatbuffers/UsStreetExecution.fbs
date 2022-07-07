@@ -53,7 +53,7 @@ Identifiers of order in FO order managment system. Can aggregeate or split clien
 */
 table OrderManagmentSystem {
     name: string;
-    execution_id: string; //todo: on OM exec id appears first time?
+    execution_id: string; //todo: on OM exec id appears first time as result of execution system?
     order_id: string;
 }
 /**
@@ -65,15 +65,18 @@ table ExecutionSystem {
     order_id: string;
 }
 /**
-Representation of FO for concrete execution. Some parts can be missed.
+Representation of FO for concrete execution report. Some parts can be missed.
 */
 table FrontOffice{ //todo: merge of US flow?
     client_system: ClientSystem;
     accept_system: AcceptSystem;
     order_manament_system: OrderManagmentSystem;
-    exection_system: ExecutionSystem;
+    execution_system: ExecutionSystem;
 }
 
+/**
+Representation of Order in FO in fact in order managment part
+*/
 table Order {
     side: Side = BUY; // Side direction from client perspective
     order_type: OrderType = Market;
@@ -88,7 +91,7 @@ table Order {
 }
 
 table Broker {
-    swift_code: string; // FO representation of the broker, Broker BIC code
+    bic_code: string; // FO representation of the broker, Broker BIC code
     broker_id: long; // gba broker public identifier
 
     execution_id: string;
@@ -102,7 +105,7 @@ table Exchage {
     order_id: string;
 }
 
-table Execution{
+table ExecutionReport{
     id: long; // GBA generated public identifier
     type: Type = NEW;
 
@@ -118,13 +121,13 @@ table Execution{
 //in BNPP DMA splitted on 10 subtype. ALGO, SMART ORDER ROUTER.
 //businesstype - GES and PB - cash agency and swap primery broker analog product type
 
-union Executor {Broker, Exchange} //todo: executor what's a real business term??
+union Counterparty {Broker, Exchange} //todo: executor what's a real business term??
 
-table UsStreetExecution {
+table UsStreetExecutionReport {
  front_office: FrontOffice;
- executor: Executor;
  order: Order;
- execution: Execution;
+ counterparty: Counterparty;
+ execution_report: ExecutionReport;
 }
 
-root_type UsStreetExecution;
+root_type UsStreetExecutionReport;
