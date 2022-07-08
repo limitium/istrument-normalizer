@@ -1,0 +1,92 @@
+rpc_service InstrumentKeeper {
+  GetBy(Id): Instrument (streaming: "none");
+  LookupBy(SecurityId): Instrument (streaming: "none");
+  Upsert(Instrument): StoreResponse (streaming: "none");
+}
+
+table Id {
+  id: long;
+}
+
+table SecurityId {
+  security_id: string;
+}
+
+enum Status {
+    SUCCESS,
+    ERROR_CLIENT, // No reason for retry. for ex. partially filled request.
+    ERROR_SERVER // Can be retried
+}
+
+table Response {
+  id: long;
+  status: Status;
+  status_message: string;
+}
+
+table Equity {
+  instrument_id:long;
+
+  ric:string; // id concrete instrument. ROUTERS
+  isin:string; // security id on different exchanges. one per world
+
+  mic_sedol:string; // looks like sedol non uniq??
+  mic:string; // listing exhange another idetifier wtf iso
+  cusip:string; // like sedol but for america ???
+  bb_cticker:string; // security per country  ????
+  bb_root_ticker:string; // more generic than bb_cticker, but less than ISIN
+  quick:string; // to remove
+  ticker:string; // custom made from rick withou suffix
+  cins:string; // cusip international non uniq
+
+
+  cfi_code:string; // classification of financial instruments, looks like not use
+  description:string; // used by GUI and confirm per ISIN
+
+  country_of_listing:string; // current listing
+  country_of_issue:string; // IPO where happened
+
+  currency:string; // of listing exchange  for instrument in converted to MAJOR
+  original_currency:string; //  of listing exchange  for instrument real
+
+  listing_exchange:string; // exhcange where on listed in routers
+
+  is_global_primary:string; // Y on instrument wich was in IPO
+  regional_primary_flag:string; // on country level entrypoint exchange for instrument
+  fftt_flag:string; // france additinal charges for some instrument transactional tax per ISIN
+  itt_flag:string; // italy additinal charges for some instrument transactional tax per ISIN
+  sftt_flag:string; // spain additinal charges for some instrument transactional tax per ISIN
+
+  ccp_eligible_flag:string; // can be sent to BATS for EROPE, but per ISIN
+  par_value:string; // to remove
+  clearing_method:string; // to remove
+  asset_category:string; // human redable per ISIN
+  stamp_exempt:string; // to remove
+  lse_segment:string; // to remove
+  listing_class:string; // to remove
+
+
+  mds_code:string; // power specific instrrument identifier
+  place_code:string; // power specific exchange identifier
+
+
+  bb_prime_exchange:string; // where IPO happened in bloomberg code
+
+  shares_outstanding:string; // IPO amount of instruments
+
+  ptm_levy_eligible:string; // only for LSE to add one tax ptm lvy
+  stamp_duty_eligible:string; // for 3 echanges flag to add stamp tax
+  is_custom_basket:string; // cunstom indexes created by BANK in general not listed.  asset_category=='DELTA1', indicates what source API was used todo: why?
+  is_warrant:string; // indicates what source API was used todo: why?
+
+  equity_underlying_flag:string; // if warants on equity and equity has tax it need to be taken from warrant too
+  country_of_risk:string; // todo: wtf?
+  international_settlement_flag:string; // determinces non standart clearing settlement location. for ex. GB->euro_clear instead of CREST
+
+  active:string;
+  created:string;
+  last_modified:string;
+  last_modified_user:string;
+}
+
+union Instrument {Equity}
