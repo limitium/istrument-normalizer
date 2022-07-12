@@ -76,7 +76,7 @@ table Broker {
     order_id: string; // ATM8.ExchangeOrderID
 }
 
-table Exchage {
+table Exchange {
     name: string; // ATM8.contraBroker name of market, Markter Exchange CCP code of birge
 
     execution_id: string; // ATM8.ExchangeExecID
