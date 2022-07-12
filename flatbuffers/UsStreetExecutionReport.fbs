@@ -5,18 +5,18 @@ enum Type:byte {
 }
 
 enum Side:byte {
-    BUY = 1,
-    SELL_LONG = 2,
+    BUY        = 1,
+    SELL_LONG  = 2,
     SELL_SHORT = 5
 }
 
 enum TimeInForce:byte {
-    DAY = 0,
-    GTC = 1,
-    AT_OPEN = 2,
-    IOC = 3,
-    FOK = 4,
-    GTD = 6
+    DAY        = 0,
+    GTC        = 1,
+    AT_OPEN    = 2,
+    IOC        = 3,
+    FOK        = 4,
+    GTD        = 6
 }
 
 enum Capacity:byte {
@@ -27,85 +27,91 @@ enum Capacity:byte {
 }
 
 enum OrderType:byte { // Fix values are used
-    Market = 1,
-    Limit = 2,
-    Stop = 3,
-    StopLimit = 4,
+    Market     = 1,
+    Limit      = 2,
+    Stop       = 3,
+    StopLimit  = 4,
 }
 
 /**
-Identifiers of order in system wich execute orders on the market
+  Identifiers of order in system wich execute orders on the market
 */
 table ExecutionSystem {
-    name: string; // ATM8.SrcSysID
-    execution_id: string; // ATM8.ExecID
-    order_id: string; // ATM8.OrderID
-    client_name: string; // ATM8.SrcSysID user name in execution system. taken from atm8 source system @todo: is it client or system?
+    name:             string;             // ATM8.SrcSysID
+    execution_id:     string;             // ATM8.ExecID
+    order_id:         string;             // ATM8.OrderID
+    client_name:      string;             // ATM8.SrcSysID user name in execution system. taken from atm8 source system @todo: is it client or system?
 }
 /**
-Representation of FO for concrete execution report. Some parts can be missed.
+  Representation of FO for concrete execution report. Some parts can be missed.
 */
 table FrontOffice{ //todo: merge of US flow?
     execution_system: ExecutionSystem;
 
-    execution_id: string; // ATM8.ExecID
-    order_id: string; // ATM8.OrderID
+    execution_id:     string;             // ATM8.ExecID
+    order_id:         string;             // ATM8.OrderID
 }
 
 /**
-Representation of Order in FO in fact in order managment part
+  Representation of Order in FO in fact in order managment part
 */
 table Order {
-    side: Side = BUY; // ATM8.Side Side direction from client perspective
-    order_type: OrderType = Market; // ATM8.OrderType
-    time_in_force: TimeInForce; // ATM8.TimeInForce
-    capacity: Capacity = A; // ATM8.Capacity
+    side:             Side      = BUY;    // ATM8.Side Side direction from client perspective
+    order_type:       OrderType = Market; // ATM8.OrderType
+    time_in_force:    TimeInForce;        // ATM8.TimeInForce
+    capacity:         Capacity  = A;      // ATM8.Capacity
 
-    security_id: string; // ATM8.SecurityID FO or client instrument identifier. Can ber RIC, ISIN etc
-    instrument_id: long; // gba instrument public identifier
+    security_id:      string;             // ATM8.SecurityID FO or client instrument identifier. Can ber RIC, ISIN etc
+    instrument_id:    long;               // gba instrument public identifier
 
-    portfolio_code: string; // ATM8.Portfolio todo:? FO representation of client AVP group
-    book_id: long; // gba book public identifier
+    portfolio_code:   string;             // ATM8.Portfolio todo:? FO representation of client AVP group
+    book_id:          long;               // gba book public identifier
 }
 
+/**
+  Describes broker as counterparty of the trade
+*/
 table Broker {
-    bic_code: string; // ATM8.ExecutingFirm FO representation of the broker, Broker BIC code
-    broker_id: long; // gba broker public identifier
+    bic_code:         string;             // ATM8.ExecutingFirm FO representation of the broker, Broker BIC code
+    broker_id:        long;               // gba broker public identifier
 
-    execution_id: string; // ATM8.ExchangeExecID
-    order_id: string; // ATM8.ExchangeOrderID
+    execution_id:     string;             // ATM8.ExchangeExecID
+    order_id:         string;             // ATM8.ExchangeOrderID
 }
 
+/**
+  Describes exchange as counterparty of the trade
+*/
 table Exchange {
-    name: string; // ATM8.contraBroker name of market, Markter Exchange CCP code of birge
+    name:             string;             // ATM8.contraBroker name of market, Markter Exchange CCP code of birge
 
-    execution_id: string; // ATM8.ExchangeExecID
-    order_id: string; // ATM8.ExchangeOrderID
+    execution_id:     string;             // ATM8.ExchangeExecID
+    order_id:         string;             // ATM8.ExchangeOrderID
 }
 
 table ExecutionReport{
-    id: long; // GBA generated public identifier
-    type: Type = NEW; // ATM8.ExecType
+    id:               long;               // GBA generated public identifier
+    type:             Type = NEW;         // ATM8.ExecType
 
-    last_qty: double; // ATM8.LastQty
-    last_price: double; // ATM8.LastPx
+    last_qty:         double;             // ATM8.LastQty
+    last_price:       double;             // ATM8.LastPx
 
-    transact_time: long; // ATM8. TransactTime
+    transact_time:    long;               // ATM8.TransactTime
 
-    last_market: string; // ATM8.LastMkt name of market where execution was really executed todo: can broker have different last_markets per single order, do we need it if we have exchange?
+    last_market:      string;             // ATM8.LastMkt name of market where execution was really executed todo: can broker have different last_markets per single order, do we need it if we have exchange?
 }
 
 //flowtype - low level, DCA category of flows low latencey direct market acess, low latency algo, Different desk. DMA diirect market acess mininal comission all by client , program trading per busket -> split, single stok - grate order to manual wrok on it.
 //in BNPP DMA splitted on 10 subtype. ALGO, SMART ORDER ROUTER.
 //businesstype - GES and PB - cash agency and swap primery broker analog product type
 
-union Counterparty {Broker, Exchange} //todo: executor what's a real business term??
+union Counterparty {Broker, Exchange}
 
 table UsStreetExecutionReport {
- front_office: FrontOffice;
- order: Order;
- counterparty: Counterparty;
- execution_report: ExecutionReport;
+    front_office:     FrontOffice;
+    order:            Order;
+    counterparty:     Counterparty;
+    execution_report: ExecutionReport;
 }
 
 root_type UsStreetExecutionReport;
