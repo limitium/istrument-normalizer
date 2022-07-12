@@ -34,87 +34,65 @@ enum OrderType:byte { // Fix values are used
 }
 
 /**
-Identifiers of order in clients system.
-*/
-table ClientSystem{
-    name: string;
-    order_id: string; //todo: does client has execution objects and IDs?
-}
-/**
-Identifiers of order in system which accepts order from client
-*/
-table AcceptSystem {
-    name: string;
-    client_id: string; // client username registered in FO
-    order_id: string;
-}
-/**
-Identifiers of order in FO order managment system. Can aggregeate or split client orders
-*/
-table OrderManagmentSystem {
-    name: string;
-    execution_id: string; //todo: on OM exec id appears first time as result of execution system?
-    order_id: string;
-}
-/**
 Identifiers of order in system wich execute orders on the market
 */
 table ExecutionSystem {
-    name: string;
-    execution_id: string;
-    order_id: string;
+    name: string; // ATM8.SrcSysID
+    execution_id: string; // ATM8.ExecID
+    order_id: string; // ATM8.OrderID
+    client_name: string; // ATM8.SrcSysID user name in execution system. taken from atm8 source system @todo: is it client or system?
 }
 /**
 Representation of FO for concrete execution report. Some parts can be missed.
 */
 table FrontOffice{ //todo: merge of US flow?
-    client_system: ClientSystem;
-    accept_system: AcceptSystem;
-    order_manament_system: OrderManagmentSystem;
     execution_system: ExecutionSystem;
+
+    execution_id: string; // ATM8.ExecID
+    order_id: string; // ATM8.OrderID
 }
 
 /**
 Representation of Order in FO in fact in order managment part
 */
 table Order {
-    side: Side = BUY; // Side direction from client perspective
-    order_type: OrderType = Market;
-    time_in_force: TimeInForce;
-    capacity: Capacity = A;
+    side: Side = BUY; // ATM8.Side Side direction from client perspective
+    order_type: OrderType = Market; // ATM8.OrderType
+    time_in_force: TimeInForce; // ATM8.TimeInForce
+    capacity: Capacity = A; // ATM8.Capacity
 
-    security_id: string; // FO or client instrument identifier. Can ber RIC, ISIN etc
+    security_id: string; // ATM8.SecurityID FO or client instrument identifier. Can ber RIC, ISIN etc
     instrument_id: long; // gba instrument public identifier
 
-    portfolio_code: string; // FO representation of client AVP group
+    portfolio_code: string; // ATM8.Portfolio todo:? FO representation of client AVP group
     book_id: long; // gba book public identifier
 }
 
 table Broker {
-    bic_code: string; // FO representation of the broker, Broker BIC code
+    bic_code: string; // ATM8.ExecutingFirm FO representation of the broker, Broker BIC code
     broker_id: long; // gba broker public identifier
 
-    execution_id: string;
-    order_id: string;
+    execution_id: string; // ATM8.ExchangeExecID
+    order_id: string; // ATM8.ExchangeOrderID
 }
 
 table Exchage {
-    name: string; // name of market, Markter Exchange CCP code of birge
+    name: string; // ATM8.contraBroker name of market, Markter Exchange CCP code of birge
 
-    execution_id: string;
-    order_id: string;
+    execution_id: string; // ATM8.ExchangeExecID
+    order_id: string; // ATM8.ExchangeOrderID
 }
 
 table ExecutionReport{
     id: long; // GBA generated public identifier
-    type: Type = NEW;
+    type: Type = NEW; // ATM8.ExecType
 
-    last_qty: double;
-    last_price: double;
+    last_qty: double; // ATM8.LastQty
+    last_price: double; // ATM8.LastPx
 
-    transact_time: long;
+    transact_time: long; // ATM8. TransactTime
 
-    last_market: string; //name of market where execution was really executed todo: can broker have different last_markets per single order, do we need it if we have exchange?
+    last_market: string; // ATM8.LastMkt name of market where execution was really executed todo: can broker have different last_markets per single order, do we need it if we have exchange?
 }
 
 //flowtype - low level, DCA category of flows low latencey direct market acess, low latency algo, Different desk. DMA diirect market acess mininal comission all by client , program trading per busket -> split, single stok - grate order to manual wrok on it.
