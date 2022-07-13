@@ -1,124 +1,116 @@
 rpc_service InstrumentKeeper {
-  GetBy(Id): Instrument (streaming: "none");
-  LookupBy(SecurityId): Instrument (streaming: "none");
-  Upsert(Instrument): StoreResponse (streaming: "none");
+    GetBy(Id):                     Instrument    (streaming: "none");
+    LookupBy(SecurityId):          Instrument    (streaming: "none");
+    Upsert(Instrument):            StoreResponse (streaming: "none");
 }
 
 table Id {
-  id: long;
+    id:                            long;
 }
 
 table SecurityId {
-  security_id: string;
+    security_id:                   string;
 }
 
 enum Status {
     SUCCESS,
-    ERROR_CLIENT, // No reason for retry. for ex. partially filled request.
-    ERROR_SERVER // Can be retried
+    ERROR_CLIENT,                                // No reason for retry. for ex. partially filled request.
+    ERROR_SERVER                                 // Can be retried
 }
 
 table Response {
-  id: long;
-  status: Status;
-  status_message: string;
+    id:                            long;
+    status:                        Status;
+    status_message:                string;
 }
 
 /**
   General security definiton
 */
 table Security{
-  isin:string; // security id on different exchanges. one per world
-  asset_category:string; // human redable per ISIN
-  description:string; // used by GUI and confirm per ISIN
+    isin:                          string;       // Equity.isin security id on different exchanges. one per world
+    asset_category:                string;       // Equity.asset_category human redable per ISIN
+    description:                   string;       // Equity.description used by GUI and confirm per ISIN
 
-  ccp_eligible_flag:string; // can be sent to BATS for EROPE, but per ISIN
+    country_of_risk:               string;       // Equity.country_of_risk country of securities legal entity
 
-  taxes: Taxes;
+    ccp_eligible_flag:             bool = false; // Equity.ccp_eligible_flag can be sent to BATS for EROPE, but per ISIN
+
+    taxes: Taxes;
 }
 
 /**
   Exhcnage wehere current instrument is listing
 */
 table ListingExchange{
-  mic:string; // listing exhange another idetifier wtf iso
-  listing_exchange:string; // exhcange where on listed in routers
-  country_of_listing:string; // current listing
-  currency:string; // of listing exchange  for instrument in converted to MAJOR
-  original_currency:string; //  of listing exchange  for instrument real
+    rec:                           string;       // Equity.listing_exchange reuters exchange code
+    mic:                           string;       // Equity.mic listing exhange another idetifier wtf iso
+    country:                       string;       // Equity.country_of_listing current listing
+    currency:                      string;       // Equity.currency of listing exchange  for instrument in converted to MAJOR
+    original_currency:             string;       // Equity.original_currency of listing exchange  for instrument real
 }
 
 /**
   Exchange where IPO of securiy happened
 */
 table IssueExchange{
-  bb_prime_exchange:string; // where IPO happened in bloomberg code
-  shares_outstanding:string; // IPO amount of instruments
-  country_of_issue:string; // IPO where happened
+    bb_prime_exchange:             string;       // Equity.bb_prime_exchange where IPO happened in bloomberg code
+    shares_outstanding:            long;         // Equity.shares_outstanding IPO amount of instruments
+    country_of_issue:              string;       // Equity.country_of_issue IPO where happened
 }
 
 table Taxes{
-  fftt_flag: string; // france additinal charges for some instrument transactional tax per ISIN
-  itt_flag: string; // italy additinal charges for some instrument transactional tax per ISIN
-  sftt_flag: string; // spain additinal charges for some instrument transactional tax per ISIN
+    fftt_flag:                     bool = false; // Equity.fft_flag france additinal charges for some instrument transactional tax per ISIN
+    itt_flag:                      bool = false; // Equity.itt_flag italy additinal charges for some instrument transactional tax per ISIN
+    sftt_flag:                     bool = false; // Equity.sftt_flag spain additinal charges for some instrument transactional tax per ISIN
 
-  equity_underlying_flag: bool; // if warants on equity and equity has tax it need to be taken from warrant too
+    equity_underlying_flag:        bool = false; // Equity.equity_underlying_flag if warants on equity and equity has tax it need to be taken from warrant too
 
-  ptm_levy_eligible:string; // only for LSE to add one tax ptm lvy
-  stamp_duty_eligible:string; // for 3 echanges flag to add stamp tax
+    ptm_levy_eligible:             bool = false; // Equity.ptm_levy_eligible only for LSE to add one tax ptm lvy
+    stamp_duty_eligible:           bool = false; // Equity.stamp_duty_eligible for 3 echanges flag to add stamp tax
 }
 
 table Power {
-  mds_code:string; // power specific instrrument identifier
-  place_code:string; // power specific exchange identifier
+    mds_code:                      string;       // Equity.mds_code power specific instrrument identifier
+    place_code:                    string;       // Equity.place_code power specific exchange identifier
 }
 
 /**
   Concrete definition of instrument on listing exchange
 */
 table Equity {
-  instrument_id:long;
+    id:                            long;         // Equity.instrument_id
 
-  ric:string; // id concrete instrument. ROUTERS
-  mic_sedol:string; // looks like sedol non uniq??
-  cusip:string; // like sedol but for america ???
-  bb_cticker:string; // security per country  ????
-  bb_root_ticker:string; // more generic than bb_cticker, but less than ISIN
-  ticker:string; // custom made from rick withou suffix
-  cins:string; // cusip international non uniq
-
-
-  cfi_code:string; // classification of financial instruments, looks like not use
-
-  is_global_primary: bool; // Y on instrument wich was in IPO
-  regional_primary_flag: bool; // Y on country level entrypoint exchange for instrument
+    ric:                           string;       // Equity.ric id concrete instrument. ROUTERS
+    sedol:                         string;       // Equity.mic_sedol looks like sedol non uniq??
+    cusip:                         string;       // Equity.cusip like sedol but for america ???
+    bb_cticker:                    string;       // Equity.bb_cticker security per country  ????
+    bb_root_ticker:                string;       // Equity.bb_root_ticker more generic than bb_cticker, but less than ISIN
+    ticker:                        string;       // Equity.ticker custom made from rick withou suffix
+    cins:                          string;       // Equity.cins cusip international non uniq
 
 
-  is_custom_basket: bool; // cunstom indexes created by BANK in general not listed.  asset_category=='DELTA1', indicates what source API was used todo: why?
-  is_warrant: bool; // indicates what source API was used todo: why?
+    cfi_code:                      string;       // Equity.cfi_code classification of financial instruments, looks like not use
+
+    is_global_primary:             bool = false; // Equity.is_global_primary Y on instrument wich was in IPO
+    regional_primary_flag:         bool = false; // Equity.regional_primary_flag Y on country level entrypoint exchange for instrument
 
 
-  country_of_risk: string; // todo: wtf?
-  international_settlement_flag: string; // determinces non standart clearing settlement location. for ex. GB->euro_clear instead of CREST
+    is_custom_basket:              bool = false; // Equity.is_custom_basket cunstom indexes created by BANK in general not listed.  asset_category=='DELTA1', indicates what source API was used todo: why?
+    is_warrant:                    bool = false; // Equity.is_warrant indicates what source API was used todo: why?
 
-  security: Security;
-  listing_exchange: ListingExchange;
-  issue_exchange: IssueExchange;
+    international_settlement_flag: bool = false; // Equity.international_settllement_flag determinces non standart clearing settlement location. for ex. GB->euro_clear instead of CREST
 
-  power: Power;
+    security:                      Security;
+    listing_exchange:              ListingExchange;
+    issue_exchange:                IssueExchange;
 
-  active: bool = true;
-  created: long;
-  last_modified: long;
-  last_modified_user: string;
+    power:                         Power;
 
-
-  quick:string; // to remove
-  par_value:string; // to remove
-  clearing_method:string; // to remove
-  stamp_exempt:string; // to remove
-  lse_segment:string; // to remove
-  listing_class:string; // to remove
+    active:                        bool = true; // Equity.active
+    created:                       long;        // Equity.created
+    last_modified:                 long;        // Equity.last_modified
+    last_modified_user:            string;      // Equity.last_modified_user
 }
 
 union Instrument {Equity}
