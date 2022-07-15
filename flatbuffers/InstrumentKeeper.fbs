@@ -1,6 +1,6 @@
 rpc_service InstrumentKeeper {
     GetBy(Id):                     Instrument    (streaming: "none");
-    LookupBy(SecurityId):          Instrument    (streaming: "none");
+    LookupBy(LookupRequest):       Instrument    (streaming: "none");
     Upsert(Instrument):            StoreResponse (streaming: "none");
 }
 
@@ -8,8 +8,10 @@ table Id {
     id:                            long;
 }
 
-table SecurityId {
+table LookupRequest {
     security_id:                   string;
+    country:                       string;       // todo: where this comes from?
+    trading_currency:              string;
 }
 
 enum Status {
@@ -34,7 +36,7 @@ table Security{
 
     country_of_risk:               string;       // Equity.country_of_risk country of securities legal entity
 
-    ccp_eligible_flag:             bool = false; // Equity.ccp_eligible_flag can be sent to BATS for EROPE, but per ISIN
+    ccp_eligible:                  bool = false; // Equity.ccp_eligible_flag can be sent to BATS for EROPE, but per ISIN
 
     taxes: Taxes;
 }
@@ -54,20 +56,20 @@ table ListingExchange{
   Exchange where IPO of securiy happened
 */
 table IssueExchange{
-    bb_prime_exchange:             string;       // Equity.bb_prime_exchange where IPO happened in bloomberg code
+    bloomberg_code:                string;       // Equity.bb_prime_exchange where IPO happened in bloomberg code
     shares_outstanding:            long;         // Equity.shares_outstanding IPO amount of instruments
     country_of_issue:              string;       // Equity.country_of_issue IPO where happened
 }
 
 table Taxes{
-    fftt_flag:                     bool = false; // Equity.fft_flag france additinal charges for some instrument transactional tax per ISIN
-    itt_flag:                      bool = false; // Equity.itt_flag italy additinal charges for some instrument transactional tax per ISIN
-    sftt_flag:                     bool = false; // Equity.sftt_flag spain additinal charges for some instrument transactional tax per ISIN
+    france_financial_transaction:  bool = false; // Equity.fft_flag france additinal charges for some instrument transactional tax per ISIN
+    italy_financial_transaction:   bool = false; // Equity.itt_flag italy additinal charges for some instrument transactional tax per ISIN
+    spain_financial_transaction:   bool = false; // Equity.sftt_flag spain additinal charges for some instrument transactional tax per ISIN
 
-    equity_underlying_flag:        bool = false; // Equity.equity_underlying_flag if warants on equity and equity has tax it need to be taken from warrant too
+    PTM_levy:                      bool = false; // Equity.ptm_levy_eligible only for LSE to add one tax ptm lvy
+    stamp_duty:                    bool = false; // Equity.stamp_duty_eligible for 3 echanges flag to add stamp tax
 
-    ptm_levy_eligible:             bool = false; // Equity.ptm_levy_eligible only for LSE to add one tax ptm lvy
-    stamp_duty_eligible:           bool = false; // Equity.stamp_duty_eligible for 3 echanges flag to add stamp tax
+    warraned_equity_taxed:         bool = false; // Equity.equity_underlying_flag todo: what tax? can other flags be used? or extracted to warrant if warants on equity and equity has tax it need to be taken from warrant too
 }
 
 table Power {
@@ -81,25 +83,23 @@ table Power {
 table Equity {
     id:                            long;         // Equity.instrument_id
 
-    ric:                           string;       // Equity.ric id concrete instrument. ROUTERS
-    sedol:                         string;       // Equity.mic_sedol looks like sedol non uniq??
-    cusip:                         string;       // Equity.cusip like sedol but for america ???
-    bb_cticker:                    string;       // Equity.bb_cticker security per country  ????
-    bb_root_ticker:                string;       // Equity.bb_root_ticker more generic than bb_cticker, but less than ISIN
-    ticker:                        string;       // Equity.ticker custom made from rick withou suffix
-    cins:                          string;       // Equity.cins cusip international non uniq
+    ric:                           string;       // Equity.ric id concrete instrument. ROUTERS main identifier in GBA
+    sedol:                         string;       // Equity.mic_sedol SEDOL uniq for UK exchanges
+    cusip:                         string;       // Equity.cusip CUSIP uniq for US and Canada exhanges
+    bloomberg:                     string;       // Equity.bb_cticker bloomberg_root_ticker + exchange code + market sector
+    bloomberg_root:                string;       // Equity.bb_root_ticker identifies legal entity or company
+    cins:                          string;       // Equity.cins international extension of the CUSIP, non uniq, must be used with CUSIP
+    gba_ticker:                    string;       // Equity.ticker custom made from rick withou suffix
 
-
-    cfi_code:                      string;       // Equity.cfi_code classification of financial instruments, looks like not use
+    cfi_code:                      string;       // Equity.cfi_code todo: check usage! classification of financial instruments
 
     is_global_primary:             bool = false; // Equity.is_global_primary Y on instrument wich was in IPO
-    regional_primary_flag:         bool = false; // Equity.regional_primary_flag Y on country level entrypoint exchange for instrument
-
+    is_regional_primary:           bool = false; // Equity.regional_primary_flag Y on country level entrypoint exchange for instrument
 
     is_custom_basket:              bool = false; // Equity.is_custom_basket cunstom indexes created by BANK in general not listed.  asset_category=='DELTA1', indicates what source API was used todo: why?
     is_warrant:                    bool = false; // Equity.is_warrant indicates what source API was used todo: why?
 
-    international_settlement_flag: bool = false; // Equity.international_settllement_flag determinces non standart clearing settlement location. for ex. GB->euro_clear instead of CREST
+    is_non_standard_settlement:    bool = false; // Equity.international_settllement_flag determinces non standart clearing settlement location. for ex. GB->euro_clear instead of CREST
 
     security:                      Security;
     listing_exchange:              ListingExchange;
