@@ -94,12 +94,12 @@ table Equity {
     cfi_code:                      string;       // Equity.cfi_code todo: check usage! classification of financial instruments
 
     is_global_primary:             bool = false; // Equity.is_global_primary Y on instrument wich was in IPO
-    is_regional_primary:           bool = false; // Equity.regional_primary_flag Y on country level entrypoint exchange for instrument
+    is_country_primary:            bool = false; // Equity.regional_primary_flag Y on country level entrypoint exchange for instrument
 
     is_custom_basket:              bool = false; // Equity.is_custom_basket cunstom indexes created by BANK in general not listed.  asset_category=='DELTA1', indicates what source API was used todo: why?
     is_warrant:                    bool = false; // Equity.is_warrant indicates what source API was used todo: why?
 
-    is_non_standard_settlement:    bool = false; // Equity.international_settllement_flag determinces non standart clearing settlement location. for ex. GB->euro_clear instead of CREST
+    is_international_settllement:  bool = false; // Equity.international_settllement_flag determinces non standart clearing settlement location. for ex. GB->euro_clear instead of CREST
 
     security:                      Security;
     listing_exchange:              ListingExchange;
@@ -113,4 +113,26 @@ table Equity {
     last_modified_user:            string;      // Equity.last_modified_user
 }
 
-union Instrument {Equity}
+
+table Delta1 {
+    id:                            long;         // Equity.instrument_id
+    description:                   string;       // Equity.description used by GUI and confirm per ISIN
+
+    ric:                           string;       // Equity.ric id concrete instrument. ROUTERS main identifier in GBA
+    isin:                          string;       // Equity.isin security id on different exchanges. one per world
+
+    original_currency:             string;       // Equity.original_currency of listing exchange  for instrument real
+    country:                       string;       // Equity.country_of_listing current listing
+
+    is_custom_basket:              bool = false; // Equity.is_custom_basket cunstom indexes created by BANK in general not listed.  asset_category=='DELTA1', indicates what source API was used todo: why?
+
+    cfi_code:                      string;       // Equity.cfi_code todo: check usage! classification of financial instruments
+
+    mds_code:                      string;       // Equity.mds_code power specific instrrument identifier
+}
+
+table Warrant {
+    is_international_settllement:  bool = false; // Equity.international_settllement_flag determinces non standart clearing settlement location. for ex. GB->euro_clear instead of CREST
+}
+
+union Instrument {Equity, Delta1, Warrant}
