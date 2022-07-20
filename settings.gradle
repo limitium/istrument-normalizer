@@ -7,13 +7,14 @@ pluginManagement {
 
 rootProject.name = 'instrument-normalizer'
 
-include 'core'
-include 'receiver'
-include 'reducer'
-include 'seeker'
-include 'combiner'
+include 'core' //general dependency for all kafka stream applications, provided as lib
+
+include 'receiver' //kafka stream application, provided as containerized application
+include 'reducer' //kafka stream application, provided as containerized application
+include 'seeker' //kafka stream application, provided as containerized application
+include 'combiner' //kafka stream application, provided as containerized application
 
 
-include 'stubs'
-include 'sequencer'
+include 'stubs' // used as pseudo dev environment to send and received messages from kafka, no need to build
+include 'sequencer' // should be used as lib, in others projects
 
