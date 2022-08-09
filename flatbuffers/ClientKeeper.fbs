@@ -1,4 +1,4 @@
-namespace com.bnpparibas.gban.ClientKeeper.flatbuffers;
+namespace com.bnpparibas.gban.clientkeeper.grpc;
 
 /**
 ====================================== gRPC API ======================================
@@ -13,7 +13,7 @@ rpc_service ClientKeeper {
     GetBookBy(Id):                     BookResponse          (streaming: "none");
 
     /**
-    * Looks up for book via client portfolio_code
+    * Lookups for book via client portfolio_code
     *
     * <pre>{@code
     *   select b.*
@@ -27,7 +27,7 @@ rpc_service ClientKeeper {
     LookupBookBy(Portfolio):           BookResponse          (streaming: "none");
 
     /**
-    * Looks up for book public id via client portfolio_code
+    * Lookups for book public id via client portfolio_code
     *
     * <pre>{@code
     *   select BOOK_ID
@@ -66,7 +66,7 @@ table Portfolio {
 /**
 * Is used in response to define technical status
 */
-enum Status {
+enum Status: byte {
     SUCCESS,
     ERROR_CLIENT,                                  // No reason for retry. for ex. partially filled request.
     ERROR_SERVER                                   // Can be retried
@@ -75,7 +75,7 @@ enum Status {
 /**
 * Wraps public id of any object or error message
 */
-table IdResponse{
+table IdResponse {
     id:                                long;
     status:                            Status;
     status_message:                    string;

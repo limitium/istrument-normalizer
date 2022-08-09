@@ -1,50 +1,52 @@
-enum Type:byte {
+namespace com.bnpparibas.gban.messages.flatbuffers;
+
+enum Type: byte {
     NEW,
     AMEND,
     CANCEL
 }
 
-enum Side:byte {
-    BUY        = 1,
-    SELL_LONG  = 2,
-    SELL_SHORT = 5
+enum Side: byte {
+    BUY               = 1,
+    SELL_LONG         = 2,
+    SELL_SHORT        = 5
 }
 
-enum TimeInForce:byte {
-    DAY        = 0,
-    GTC        = 1,
-    AT_OPEN    = 2,
-    IOC        = 3,
-    FOK        = 4,
-    GTD        = 6
+enum TimeInForce: byte {
+    DAY               = 0,
+    GTC               = 1,
+    AT_OPEN           = 2,
+    IOC               = 3,
+    FOK               = 4,
+    GTD               = 6
 }
 
-enum Capacity:byte {
-    P, // principal
-    A, // agency and default
-    R, // riskless principal
-    M, // mixed capacity
+enum Capacity: byte {
+    P,                                      // principal
+    A,                                      // agency and default
+    R,                                      // riskless principal
+    M,                                      // mixed capacity
 }
 
-enum OrderType:byte { // Fix values are used
-    Market     = 1,
-    Limit      = 2,
-    Stop       = 3,
-    StopLimit  = 4,
+enum OrderType: byte {                      // Fix values are used
+    Market            = 1,
+    Limit             = 2,
+    Stop              = 3,
+    StopLimit         = 4,
 }
 
-enum CounterpartyCodeType:byte {
+enum CounterpartyCodeType: byte {
     DTC,                                    // ATM8.ContraBroker DTC code of exchanges
     BIC                                     // ATM8.ExecutingFirm 1st 4 chars of BIC or SWIFT codes
 }
 
-enum CounterpartyType:byte {
+enum CounterpartyType: byte {
     BROKER,                                 // ATM8.ExecutingFirm != null
     EXCHANGE                                // ATM8.ContraBroker != null
 }
 
 table CounterParty {
-    type:             CounterPartyType;     // ATM8.ExecutingFirm or ATM8.ContraBroker, todo: wtf LATAM empty contra but have last market
+    type:             CounterpartyType;     // ATM8.ExecutingFirm or ATM8.ContraBroker, todo: wtf LATAM empty contra but have last market
     code:             string;
     code_type:        CounterpartyCodeType;
 
@@ -63,7 +65,7 @@ table ExecutionSystem {
 /**
   Representation of FO for concrete execution report. Some parts can be missed.
 */
-table FrontOffice{ //todo: merge of US flow?
+table FrontOffice { //todo: merge of US flow?
     execution_system: ExecutionSystem;
 
     execution_id:     string;               // ATM8.ExecID
@@ -86,7 +88,7 @@ table Order {
     book_id:          long;                 // gba book public identifier
 }
 
-table ExecutionReport{
+table ExecutionReport {
     id:               long;                 // GBA generated public identifier
     type:             Type = NEW;           // ATM8.ExecType
 
