@@ -44,7 +44,7 @@ enum CounterpartyType:byte {
 }
 
 table CounterParty {
-    type:             CounterPartyType;     // ATM8.ExecutingFirm or ATM8.ContraBroker
+    type:             CounterPartyType;     // ATM8.ExecutingFirm or ATM8.ContraBroker, todo: wtf LATAM empty contra but have last market
     code:             string;
     code_type:        CounterpartyCodeType;
 

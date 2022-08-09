@@ -1,0 +1,103 @@
+namespace com.bnpparibas.gban.ClientKeeper.flatbuffers;
+
+/**
+====================================== gRPC API ======================================
+*/
+rpc_service ClientKeeper {
+    /**
+    * Returns Book by public id
+    *
+    * @param Id with book public id
+    * @return BookResponse with book or with error message
+    */
+    GetBookBy(Id):                     BookResponse          (streaming: "none");
+
+    /**
+    * Looks up for book via client portfolio_code
+    *
+    * <pre>{@code
+    *   select b.*
+    *     from BOOKS b, PORTFOLIOS p
+    *     where b.ID=p.BOOK_ID and p.PORTFOLIO_CODE={portfolio_code}
+    * }</pre>
+    *
+    * @param Portfolio
+    * @return BookResponse with book or with error message
+    */
+    LookupBookBy(Portfolio):           BookResponse          (streaming: "none");
+
+    /**
+    * Looks up for book public id via client portfolio_code
+    *
+    * <pre>{@code
+    *   select BOOK_ID
+    *     from PORTFOLIOS
+    *     where PORTFOLIO_CODE={portfolio_code}
+    * }</pre>
+    *
+    * @param Portfolio
+    * @return IdResponse with public id or with error message
+    */
+    LookupBookIdBy(Portfolio):         IdResponse            (streaming: "none");
+}
+
+/**
+====================================== Requests ======================================
+*/
+
+/**
+* Public id of any object
+*/
+table Id {
+    id:                                long;
+}
+
+/**
+* Client representation of portfolio
+*/
+table Portfolio {
+    portfolio_code:                    string;
+}
+
+/**
+====================================== Responses ======================================
+*/
+
+/**
+* Is used in response to define technical status
+*/
+enum Status {
+    SUCCESS,
+    ERROR_CLIENT,                                  // No reason for retry. for ex. partially filled request.
+    ERROR_SERVER                                   // Can be retried
+}
+
+/**
+* Wraps public id of any object or error message
+*/
+table IdResponse{
+    id:                                long;
+    status:                            Status;
+    status_message:                    string;
+}
+
+/**
+* Wraps Book or error message
+*/
+table BookResponse {
+    book:                              Book;
+    status:                            Status;
+    status_message:                    string;
+}
+
+/**
+====================================== Messages ======================================
+*/
+
+/**
+* Representation of Book
+*/
+table Book {
+    id:                                long;
+    account:                           string;       // BOOKS.TRADING_ACCOUNT
+}

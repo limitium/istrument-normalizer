@@ -1,9 +1,16 @@
+/**
+================================== gRPC API ==================================
+*/
 rpc_service InstrumentKeeper {
-    GetBy(Id):                     Instrument    (streaming: "none");
-    LookupBy(LookupRequest):       Instrument    (streaming: "none");
-    Upsert(Instrument):            StoreResponse (streaming: "none");
+    GetBy(Id):                     InstrumentResponse    (streaming: "none");
+    LookupBy(LookupRequest):       InstrumentResponse    (streaming: "none");
+    LookupIdBy(LookupRequest):     IdResponse            (streaming: "none");
+    Upsert(Instrument):            StoreResponse         (streaming: "none");
 }
 
+/**
+================================== Requests ==================================
+*/
 table Id {
     id:                            long;
 }
@@ -14,18 +21,30 @@ table LookupRequest {
     trading_currency:              string;
 }
 
+/**
+================================== Responses ==================================
+*/
 enum Status {
     SUCCESS,
     ERROR_CLIENT,                                // No reason for retry. for ex. partially filled request.
     ERROR_SERVER                                 // Can be retried
 }
 
-table Response {
+table IdResponse {
     id:                            long;
     status:                        Status;
     status_message:                string;
 }
 
+table InstrumentResponse {
+    instrument:                    Instrument;
+    status:                        Status;
+    status_message:                string;
+}
+
+/**
+================================== Messages ==================================
+*/
 /**
   General security definiton
 */
