@@ -1,5 +1,7 @@
 subprojects {
     apply plugin: 'java'
+    apply plugin: "com.diffplug.spotless" version "6.9.0"
+
 
     group 'extb.gba'
     version '1.0-SNAPSHOT'
@@ -13,5 +15,17 @@ subprojects {
 
     dependencies {
         testImplementation group: 'junit', name: 'junit', version: '4.12'
+    }
+
+    spotless {
+        java {
+            googleJavaFormat('1.15.0').aosp().reflowLongStrings()
+        }
+        format 'misc', {
+            target '**/*.gradle', '**/*.md', '**/.gitignore'
+            indentWithSpaces()
+            trimTrailingWhitespace()
+            endWithNewline()
+        }
     }
 }

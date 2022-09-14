@@ -5,21 +5,18 @@ title Seeker sequence diagram
 box "Instrument normalizer"
 participant Reducer order 20 
 participant Seeker order 30 
+participant Receiver order 40
 end box
 participant ExternalStaticProvider order 50 
-database InstrumentsKeeper order 55
-collections downstreams order 70
 
-Reducer -> Seeker : onReceive(instrumentRequest)
+
+Reducer -> Seeker : onReceive(lookupRequest)
 activate Seeker
 Seeker -> ExternalStaticProvider : lookups()
 activate ExternalStaticProvider
 ExternalStaticProvider -> Seeker: Response
 deactivate ExternalStaticProvider
-alt#Gold #LightBlue Instrument was found
-Seeker -> InstrumentsKeeper : upsert(instrument)
-Seeker -> downstreams : publish(instrumentData)
-end
+Seeker -> Receiver : publish(LookupResponse)
 deactivate Seeker
 
 @enduml

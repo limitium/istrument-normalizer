@@ -29,16 +29,16 @@ public class Topics {
 
     static {
         JsonSerde<UsStreetExecution> executionJsonSerde = new JsonSerde<>(UsStreetExecution.class);
-        Topics.UPSTREAM = new Topic<>("gba.upstream.evt.us.street.executed.0", Serdes.String(), executionJsonSerde);
+        Topics.UPSTREAM = new Topic<>("gba.upstream.domain.us.street.tradeExecuted", Serdes.String(), executionJsonSerde);
 
-        Topics.INSTRUMENT_ENRICHED = new Topic<>("gba.instrument.evt.us.street.enriched.0", Serdes.Long(), executionJsonSerde);
+        Topics.INSTRUMENT_ENRICHED = new Topic<>("gba.instrument.domain.us.street.instrumentEnriched", Serdes.Long(), executionJsonSerde);
 
-        Topics.INSTRUMENT_MISSED = new Topic<>("gba.instrument.int.us.street.execution.missed.0", Serdes.String(), executionJsonSerde);
+        Topics.INSTRUMENT_MISSED = new Topic<>("gba.instrument.internal.us.street.instrumentMissed", Serdes.String(), executionJsonSerde);
 
         JsonSerde<SeekRequest> seekRequestSerde = new JsonSerde<>(SeekRequest.class);
-        Topics.INSTRUMENT_SEEK_REQUEST = new Topic<>("gba.instrument.int.seek.request.0", Serdes.String(), seekRequestSerde);
+        Topics.INSTRUMENT_SEEK_REQUEST = new Topic<>("gba.instrument.seek.internal.lookupRequested", Serdes.String(), seekRequestSerde);
 
         JsonSerde<InstrumentDefinition> instrumentSerde = new JsonSerde<>(InstrumentDefinition.class);
-        Topics.INSTRUMENT_UPDATED = new Topic<>("gba.instrument.evt.instrument.updated.0", Serdes.String(), instrumentSerde);
+        Topics.INSTRUMENT_UPDATED = new Topic<>("gba.instrument.domain.equity.instrumentUpdated", Serdes.String(), instrumentSerde);
     }
 }

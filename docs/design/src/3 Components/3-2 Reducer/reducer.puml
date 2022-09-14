@@ -9,18 +9,18 @@ participant Reducer order 30
 participant Seeker order 40 
 end box
 == Processing ==
-Receiver -> Reducer : onReceive(missingInstrumentMessage)
+Receiver -> Reducer : onReceive(securityId, byte[])
 activate Reducer
-Reducer -> Reducer : getStoredInstrument(instrument)
-alt#Gold #LightBlue Instrument last usage less THROTTLE_TIME
-Reducer -> Seeker : publish(instrumentLookupRequest)  
+Reducer -> Reducer : getStoredSecurity(securityId)
+alt#Gold #LightBlue Last security request was sent more than THROTTLE_TIME
+Reducer -> Seeker : publish(byte[])  
+Reducer -> Reducer : upsertSecurityIdLastUsage(securityId)
 end
-Reducer -> Reducer : upsertInstrumentLastUsage(instrument)
 deactivate Reducer
 == Scheduling ==
-Reducer -> Reducer : getThrottledInstruments()
+Reducer -> Reducer : getThrottledSecurityIds()
 activate Reducer
-Reducer -> Reducer : cleanUpOld()
+Reducer -> Reducer : cleanUp(lastUsage > THROTTLE_TIME)
 deactivate Reducer
 
 @enduml

@@ -5,7 +5,6 @@
 
 title Components diagram
 
-LAYOUT_TOP_DOWN()
 
 AddRelTag("control", $textColor="blue", $lineColor="blue", $lineStyle = DashedLine())
 
@@ -18,53 +17,37 @@ System_Boundary(static_ext, "External static"){
 }
 
 System_Boundary(static, "Static zone"){
-    System_Ext(tee, "TEE", "gRPC TEE service")
     System_Ext(instr, "Instrument keeper", "gRPC Instruments service")
-    ContainerDb(db, "Static storage", "Instrument data", "Oracle")
+    ContainerDb_Ext(db, "Instrument data", "Refshared", "Oracle")
 }
 
 System_Boundary(kafka, "Kafka boundary"){
-    Component(kafka_connect_in, "Kafka Connect", "Solace to Kafka")
+    Component_Ext(kafka_connect_in, "Kafka Connect", "Solace to Kafka, flow specific")
     Container_Boundary(instrument_normalization, "Instrument normalization"){
-        Component(receiver, "Receiver", "Kafka streams", "Checks instrument availablity and start ondemand loading if required")
-        Component(router, "Router", "Kafka streams","Route message to downstreams")
+        Component(receiver, "Receiver", "Kafka streams", "Checks instrument availablity and start ondemand loading if required, shelves messages")
         Component(reducer, "Reducer", "Kafka streams", "Reduce number of instruments lookups to one per 5 min")
         Component(seeker, "Seeker", "Kafka streams", "Lookup instrument in external providers, spawn drainers on complete")
-        Component(combiner, "Combiner", "Kafka streams", "Combines shelved messages with resolved instrument data")
     }
-    Component(kafka_connect_out, "Kafka Connect", "Kafka to Solace")
+    Component_Ext(downstreams, "Downstreams", "Flow specific Kafka consumers")
 }
 
-Rel(receiver, reducer, "Missing instrument", "kafka")
-Rel(receiver, combiner, "Original message", "kafka")
+Rel(receiver, reducer, "Lookup instrument request", "kafka")
 
-Rel(reducer, seeker, "Instrument lookup request", "kafka")
+Rel(reducer, seeker, "Lookup instrument request", "kafka")
 Rel(static_ext, seeker, "Instrument data", "pdl/rest")
-Rel(seeker, instr, "Store instrument", "gRPC")
-Rel(seeker, combiner, "Resolved instrument", "kafka")
+Rel(receiver, instr, "Store instrument", "gRPC")
+Rel(seeker, receiver, "Instrument lookup response", "kafka")
 
-Rel(receiver, router, "Message enriched with instrument", "kafka")
-Rel(router, kafka_connect_out, "Routed enriched message", "kafka")
-
-
-Rel(combiner, router, "Shelved original message+instrument", "kafka")
+Rel(receiver, downstreams, "Original message enriched with the instrument", "kafka, flow specific topic")
 
 Rel(upstreams, kafka_connect_in, "Incoming message", "solace")
-Rel(kafka_connect_in, receiver, "Incoming message", "kafka")
+Rel(kafka_connect_in, receiver, "Normalization request", "kafka")
 
-BiRel(instr, db, "Select/Insert", "jdbi")
-Rel(tee, router, "teeRoute", "gRPC")
+BiRel(instr, db, "Select/Upsert", "jdbi")
 Rel(instr, receiver, "instrumentData", "gRPC")
 
-Rel(seeker, kafka_connect_out, "New instrument meta", "kafka")
-
-Rel(kafka_connect_out, downstreams, "Outgoing message", "solace")
-
-
-System_Boundary(downstreams, "Downstreams"){
-
-}
 
 Lay_L(instrument_normalization, static)
+Lay_D(receiver,seeker)
 
 @enduml

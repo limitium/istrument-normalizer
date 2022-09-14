@@ -1,5 +1,29 @@
 This component is an entry point for all incoming messages with non nomalized instrument.
 
-`Receiver` accepts incoming messages, checks the availablity of the instrument in external `instruments services` via `gRPC` call. If the instrument is mature then an incoming message with instrument data is sent to the `Router`. Otherwise, the message is sent to the `Combiner` 
+`Receiver` accepts incoming Instrument normalize requests, checks the availability of the instrument in external `Instrument keeper` via `gRPC` call.
 
-Only statically loaded instruments go to happy path, on-demand loaded go to `combiner` to preserve local ordering
+Statefull component stores messages with missing instrument from `Kafka connect` in a local `KeyValueStore`. 
+
+To have a single API for instrument normalization process, all upstream components must wrap their business message into `NormalizeInstrument` request
+
+```flatbuffers
+
+table NormalizeInstrument {
+    security_id:            string;
+    original_message_class: string; //Fully qualified class name of Business message
+    original_message:       [byte]; //Serialized business message, _must_ have mutateInstrumentId(long)
+    egress_topic:           string;
+}
+
+```
+
+`Receiver` creates `LookupInstrument` requests to `Seeker`
+
+```flatbuffers
+
+table LookupInstrument {
+    security_id:           string;
+    currency:             string;
+}
+
+```

@@ -3,14 +3,14 @@ namespace com.bnpparibas.gban.clientkeeper.grpc;
 /**
 ====================================== gRPC API ======================================
 */
-rpc_service ClientKeeper {
+rpc_service FbClientKeeper {
     /**
     * Returns Book by public id
     *
     * @param Id with book public id
     * @return BookResponse with book or with error message
     */
-    GetBookBy(Id):                     BookResponse          (streaming: "none");
+    GetBookBy(FbId):                   FbBookResponse          (streaming: "none");
 
     /**
     * Lookups for book via client portfolio_code
@@ -24,7 +24,7 @@ rpc_service ClientKeeper {
     * @param Portfolio
     * @return BookResponse with book or with error message
     */
-    LookupBookBy(Portfolio):           BookResponse          (streaming: "none");
+    LookupBookBy(FbPortfolio):         FbBookResponse          (streaming: "none");
 
     /**
     * Lookups for book public id via client portfolio_code
@@ -38,7 +38,7 @@ rpc_service ClientKeeper {
     * @param Portfolio
     * @return IdResponse with public id or with error message
     */
-    LookupBookIdBy(Portfolio):         IdResponse            (streaming: "none");
+    LookupBookIdBy(FbPortfolio):       FbIdResponse            (streaming: "none");
 }
 
 /**
@@ -48,14 +48,14 @@ rpc_service ClientKeeper {
 /**
 * Public id of any object
 */
-table Id {
+table FbId {
     id:                                long;
 }
 
 /**
 * Client representation of portfolio
 */
-table Portfolio {
+table FbPortfolio {
     portfolio_code:                    string;
 }
 
@@ -66,7 +66,7 @@ table Portfolio {
 /**
 * Is used in response to define technical status
 */
-enum Status: byte {
+enum FbStatus: byte {
     SUCCESS,
     ERROR_CLIENT,                                  // No reason for retry. for ex. partially filled request.
     ERROR_SERVER                                   // Can be retried
@@ -75,18 +75,18 @@ enum Status: byte {
 /**
 * Wraps public id of any object or error message
 */
-table IdResponse {
+table FbIdResponse {
     id:                                long;
-    status:                            Status;
+    status:                            FbStatus;
     status_message:                    string;
 }
 
 /**
 * Wraps Book or error message
 */
-table BookResponse {
-    book:                              Book;
-    status:                            Status;
+table FbBookResponse {
+    book:                              FbBook;
+    status:                            FbStatus;
     status_message:                    string;
 }
 
@@ -97,7 +97,7 @@ table BookResponse {
 /**
 * Representation of Book
 */
-table Book {
+table FbBook {
     id:                                long;
     account:                           string;       // BOOKS.TRADING_ACCOUNT
 }

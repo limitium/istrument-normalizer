@@ -3,19 +3,19 @@ namespace com.bnpparibas.gban.instrumentkeeper.grpc;
 /**
 ================================== Unions ==================================
 */
-union Instrument {Equity, Delta1, Warrant}
+union FbInstrument {FbEquity, FbDelta1, FbWarrant}
 
 /**
 ================================== gRPC API ==================================
 */
-rpc_service InstrumentKeeper {
+rpc_service FbInstrumentKeeper {
     /**
     * Returns Instrument by public id, public id is uniq across all types of instruments.
     *
     * @param Id with instrument public id
     * @return InstrumentResponse with Instrument or with error message
     */
-    GetBy(Id):                     InstrumentResponse    (streaming: "none");
+    GetBy(FbId):                   FbInstrumentResponse    (streaming: "none");
 
     /**
     * Lookups instrument from partial information about it, so some ambiguity or incorrect lookup may occur.
@@ -31,7 +31,7 @@ rpc_service InstrumentKeeper {
     * @param LookupRequest
     * @return InstrumentResponse with book or with error message
     */
-    LookupBy(LookupRequest):       InstrumentResponse    (streaming: "none");
+    LookupBy(FbLookupRequest):     FbInstrumentResponse    (streaming: "none");
 
     /**
     * Lookups for instrument public id with the same logic as {@code LookupBy}
@@ -39,7 +39,7 @@ rpc_service InstrumentKeeper {
     * @param LookupRequest
     * @return IdResponse with instrument public id or with error message
     */
-    LookupIdBy(LookupRequest):     IdResponse            (streaming: "none");
+    LookupIdBy(FbLookupRequest):   FbIdResponse            (streaming: "none");
 
     /**
     * Inserts or updates instrument
@@ -47,7 +47,7 @@ rpc_service InstrumentKeeper {
     * @param Instrument
     * @return IdResponse with instrument public id or with error message
     */
-    Upsert(UpsertRequest):            IdResponse            (streaming: "none");
+    Upsert(FbUpsertRequest):        FbIdResponse            (streaming: "none");
 }
 
 /**
@@ -57,14 +57,14 @@ rpc_service InstrumentKeeper {
 /**
 * Public id of any object
 */
-table Id {
+table FbId {
     id:                            long;
 }
 
 /**
 * Client representation of raw instrument data
 */
-table LookupRequest {
+table FbLookupRequest {
     security_id:                   string;
     country:                       string;       // todo: where this comes from?
     trading_currency:              string;
@@ -73,28 +73,28 @@ table LookupRequest {
 /**
 * Wraps instrument for upsert
 */
-table UpsertRequest {
-    instrument:                    Instrument;
+table FbUpsertRequest {
+    instrument:                    FbInstrument;
 }
 
 /**
 ================================== Responses ==================================
 */
-enum Status: byte {
+enum FbStatus: byte {
     SUCCESS,
     ERROR_CLIENT,                                // No reason for retry. for ex. partially filled request.
     ERROR_SERVER                                 // Can be retried
 }
 
-table IdResponse {
+table FbIdResponse {
     id:                            long;
-    status:                        Status;
+    status:                        FbStatus;
     status_message:                string;
 }
 
-table InstrumentResponse {
-    instrument:                    Instrument;
-    status:                        Status;
+table FbInstrumentResponse {
+    instrument:                    FbInstrument;
+    status:                        FbStatus;
     status_message:                string;
 }
 
@@ -106,7 +106,7 @@ table InstrumentResponse {
 /**
   General security definiton
 */
-table Security {
+table FbSecurity {
     isin:                          string;       // Equity.isin security id on different exchanges. one per world
     asset_category:                string;       // Equity.asset_category human redable per ISIN
     description:                   string;       // Equity.description used by GUI and confirm per ISIN
@@ -115,13 +115,13 @@ table Security {
 
     ccp_eligible:                  bool = false; // Equity.ccp_eligible_flag can be sent to BATS for EROPE, but per ISIN
 
-    taxes: Taxes;
+    taxes: FbTaxes;
 }
 
 /**
   Exchange wehere current instrument is listing
 */
-table ListingExchange {
+table FbListingExchange {
     rec:                           string;       // Equity.listing_exchange reuters exchange code
     mic:                           string;       // Equity.mic listing exhange another idetifier wtf iso
     country:                       string;       // Equity.country_of_listing current listing
@@ -132,13 +132,13 @@ table ListingExchange {
 /**
   Exchange where IPO of securiy happened
 */
-table IssueExchange {
+table FbIssueExchange {
     bloomberg_code:                string;       // Equity.bb_prime_exchange where IPO happened in bloomberg code
     shares_outstanding:            long;         // Equity.shares_outstanding IPO amount of instruments
     country_of_issue:              string;       // Equity.country_of_issue IPO where happened
 }
 
-table Taxes {
+table FbTaxes {
     france_financial_transaction:  bool = false; // Equity.fft_flag france additinal charges for some instrument transactional tax per ISIN
     italy_financial_transaction:   bool = false; // Equity.itt_flag italy additinal charges for some instrument transactional tax per ISIN
     spain_financial_transaction:   bool = false; // Equity.sftt_flag spain additinal charges for some instrument transactional tax per ISIN
@@ -149,7 +149,7 @@ table Taxes {
     warraned_equity_taxed:         bool = false; // Equity.equity_underlying_flag todo: what tax? can other flags be used? or extracted to warrant if warants on equity and equity has tax it need to be taken from warrant too
 }
 
-table Power {
+table FbPower {
     mds_code:                      string;       // Equity.mds_code power specific instrrument identifier
     place_code:                    string;       // Equity.place_code power specific exchange identifier
 }
@@ -157,7 +157,7 @@ table Power {
 /**
   Concrete definition of instrument on listing exchange
 */
-table Equity {                                   // @todo: complete splitting!!!
+table FbEquity {                                 // @todo: complete splitting!!!
     id:                            long;         // Equity.instrument_id
 
     ric:                           string;       // Equity.ric id concrete instrument. ROUTERS main identifier in GBA
@@ -178,11 +178,11 @@ table Equity {                                   // @todo: complete splitting!!!
 
     is_international_settllement:  bool = false; // Equity.international_settllement_flag determinces non standart clearing settlement location. for ex. GB->euro_clear instead of CREST
 
-    security:                      Security;
-    listing_exchange:              ListingExchange;
-    issue_exchange:                IssueExchange;
+    security:                      FbSecurity;
+    listing_exchange:              FbListingExchange;
+    issue_exchange:                FbIssueExchange;
 
-    power:                         Power;
+    power:                         FbPower;
 
     active:                        bool = true; // Equity.active
     created:                       long;        // Equity.created
@@ -191,7 +191,7 @@ table Equity {                                   // @todo: complete splitting!!!
 }
 
 
-table Delta1 {
+table FbDelta1 {
     id:                            long;         // Equity.instrument_id
     description:                   string;       // Equity.description used by GUI and confirm per ISIN
 
@@ -208,7 +208,7 @@ table Delta1 {
     mds_code:                      string;       // Equity.mds_code power specific instrrument identifier
 }
 
-table Warrant {
+table FbWarrant {
     is_international_settllement:  bool = false; // Equity.international_settllement_flag determinces non standart clearing settlement location. for ex. GB->euro_clear instead of CREST
 }
 

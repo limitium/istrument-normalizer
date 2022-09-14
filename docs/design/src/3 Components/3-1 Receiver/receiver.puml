@@ -3,27 +3,39 @@
 title Receiver sequence diagram
 
 
-control Upstream order 10
+collections KafkaConnect order 10
 box "Instrument normalizer"
+participant Seeker order 15
 participant Receiver order 20 
-participant Router order 30 
+collections Downstreams order 30 
 participant Reducer order 35 
-participant Combiner order 40 
 end box
-database InstrumentsKeeper order 50
+database InstrumentKeeper order 50
+participant DLQ order 55
 
-Upstream -> Receiver: onReceive(message)
+== Direct flow ==
+KafkaConnect -> Receiver: onReceive(normalizeInstrument)
 activate Receiver
-Receiver -> InstrumentsKeeper : getInstrumentData(message.instrumentId, message.instrumentIdSource)
-activate InstrumentsKeeper
-InstrumentsKeeper -> Receiver : instrumentData
-deactivate InstrumentsKeeper
-Receiver -> Receiver : isInstumentStatic(instrumentData)
-alt#Gold #LightBlue True
-Receiver -> Router: {message + instrumentData}
+Receiver -> InstrumentKeeper : lookupInstrumentID(normalizeInstrument.securityId)
+activate InstrumentKeeper
+InstrumentKeeper -> Receiver : instrumentId
+deactivate InstrumentKeeper
+alt#Gold #LightBlue instrumentId is not null
+Receiver -> Receiver: mutate(originalMessage, instrumentId)
+Receiver -> Downstreams: publish(originalMessage, normalizeInstrument.egressTopic)
 else #Pink else
-Receiver -> Reducer: {missing instrument}
-Receiver -> Combiner: {message}
+Receiver -> Receiver: shelveNormalizeInstrument(normalizeInstrument.securityId, normalizeInstrument)
+Receiver -> Reducer: publish(lookupInstrument)
 end
 deactivate Receiver
+== Lookup flow ==
+Seeker -> Receiver: onReceive(lookupResponse)
+activate Receiver
+alt#Gold #LightBlue is lookup successful 
+Receiver -> Receiver: List<normalizeInstrument> unshelve(lookupResponse.securityId)
+Receiver -> Downstreams: publish(originalMessage, normalizeInstrument.egressTopic)
+Receiver -> InstrumentKeeper: upsert(lookupResponse.instrumentData)
+else #Pink else
+Receiver -> DLQ: publish(InstrumentLookupFailed)
+end
 @enduml
