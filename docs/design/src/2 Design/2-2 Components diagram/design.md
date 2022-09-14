@@ -1,7 +1,7 @@
 
-Instrument normalization project is devided into several components to reduce code complexity and increase flexiblity. Kafka is used as a transport layer for communication between components. Component is a single threaded application based on Kafka streams library. 
+Instrument normalization project is devided into several components to reduce code complexity and increase flexiblity. Kafka is used as a transport layer for communication between components. Component is a single threaded application based on Kafka streams library.
 
-There're stateless and stateful components, all states are exposed to kafka with kafka transaction guarantees. All interaction with external services are idempotent.    
+There're stateless and stateful components, all states are exposed to kafka with kafka transaction guarantees. All interaction with external services are idempotent.
 
 All action steps are almost one to one reflected in the corresponding component.
 

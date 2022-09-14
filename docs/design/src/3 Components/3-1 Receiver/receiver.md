@@ -2,7 +2,7 @@ This component is an entry point for all incoming messages with non nomalized in
 
 `Receiver` accepts incoming Instrument normalize requests, checks the availability of the instrument in external `Instrument keeper` via `gRPC` call.
 
-Statefull component stores messages with missing instrument from `Kafka connect` in a local `KeyValueStore`. 
+Statefull component stores messages with missing instrument from `Kafka connect` in a local `KeyValueStore`.
 
 To have a single API for instrument normalization process, all upstream components must wrap their business message into `NormalizeInstrument` request
 

@@ -7,4 +7,3 @@ There're three main goals of instrument normalization project:
 Optional:
 - Introduce new shared non axiom services
   - Instrument keeper service
-

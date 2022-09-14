@@ -8,7 +8,7 @@
 ```shell
 KSA_Receiver -cp instrument-normalizer.receiver.main
 mainclass extb.gba.kscore.KStreamApplication
- 
+
 ```
 
 ```shell

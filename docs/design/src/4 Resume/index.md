@@ -22,7 +22,7 @@ Current approach can be scaled horizontally with partitions based on instrument.
 
 
 # Pros
-  
+
 * Doable
 * Modern streaming processing approach
 * Introducing kafka broker
@@ -38,7 +38,6 @@ Current approach can be scaled horizontally with partitions based on instrument.
 * Telemetry
   * Tracing info
   * Log aggregation
-  * Metrics collecting  
+  * Metrics collecting
 * The most probable performance enchantment is a cache layer around gRPC calls
 * Web-based control cockpit for project - more components
-  

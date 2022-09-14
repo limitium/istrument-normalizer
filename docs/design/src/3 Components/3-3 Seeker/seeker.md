@@ -1,6 +1,6 @@
 This component does actual lookup of the instrument in external providers. Depends on the information available in the request, lookup can be confident for a particular provider or use a "guessing" approach.
 
-## Instrument lookup 
+## Instrument lookup
 
 ```java
 securityIdSource = guessSecurityIdSource(securityId); // simplified euristics from Instrument keeper
@@ -15,9 +15,9 @@ instrument = lookupDelta1(securityId, securityIdSource);
 if(instrument != null) return instrument;
 ```
 
-## External providers 
+## External providers
 
-All external providers are available via MDDClient library 
+All external providers are available via MDDClient library
 
 ### Equity
 
