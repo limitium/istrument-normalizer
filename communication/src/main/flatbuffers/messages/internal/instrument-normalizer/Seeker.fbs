@@ -1,0 +1,14 @@
+namespace com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers;
+
+include tables/instrument.fbs
+
+table FbSeekRequest {
+    security_id:      string;
+}
+
+table FbInstrumentUpdated {
+    instrument:       FbInstrument;
+}
+
+root_type FbSeekRequest;
+root_type FbInstrumentUpdated;

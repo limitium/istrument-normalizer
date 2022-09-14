@@ -1,0 +1,80 @@
+namespace com.bnpparibas.gban.communication.grpc.clientkeeper.flatbuffers;
+
+include grpc/server.fbs
+
+/**
+====================================== gRPC API ======================================
+*/
+rpc_service FbClientKeeper {
+    /**
+    * Returns Book by public id
+    *
+    * @param Id with book public id
+    * @return BookResponse with book or with error message
+    */
+    GetBookBy(FbId):                   FbBookResponse          (streaming: "none");
+
+    /**
+    * Lookups for book via client portfolio_code
+    *
+    * <pre>{@code
+    *   select b.*
+    *     from BOOKS b, PORTFOLIOS p
+    *     where b.ID=p.BOOK_ID and p.PORTFOLIO_CODE={portfolio_code}
+    * }</pre>
+    *
+    * @param Portfolio
+    * @return BookResponse with book or with error message
+    */
+    LookupBookBy(FbPortfolio):         FbBookResponse          (streaming: "none");
+
+    /**
+    * Lookups for book public id via client portfolio_code
+    *
+    * <pre>{@code
+    *   select BOOK_ID
+    *     from PORTFOLIOS
+    *     where PORTFOLIO_CODE={portfolio_code}
+    * }</pre>
+    *
+    * @param Portfolio
+    * @return IdResponse with public id or with error message
+    */
+    LookupBookIdBy(FbPortfolio):       FbIdResponse            (streaming: "none");
+}
+
+/**
+====================================== Requests ======================================
+*/
+
+/**
+* Client representation of portfolio
+*/
+table FbPortfolio {
+    portfolio_code:                    string;
+}
+
+/**
+====================================== Responses ======================================
+*/
+
+/**
+* Wraps Book or error message
+*/
+table FbBookResponse {
+    book:                              FbBook;
+    status:                            FbGrpcStatus;
+    status_message:                    string;
+}
+
+/**
+====================================== Messages ======================================
+*/
+
+/**
+* Representation of Book
+*/
+table FbBook {
+    id:                                long;
+    account:                           string;       // BOOKS.TRADING_ACCOUNT
+}

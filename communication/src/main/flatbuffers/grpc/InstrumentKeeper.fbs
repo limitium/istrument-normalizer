@@ -1,0 +1,87 @@
+namespace com.bnpparibas.gban.communication.grpc.instrumentkeeper.flatbuffers;
+
+include grpc/server.fbs
+include tables/instrument.fbs
+
+/**
+================================== gRPC API ==================================
+*/
+rpc_service FbInstrumentKeeper {
+    /**
+    * Returns Instrument by public id, public id is uniq across all types of instruments.
+    *
+    * @param Id with instrument public id
+    * @return InstrumentResponse with Instrument or with error message
+    */
+    GetBy(FbId):                   FbInstrumentResponse    (streaming: "none");
+
+    /**
+    * Lookups instrument from partial information about it, so some ambiguity or incorrect lookup may occur.
+    * Bassicaly there are 3 stages of lookup:
+    * 1. Determine {@code security_id_source} from alphanumeric definition of {@code securty_id}. E.g. IBM.N -> RIC
+    * 2. Fetch instruments with known {@code security_id_source} and {@code security_id}
+    *       Fetch priority:
+    *           - Equities
+    *           - Bonds
+    *           - Options
+    * 3. Reduce set of instruments to one using primary flags or additinal data from request for ex. currency
+    *
+    * @param LookupRequest
+    * @return InstrumentResponse with book or with error message
+    */
+    LookupBy(FbLookupRequest):     FbInstrumentResponse    (streaming: "none");
+
+    /**
+    * Lookups for instrument public id with the same logic as {@code LookupBy}
+    *
+    * @param LookupRequest
+    * @return IdResponse with instrument public id or with error message
+    */
+    LookupIdBy(FbLookupRequest):   FbIdResponse            (streaming: "none");
+
+    /**
+    * Inserts or updates instrument
+    *
+    * @param Instrument
+    * @return IdResponse with instrument public id or with error message
+    */
+    Upsert(FbUpsertRequest):        FbIdResponse            (streaming: "none");
+}
+
+/**
+================================== Requests ==================================
+*/
+
+/**
+* Client representation of raw instrument data
+*/
+table FbLookupRequest {
+    security_id:                   string;
+    country:                       string;       // todo: where this comes from?
+    trading_currency:              string;
+}
+
+/**
+* Wraps instrument for upsert
+*/
+table FbUpsertRequest {
+    instrument:                    FbInstrument;
+}
+
+/**
+================================== Responses ==================================
+*/
+
+table FbInstrumentResponse {
+    instrument:                    FbInstrument;
+    status:                        FbGrpcStatus;
+    status_message:                string;
+}
+
+/**
+================================== Messages ==================================
+*/
+
+
+
+

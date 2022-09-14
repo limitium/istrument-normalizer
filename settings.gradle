@@ -17,3 +17,5 @@ include 'combiner' //kafka stream application, provided as containerized applica
 
 include 'stubs' // used as pseudo dev environment to send and received messages from kafka, no need to build
 include 'sequencer' // should be used as lib, in others projects
+
+include 'communication'

@@ -1,0 +1,32 @@
+/**
+====================================== Requests ======================================
+*/
+
+/**
+* Public id of any object
+*/
+table FbId {
+    id:                                long;
+}
+
+/**
+====================================== Responses ======================================
+*/
+
+/**
+* Is used in response to define technical status
+*/
+enum FbGrpcStatus: byte {
+    SUCCESS,
+    ERROR_CLIENT,                                  // No reason for retry. for ex. partially filled request.
+    ERROR_SERVER                                   // Can be retried
+}
+
+/**
+* Wraps public id of any object or error message
+*/
+table FbIdResponse {
+    id:                                long;
+    status:                            FbGrpcStatus;
+    status_message:                    string;
+}
