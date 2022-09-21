@@ -1,0 +1,2 @@
+spring.application.name: core-app
+spring.cloud.config.enabled: false

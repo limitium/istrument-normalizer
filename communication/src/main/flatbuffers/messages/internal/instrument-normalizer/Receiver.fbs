@@ -1,0 +1,10 @@
+namespace com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers;
+
+table FBNormalizeInstrument {
+    security_id:              string;
+    original_message_class:   string;
+    original_message:         [ubyte];
+    original_message_id:      long;
+    path_to_instrument_table: string;
+    egress_topic:             string;
+}

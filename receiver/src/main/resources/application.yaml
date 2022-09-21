@@ -1,3 +1,7 @@
 spring:
   application.name: "instrument.normalizer.receiver"
-#  main.web-application-type: SERVLET
+
+#Must be taken from config server and merged into instrument-keeper.server
+instrument-keeper:
+  host: localhost
+  port: 9999

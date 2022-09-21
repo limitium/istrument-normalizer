@@ -2,13 +2,14 @@ namespace com.bnpparibas.gban.communication.messages.internal.instrumentnormaliz
 
 include tables/instrument.fbs
 
-table FbSeekRequest {
+table FBLookupInstrument {
     security_id:      string;
 }
 
-table FbInstrumentUpdated {
+table FBInstrumentLookuped {
+    security_id:      string;
     instrument:       FbInstrument;
 }
 
-root_type FbSeekRequest;
-root_type FbInstrumentUpdated;
+root_type FBLookupInstrument;
+root_type FBInstrumentLookuped;

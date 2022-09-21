@@ -1,5 +1,6 @@
 plugins {
-    id 'org.springframework.boot' version '3.0.0-M3'
+    id 'application'
+    id 'org.springframework.boot' version '3.0.0-M4'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
 }
 
@@ -8,22 +9,28 @@ repositories {
 }
 
 ext {
-    set('springCloudVersion', "2022.0.0-M2")
+    set('springCloudVersion', "2022.0.0-M4")
 }
 
 dependencies {
     implementation 'org.apache.kafka:kafka-streams'
+    implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.cloud:spring-cloud-stream'
     implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
     implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka-streams'
-    implementation 'org.springframework.kafka:spring-kafka'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation project(":core")
-    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'io.projectreactor:reactor-test'
     testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testImplementation 'org.junit.platform:junit-platform-launcher:1.9.0'
+    testImplementation project(":core").sourceSets.test.output
+
+    implementation project(":communication")
+    implementation project(":sequencer")
+}
+
+springBoot {
+    mainClassName = 'com.bnpparibas.gban.kscore.KStreamApplication'
 }
 
 dependencyManagement {

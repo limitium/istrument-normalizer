@@ -11,14 +11,18 @@ dependencies {
 
 
     implementation project(":core")
+    implementation project(":receiver")
     implementation 'org.springframework.kafka:spring-kafka:3.0.0-M4'
     implementation 'org.springframework.boot:spring-boot-starter-actuator:3.0.0-M3'
     implementation 'io.micrometer:micrometer-registry-prometheus:1.10.0-M2'
     implementation 'org.springframework.boot:spring-boot-starter-web:3.0.0-M3'
+
+    implementation project(":communication")
+    implementation project(":sequencer")
 }
 
 ext {
-    set('springCloudVersion', "2022.0.0-M2")
+    set('springCloudVersion', "2022.0.0-M4")
 }
 
 dependencyManagement {

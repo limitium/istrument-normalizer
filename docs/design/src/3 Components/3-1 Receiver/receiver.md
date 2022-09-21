@@ -8,11 +8,13 @@ To have a single API for instrument normalization process, all upstream componen
 
 ```flatbuffers
 
-table NormalizeInstrument {
-    security_id:            string;
-    original_message_class: string; //Fully qualified class name of Business message
-    original_message:       [byte]; //Serialized business message, _must_ have mutateInstrumentId(long)
-    egress_topic:           string;
+table FBNormalizeInstrument {
+    security_id:              string;
+    original_message_class:   string; //Fully qualified class name of Business message
+    original_message:         [ubyte]; //Serialized business message, _must_ have mutateInstrumentId(long)
+    original_message_id:      long; //Message public id, must be uniq
+    path_to_instrument_table: string; //Commaseparated path to instrument table
+    egress_topic:             string; //Topic where message should be sent after normalization
 }
 
 ```
@@ -21,9 +23,8 @@ table NormalizeInstrument {
 
 ```flatbuffers
 
-table LookupInstrument {
+table FBLookupInstrument {
     security_id:           string;
-    currency:             string;
 }
 
 ```

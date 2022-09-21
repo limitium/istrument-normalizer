@@ -1,28 +1,36 @@
 plugins {
-    id 'org.springframework.boot' version '3.0.0-M3'
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'application'
+    id 'org.springframework.boot' version '3.0.0-M4'
+    id 'io.spring.dependency-management' version '1.0.12.RELEASE'
 }
 
 repositories {
+    mavenCentral()
     maven { url 'https://repo.spring.io/milestone' }
 }
 
 ext {
-    set('springCloudVersion', "2022.0.0-M2")
+    set('springCloudVersion', "2022.0.0-M4")
 }
 
 dependencies {
     implementation 'org.apache.kafka:kafka-streams'
+    implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.cloud:spring-cloud-stream'
     implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
     implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka-streams'
-    implementation 'org.springframework.kafka:spring-kafka'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'io.projectreactor:reactor-test'
-    testImplementation 'org.springfram  ework.kafka:spring-kafka-test'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+
+    // https://mvnrepository.com/artifact/org.junit.platform/junit-platform-launcher
+    testImplementation 'org.junit.platform:junit-platform-launcher:1.9.0'
+
+    implementation project(":communication")
+}
+
+springBoot {
+    mainClassName = 'com.bnpparibas.gban.kscore.KStreamApplication'
 }
 
 dependencyManagement {

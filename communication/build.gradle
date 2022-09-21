@@ -42,14 +42,15 @@ task flatc() {
     doLast {
         def flattenedSources = new File(fbsFlattenDir)
         flattenedSources.eachFileRecurse() {
-            file -> if(file.isFile()){
-                //compile endpoint fbs files
-                exec {
-                    workingDir = fbsFlattenDir
-                    commandLine = "${projectDir}/flatc"
-                    args = ["--grpc", "-j", "-o", "${buildDir}/generated/sources/flatbuffers/java/main/", file.path]
+            file ->
+                if (file.isFile()) {
+                    //compile endpoint fbs files
+                    exec {
+                        workingDir = fbsFlattenDir
+                        commandLine = "${projectDir}/flatc"
+                        args = ["--grpc", "-j", "--force-defaults", "--gen-mutable", "-o", "${buildDir}/generated/sources/flatbuffers/java/main/", file.path]
+                    }
                 }
-            }
         }
     }
 }
@@ -67,6 +68,7 @@ compileJava {
 }
 
 dependencies {
+    api 'org.apache.kafka:kafka-clients:3.2.1'
     api 'javax.annotation:javax.annotation-api:1.3.2' //used by generated classes
     api "com.google.flatbuffers:flatbuffers-java:$flatbuffersVersion" //used by generated classes
     api "com.google.flatbuffers:flatbuffers-java-grpc:$flatbuffersVersion" //used by generated classes
