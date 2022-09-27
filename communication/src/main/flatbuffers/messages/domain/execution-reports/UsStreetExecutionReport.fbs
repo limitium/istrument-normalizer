@@ -69,6 +69,7 @@ table FbFrontOffice { //todo: merge of US flow?
     execution_system: FbExecutionSystem;
 
     execution_id:     string;               // ATM8.ExecID
+    execution_ref_id: string;               // ATM8.ExecRefID
     order_id:         string;               // ATM8.OrderID
 }
 

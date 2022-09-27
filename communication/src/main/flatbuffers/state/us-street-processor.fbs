@@ -1,0 +1,81 @@
+namespace com.bnpparibas.gban.communication.state.usstreetprocessor.flatbuffers;
+
+ enum FbSide: byte {
+     BUY               = 1,
+     SELL_LONG         = 2,
+     SELL_SHORT        = 5
+ }
+
+ enum FbTimeInForce: byte {
+     DAY               = 0,
+     GTC               = 1,
+     AT_OPEN           = 2,
+     IOC               = 3,
+     FOK               = 4,
+     GTD               = 6
+ }
+
+ enum FbCapacity: byte {
+     PRINCIPAL,                              // principal
+     AGENCY,                                 // agency and default
+     RISKLESS,                               // riskless principal
+     MIXED,                                  // mixed capacity
+ }
+
+ enum FbOrderType: byte {                    // Fix values are used
+     MARKET            = 1,
+     LIMIT             = 2,
+     STOP              = 3,
+     STOP_LIMIT        = 4,
+ }
+
+ enum FbMessageType: byte {
+     EXECUTION
+ }
+
+ enum FbActionCode: byte {
+     NEW,
+     BUSTED
+ }
+
+ table FbTigerAllocation {
+     message_type: FbMessageType;
+
+     action_code: FbActionCode;
+
+     src_id: string;
+     src_user_id: string;
+     exec_sys_instance_id: string;
+     exec_sys_order_id: string;
+     exec_sys_execution_id: string;
+     exec_sys_market_order_id: string;
+
+     market_execution_id: string;
+     market_order_id: string;
+
+     trade_type: FbSide = BUY;
+
+     executed_qty: double;
+     execution_price: double;
+
+     ticker: string;
+     isin: string;
+     sedol: string;
+
+     execution_time: string;
+     booking_account: string;
+     book: string; //"FLEX_BNP"
+     time_in_system: FbTimeInForce;
+     execution_venue: string;
+     capacity_code: FbCapacity;
+     order_type: FbOrderType = MARKET;
+     when_issued: bool = false;
+     firm_mnemonic: string;
+     business_line: string; //"GES"
+     is_international: bool = false;
+     product_ccy: string;
+
+     external_src_id: string;
+ }
+
+ root_type FbTigerAllocation;
