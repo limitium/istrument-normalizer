@@ -40,7 +40,7 @@ public class NormalizeInstrument {
      * @param securityId            alphanumeric non-normalized instrument identifier
      * @param pathToInstrumentTable comma separated path of getters to table with instrument mutator, starting from root .
      * @param egressTopic           topic which will be used for publishing business message with normalized instrument
-     * @return {@code FBNormalizeInstrument} sized table
+     * @return {@link FBNormalizeInstrument} sized table
      */
     public static FBNormalizeInstrument wrapWithNormalizeInstrument(Table fbTable, long msgId, String securityId, String pathToInstrumentTable, String egressTopic) {
         assertMutateMethod(fbTable, pathToInstrumentTable);
@@ -72,12 +72,49 @@ public class NormalizeInstrument {
             Method mutator = findMutator(instrumentTable);
 
             if (!(boolean) mutator.invoke(instrumentTable, instrumentId)) {
-                throw new RuntimeException("Instrument wasn't mutated, probably it was set to default value and FlatBufferBuilder().forceDefaults(false) was used");
+                throw new NormalizeInstrumentException("Instrument wasn't mutated, probably it was set to default value and FlatBufferBuilder().forceDefaults(false) was used");
             }
-        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException |
-                 InvocationTargetException e) {
-            throw new RuntimeException("Unable to mutate instrument id", e);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new NormalizeInstrumentException("Unable to mutate instrument id", e);
         }
+    }
+
+
+    /**
+     * Constructs original flatbuffers table from {@link FBNormalizeInstrument request
+     *
+     * @param normalizeInstrument wrapper around business message
+     * @return original business message as a flatbuffers table
+     * @throws NormalizeInstrumentException
+     */
+    public static Table getOriginalTable(FBNormalizeInstrument normalizeInstrument) {
+        try {
+            Class<?> clazz = normalizeInstrument.getClass()
+                    .getClassLoader()
+                    .loadClass(normalizeInstrument.originalMessageClass());
+
+            Method rootMaker = clazz.getMethod("getRootAs" + clazz.getSimpleName(), ByteBuffer.class);
+
+            return (Table) rootMaker.invoke(null, normalizeInstrument.originalMessageAsByteBuffer());
+        } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException |
+                 IllegalAccessException e) {
+            throw new NormalizeInstrumentException(e);
+        }
+    }
+
+    /**
+     * Cuts sized byte array with an original message content from {@link FBNormalizeInstrument}
+     *
+     * @param normalizeInstrument wrapper around business message
+     * @return sized byte array of original business message
+     */
+    public static byte[] cutOriginalMessageFrom(FBNormalizeInstrument normalizeInstrument) {
+        byte[] originalMessageBytes = new byte[normalizeInstrument.originalMessageLength()];
+        normalizeInstrument.originalMessageAsByteBuffer()
+                .get(originalMessageBytes,
+                        0,
+                        originalMessageBytes.length);
+        return originalMessageBytes;
     }
 
     private static void assertMutateMethod(Table fbTable, String pathToInstrumentTable) {
@@ -96,9 +133,9 @@ public class NormalizeInstrument {
                     Method getter = instrumentTable.getClass().getMethod(getterName);
                     instrumentTable = getter.invoke(instrumentTable);
                 } catch (NoSuchMethodException e) {
-                    throw new RuntimeException("Getter method " + getterName + " not found in table " + instrumentTable.getClass(), e);
+                    throw new NormalizeInstrumentException("Getter method " + getterName + " not found in table " + instrumentTable.getClass(), e);
                 } catch (InvocationTargetException | IllegalAccessException e) {
-                    throw new RuntimeException(e);
+                    throw new NormalizeInstrumentException(e);
                 }
             }
         }
@@ -113,15 +150,22 @@ public class NormalizeInstrument {
         try {
             return instrumentTable.getClass().getMethod(MUTATE_INSTRUMENT_ID, long.class);
         } catch (NoSuchMethodException e) {
-            throw new RuntimeException("Missing `mutateInstrumentId(long)` method in table " + instrumentTable.getClass(), e);
+            throw new NormalizeInstrumentException("Missing `mutateInstrumentId(long)` method in table " + instrumentTable.getClass(), e);
         }
-
     }
 
-    private static Table getOriginalTable(FBNormalizeInstrument normalizeInstrument) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Class<?> clazz = normalizeInstrument.getClass().getClassLoader().loadClass(normalizeInstrument.originalMessageClass());
-        Method rootMaker = clazz.getMethod("getRootAs" + clazz.getSimpleName(), ByteBuffer.class);
+    public static class NormalizeInstrumentException extends RuntimeException {
 
-        return (Table) rootMaker.invoke(null, normalizeInstrument.originalMessageAsByteBuffer());
+        public NormalizeInstrumentException(Exception exception) {
+            super(exception);
+        }
+
+        public NormalizeInstrumentException(String reason, Exception exception) {
+            super(reason, exception);
+        }
+
+        public NormalizeInstrumentException(String reason) {
+            super(reason);
+        }
     }
 }

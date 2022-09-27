@@ -1,0 +1,3 @@
+spring:
+  application.name: "us.street.processor.bookenricher"
+#  main.web-application-type: SERVLET

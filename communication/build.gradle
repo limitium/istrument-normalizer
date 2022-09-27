@@ -5,6 +5,7 @@ plugins {
 group 'com.bnpparibas.gban.communication'
 version '0.1-SNAPSHOT'
 
+sourceCompatibility = '11'
 
 ext {
     flatbuffersVersion = '2.0.3'

@@ -85,9 +85,7 @@ public class Receiver implements KStreamInfraCustomizer.KStreamTopologyBuilder {
     }
 
     private byte[] originalMessageExtractor(String topic, FBNormalizeInstrument normalizeInstrument) {
-        byte[] mutatedOriginalMessage = new byte[normalizeInstrument.originalMessageLength()];
-        normalizeInstrument.originalMessageAsByteBuffer().get(normalizeInstrument.originalMessageAsByteBuffer().position(), mutatedOriginalMessage);
-        return mutatedOriginalMessage;
+        return NormalizeInstrument.cutOriginalMessageFrom(normalizeInstrument);
     }
 
 
