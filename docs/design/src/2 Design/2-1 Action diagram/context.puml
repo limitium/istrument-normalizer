@@ -9,7 +9,6 @@ if (Instrument exists?) then (no)
         :Notify about missing instrument;
         STOP
     else (yes)
-        :Notify downstreams about new instrument;
         :Unshelve message; 
     endif 
 else (yes)    

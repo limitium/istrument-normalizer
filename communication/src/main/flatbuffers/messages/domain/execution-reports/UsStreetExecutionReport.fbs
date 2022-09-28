@@ -2,7 +2,6 @@ namespace com.bnpparibas.gban.communication.messages.domain.executionreports.fla
 
 enum FbType: byte {
     NEW,
-    AMEND,
     CANCEL
 }
 
@@ -42,31 +41,24 @@ enum FbCounterpartyCodeType: byte {
 
 enum FbCounterpartyType: byte {
     BROKER,                                 // ATM8.ExecutingFirm != null
-    EXCHANGE                                // ATM8.ContraBroker != null
+    EXCHANGE                                // ATM8.LastMkt != null, MIC name of market where execution was really executed
 }
 
 table FbCounterParty {
     type:             FbCounterpartyType;   // ATM8.ExecutingFirm or ATM8.ContraBroker, todo: wtf LATAM empty contra but have last market
-    code:             string;
+    code:             string;               // ATM8.LastMkt or ATM8.ExecutingFirm
     code_type:        FbCounterpartyCodeType;
 
     execution_id:     string;               // ATM8.ExchangeExecID
     order_id:         string;               // ATM8.ExchangeOrderID
 }
-/**
-  Identifiers of order in system wich execute orders on the market
-*/
-table FbExecutionSystem {
-    name:             string;               // ATM8.SrcSysID
-    execution_id:     string;               // ATM8.ExecID
-    order_id:         string;               // ATM8.OrderID
-    client_name:      string;               // ATM8.SrcSysID user name in execution system. taken from atm8 source system @todo: is it client or system?
-}
+
 /**
   Representation of FO for concrete execution report. Some parts can be missed.
 */
 table FbFrontOffice { //todo: merge of US flow?
-    execution_system: FbExecutionSystem;
+    name:             string;               // ATM8.SrcSysID
+    instance:         string;               // ATM8.SourceSystemInstance
 
     execution_id:     string;               // ATM8.ExecID
     execution_ref_id: string;               // ATM8.ExecRefID
@@ -80,7 +72,6 @@ table FbOrder {
     side:             FbSide      = BUY;    // ATM8.Side Side direction from client perspective
     order_type:       FbOrderType = Market; // ATM8.OrderType
     time_in_force:    FbTimeInForce;        // ATM8.TimeInForce
-    capacity:         FbCapacity  = A;      // ATM8.Capacity
 
     security_id:      string;               // ATM8.SecurityID FO or client instrument identifier. Can ber RIC, ISIN etc
     instrument_id:    long;                 // gba instrument public identifier
@@ -92,13 +83,12 @@ table FbOrder {
 table FbExecutionReport {
     id:               long;                 // GBA generated public identifier
     type:             FbType = NEW;         // ATM8.ExecType
+    capacity:         FbCapacity  = A;      // ATM8.Capacity
 
     last_qty:         double;               // ATM8.LastQty
     last_price:       double;               // ATM8.LastPx
 
     transact_time:    long;                 // ATM8.TransactTime
-
-    last_market:      string;               // ATM8.LastMkt MIC name of market where execution was really executed
 }
 
 //flowtype - low level, DCA category of flows low latencey direct market acess, low latency algo, Different desk. DMA diirect market acess mininal comission all by client , program trading per busket -> split, single stok - grate order to manual wrok on it.
