@@ -21,17 +21,17 @@ enum FbTimeInForce: byte {
 }
 
 enum FbCapacity: byte {
-    P,                                      // principal
-    A,                                      // agency and default
-    R,                                      // riskless principal
-    M,                                      // mixed capacity
+    PRINCIPAL,                              // principal
+    AGENCY,                                 // agency and default
+    RISKLESS,                               // riskless principal
+    MARKET,                                 // mixed capacity
 }
 
 enum FbOrderType: byte {                    // Fix values are used
-    Market            = 1,
-    Limit             = 2,
-    Stop              = 3,
-    StopLimit         = 4,
+    MARKTET            = 1,
+    LIMIT              = 2,
+    STOP               = 3,
+    STOP_LIMIT         = 4,
 }
 
 enum FbCounterpartyCodeType: byte {
