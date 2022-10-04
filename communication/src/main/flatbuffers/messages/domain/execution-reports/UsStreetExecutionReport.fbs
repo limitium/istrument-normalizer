@@ -28,7 +28,7 @@ enum FbCapacity: byte {
 }
 
 enum FbOrderType: byte {                    // Fix values are used
-    MARKTET            = 1,
+    MARKET             = 1,
     LIMIT              = 2,
     STOP               = 3,
     STOP_LIMIT         = 4,
@@ -70,7 +70,7 @@ table FbFrontOffice { //todo: merge of US flow?
 */
 table FbOrder {
     side:             FbSide      = BUY;    // ATM8.Side Side direction from client perspective
-    order_type:       FbOrderType = Market; // ATM8.OrderType
+    order_type:       FbOrderType = MARKET; // ATM8.OrderType
     time_in_force:    FbTimeInForce;        // ATM8.TimeInForce
 
     security_id:      string;               // ATM8.SecurityID FO or client instrument identifier. Can ber RIC, ISIN etc
@@ -83,7 +83,7 @@ table FbOrder {
 table FbExecutionReport {
     id:               long;                 // GBA generated public identifier
     type:             FbType = NEW;         // ATM8.ExecType
-    capacity:         FbCapacity  = A;      // ATM8.Capacity
+    capacity:         FbCapacity = AGENCY;  // ATM8.Capacity
 
     last_qty:         double;               // ATM8.LastQty
     last_price:       double;               // ATM8.LastPx

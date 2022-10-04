@@ -2,6 +2,7 @@ package com.bnpparibas.gban.usstreetprocessor.bookenricher;
 
 
 import com.bnpparibas.gban.kscore.kstreamcore.KStreamInfraCustomizer;
+import com.bnpparibas.gban.usstreetprocessor.Topics;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Branched;
 import org.apache.kafka.streams.kstream.Consumed;
@@ -39,7 +40,7 @@ public class BookEnricher implements KStreamInfraCustomizer.KStreamDSLBuilder {
                 .defaultBranch(Branched.withConsumer(kStream -> kStream
                         //Enriched executions partitioned by public instrumentId
                         .peek((instrumentId, executionReport) -> logger.info("{},{}->{}", executionReport.executionId, executionReport.portfolioCode, executionReport.bookId))
-                        .to(Topics.BOOK_ENRICHED.topic, Produced.with(Topics.BOOK_ENRICHED.keySerde, Topics.BOOK_ENRICHED.valueSerde))
-                ));
+                        .to(Topics.BOOK_ENRICHED.topic, Produced.with(Topics.BOOK_ENRICHED.keySerde, Topics.BOOK_ENRICHED.valueSerde)))
+                );
     }
 }

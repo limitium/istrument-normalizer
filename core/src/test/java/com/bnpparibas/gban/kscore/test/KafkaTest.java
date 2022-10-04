@@ -18,13 +18,16 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
 
 @SpringBootTest
-@EmbeddedKafka(partitions = 1, brokerProperties = {"listeners=PLAINTEXT://localhost:9092", "port=9092"})
+@EmbeddedKafka(brokerProperties = {"listeners=PLAINTEXT://localhost:9092", "port=9092"})
 
 @TestPropertySource(properties = {"kafka.bootstrap.servers=localhost:9092"})
 @TestExecutionListeners(listeners = {DependencyInjectionTestExecutionListener.class, BaseKStreamApplicationTests.CustomExecutionListener.class})
 public @interface KafkaTest {
     @AliasFor(annotation = EmbeddedKafka.class, attribute = "topics")
     String[] topics() default "";
+
+    @AliasFor(annotation = EmbeddedKafka.class, attribute = "partitions")
+    int partitions() default 2;
 
     String[] consumers() default "";
 

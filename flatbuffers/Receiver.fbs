@@ -1,7 +1,0 @@
-table NormalizeInstrument {
-    securityId:           String;
-    currency:             String; //Trading currency
-    originalMessageClass: String; //Fully qualified class name of Business message
-    originalMessage:      [ubyte]; //Serialized business message, _must_ have mutateInstrumentId(long)
-    egressTopic:          String;
-}

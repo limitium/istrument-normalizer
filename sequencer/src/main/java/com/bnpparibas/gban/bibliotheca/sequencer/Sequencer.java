@@ -96,12 +96,28 @@ public class Sequencer {
         return DateTimeFormatter.ofPattern(TIME_PATTERN).format(ZonedDateTime.ofInstant(epochMilli, ZONE_OFFSET));
     }
 
-    public static long getPartition(long sequence) {
-        return sequence >> SEQUENCE_BITS & PARTITION_MASK;
+    /**
+     * Extracts partition information from sequence
+     * @param sequence previously generated
+     * @return partition
+     */
+    public static int getPartition(long sequence) {
+        return (int) (sequence >> SEQUENCE_BITS & PARTITION_MASK);
     }
 
-    public static long getNamespace(long sequence) {
-        return sequence >> (SEQUENCE_BITS + PARTITION_BITS) & NAMESPACE_MASK;
+    /**
+     * Extracts namespace information from sequence
+     *
+     * @param sequence previously generated sequence
+     * @return
+     */
+    public static Namespace getNamespace(long sequence) {
+        int ordinal = (int) (sequence >> (SEQUENCE_BITS + PARTITION_BITS) & NAMESPACE_MASK);
+        try {
+            return Namespace.values()[ordinal];
+        } catch (Exception e) {
+            throw new RuntimeException("Wrong namespace encoding", e);
+        }
     }
 
     public static class SystemClock implements Clock {

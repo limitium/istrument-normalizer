@@ -31,10 +31,10 @@ class SequencerTest {
         String formattedTime = DateTimeFormatter.ofPattern(TIME_PATTERN).format(ZonedDateTime.ofInstant(Instant.ofEpochMilli(currentTimeMillis), ZONE_OFFSET));
 
         Sequencer sequencer = new Sequencer(() -> currentTimeMillis, Namespace.US_STREET_CASH_FUTURES, 3);
-        assertEquals("{time:\"" + formattedTime + "\",namespace:\"1\",partition:\"3\", sequence:\"0\"}", Sequencer.parse(sequencer.getNext()));
+        assertEquals("{time:\"" + formattedTime + "\",namespace:\"US_STREET_CASH_FUTURES\",partition:\"3\", sequence:\"0\"}", Sequencer.parse(sequencer.getNext()));
 
         sequencer = new Sequencer(() -> currentTimeMillis, Namespace.US_STREET_CASH_EQUITY, 2);
-        assertEquals("{time:\"" + formattedTime + "\",namespace:\"0\",partition:\"2\", sequence:\"0\"}", Sequencer.parse(sequencer.getNext()));
-        assertEquals("{time:\"" + formattedTime + "\",namespace:\"0\",partition:\"2\", sequence:\"1\"}", Sequencer.parse(sequencer.getNext()));
+        assertEquals("{time:\"" + formattedTime + "\",namespace:\"US_STREET_CASH_EQUITY\",partition:\"2\", sequence:\"0\"}", Sequencer.parse(sequencer.getNext()));
+        assertEquals("{time:\"" + formattedTime + "\",namespace:\"US_STREET_CASH_EQUITY\",partition:\"2\", sequence:\"1\"}", Sequencer.parse(sequencer.getNext()));
     }
 }

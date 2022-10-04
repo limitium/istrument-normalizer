@@ -19,5 +19,6 @@ include 'stubs' // used as pseudo dev environment to send and received messages 
 include 'sequencer' // should be used as lib, in others projects
 
 include 'communication'
+
 include 'book-enricher'
 include 'processor'
