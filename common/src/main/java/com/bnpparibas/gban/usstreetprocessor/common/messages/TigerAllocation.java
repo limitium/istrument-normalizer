@@ -1,14 +1,14 @@
-package com.bnpparibas.gban.usstreetprocessor;
+package com.bnpparibas.gban.usstreetprocessor.common.messages;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TigerAllocation {
     static Logger logger = LoggerFactory.getLogger(State.class);
-    long id;
-    long executionId;
-    State state;
-    long version;
+    public long id;
+    public long executionId;
+    public State state;
+    public long version;
 
 public enum State {
         NEW_PENDING {
@@ -70,7 +70,7 @@ public enum State {
 
         abstract public State transferTo(State state) throws WrongStateTransitionException;
 
-        static class WrongStateTransitionException extends Exception {
+        public static class WrongStateTransitionException extends Exception {
             public WrongStateTransitionException(String msg) {
                 super(msg);
             }

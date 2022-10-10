@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
                 "topic1",
                 "topic2"
         },
-        consumers = {"topic2"},
+        consumers = {"topic2","topic1"},
         configs = {
                 KStreamApplication.class,
                 BaseKStreamApplicationTests.BaseKafkaTestConfig.class,

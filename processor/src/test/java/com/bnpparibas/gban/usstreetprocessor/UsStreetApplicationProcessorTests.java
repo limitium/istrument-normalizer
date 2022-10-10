@@ -4,11 +4,13 @@ import com.bnpparibas.gban.bibliotheca.sequencer.Namespace;
 import com.bnpparibas.gban.bibliotheca.sequencer.Sequencer;
 import com.bnpparibas.gban.kscore.test.BaseKStreamApplicationTests;
 import com.bnpparibas.gban.kscore.test.KafkaTest;
+import com.bnpparibas.gban.usstreetprocessor.common.Topics;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.ReplyCode;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.TigerReply;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.UsStreetExecution;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
 
-import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
 import java.time.format.DateTimeFormatter;
 
 import static com.bnpparibas.gban.usstreetprocessor.UsStreetProcessor.TigerReplyCoProcessor.TIGER_TIMESTAMP_FORMAT;
@@ -16,12 +18,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @KafkaTest(
         topics = {
-                "gba.us-street-processor.internal.bookEnriched",
-                "gba.us-street-processor.domain.tigerCSVReplied",
-                "gba.us-street-processor.internal.tigerReplied"
+                Topics.BOOK_ENRICHED_TOPIC,
+                Topics.TIGER_REPLY_CSV_TOPIC,
+                Topics.TIGER_REPLY_TOPIC
         },
         consumers = {
-                "gba.us-street-processor.internal.tigerReplied"
+                Topics.TIGER_REPLY_TOPIC,
+                Topics.BOOK_TIGER_TOPIC
         })
 class UsStreetApplicationProcessorTests extends BaseKStreamApplicationTests {
 
@@ -42,12 +45,60 @@ class UsStreetApplicationProcessorTests extends BaseKStreamApplicationTests {
     }
 
     @Test
-    void tigerCSVReplyReceived() throws ParseException {
+    void testSendNewExecutionAndCancelIt() {
+        UsStreetExecution execution = createTestExecution();
+        sendExecution(execution);
+
+        String csv = readMessageFromBookTiger();
+        assertEquals("NEW_PENDING", getExecutionStatus(csv));
+        assertEquals(0, getVersion(csv));
+
+        execution.state = "CANCEL";
+        sendExecution(execution);
+
+        csv = readMessageFromBookTiger();
+        assertEquals("CANCEL_PENDING", getExecutionStatus(csv));
+        assertEquals(1, getVersion(csv));
+    }
+    private UsStreetExecution createTestExecution() {
+        UsStreetExecution execution = new UsStreetExecution();
+        execution.portfolioCode = "123";
+        execution.securityId = "AAA";
+        execution.instrumentId = 1000;
+        execution.state = "NEW";
+        execution.bookId = 0;
+        return execution;
+    }
+
+    private void sendExecution(UsStreetExecution execution) {
+        send(Topics.BOOK_ENRICHED, execution.executionId, execution);
+    }
+
+    private String readMessageFromBookTiger() {
+        return waitForRecordFrom(Topics.BOOK_TIGER).value();
+    }
+
+    private long getExecutionId(String csv) {
+        return Long.parseLong(csv.split(",")[1]);
+    }
+
+    private String getExecutionStatus(String csv) {
+        return csv.split(",")[4];
+    }
+
+    private long getVersion(String csv) {
+        return Long.parseLong(csv.split(",")[3]);
+    }
+
+
+
+//    @Test
+    void tigerCSVReplyReceived() {
         testConverterAndCopartitioning(0);
         testConverterAndCopartitioning(1);
     }
 
-    private void testConverterAndCopartitioning(int partition) throws ParseException {
+    private void testConverterAndCopartitioning(int partition) {
         long allocationId = new Sequencer(() -> 0, Namespace.US_STREET_CASH_EQUITY, partition).getNext();
         int allocationVersion = 3;
         ReplyCode replyCode = ReplyCode.OK;
@@ -55,13 +106,12 @@ class UsStreetApplicationProcessorTests extends BaseKStreamApplicationTests {
 
 
         String csvReply = generateCSVReply(allocationId, allocationVersion, replyCode, ackTimestamp);
-        send("gba.us-street-processor.domain.tigerCSVReplied", "".getBytes(StandardCharsets.UTF_8), csvReply.getBytes(StandardCharsets.UTF_8));
+        send(Topics.TIGER_REPLY_CSV, 0L, csvReply);
 
-        ConsumerRecord<byte[], byte[]> record = waitForRecordFrom("gba.us-street-processor.internal.tigerReplied");
+        ConsumerRecord<Long, TigerReply> record = waitForRecordFrom(Topics.TIGER_REPLY);
 
-
-        Long keyAllocationId = Topics.TIGER_REPLY.keySerde.deserializer().deserialize("", record.key());
-        TigerReply tigerReply = Topics.TIGER_REPLY.valueSerde.deserializer().deserialize("", record.value());
+        Long keyAllocationId = record.key();
+        TigerReply tigerReply = record.value();
 
         assertEquals(allocationId, keyAllocationId);
         assertEquals(allocationId, tigerReply.allocationId);

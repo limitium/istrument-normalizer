@@ -5,6 +5,7 @@ import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.
 import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers.FBInstrumentLookuped;
 import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers.FBLookupInstrument;
 import com.bnpparibas.gban.flatbufferstooling.communication.NormalizeInstrument;
+import com.bnpparibas.gban.instrumentkeeper.client.InstrumentKeeperClient;
 import com.bnpparibas.gban.kscore.kstreamcore.KStreamInfraCustomizer;
 import com.google.flatbuffers.FlatBufferBuilder;
 import org.apache.kafka.common.serialization.LongSerializer;
@@ -46,7 +47,7 @@ public class Receiver implements KStreamInfraCustomizer.KStreamTopologyBuilder {
 
 
     @Autowired
-    InstrumentKeeper instrumentKeeper;
+    InstrumentKeeperClient instrumentKeeper;
 
     @Override
     public void configureTopology(Topology topology) {
@@ -90,11 +91,11 @@ public class Receiver implements KStreamInfraCustomizer.KStreamTopologyBuilder {
 
 
     private static class NormalizeInstrumentProcessor implements Processor<String, FBNormalizeInstrument, Object, Object> {
-        private final InstrumentKeeper instrumentKeeper;
+        private final InstrumentKeeperClient instrumentKeeper;
         private KeyValueStore<String, FBNormalizeInstrument> shelvedMissedData;
         private ProcessorContext<Object, Object> context;
 
-        public NormalizeInstrumentProcessor(InstrumentKeeper instrumentKeeper) {
+        public NormalizeInstrumentProcessor(InstrumentKeeperClient instrumentKeeper) {
             this.instrumentKeeper = instrumentKeeper;
         }
 
@@ -112,7 +113,7 @@ public class Receiver implements KStreamInfraCustomizer.KStreamTopologyBuilder {
 
             logger.info("msg_id:{},security_id:{}", normalizeInstrument.originalMessageId(), securityId);
 
-            long instrumentId = instrumentKeeper.lookupInstrumentId(normalizeInstrument.securityId());
+            long instrumentId = instrumentKeeper.lookupIdBy(normalizeInstrument.securityId(),"","");
 
             if (instrumentId > 0) {
 
@@ -144,12 +145,12 @@ public class Receiver implements KStreamInfraCustomizer.KStreamTopologyBuilder {
     }
 
     private static class LookupedInstrumentProcessor implements Processor<String, FBInstrumentLookuped, Object, Object> {
-        private final InstrumentKeeper instrumentKeeper;
+        private final InstrumentKeeperClient instrumentKeeper;
         private KeyValueStore<String, FBNormalizeInstrument> shelvedMissedData;
 
         private ProcessorContext<Object, Object> context;
 
-        public LookupedInstrumentProcessor(InstrumentKeeper instrumentKeeper) {
+        public LookupedInstrumentProcessor(InstrumentKeeperClient instrumentKeeper) {
             this.instrumentKeeper = instrumentKeeper;
         }
 
@@ -194,9 +195,9 @@ public class Receiver implements KStreamInfraCustomizer.KStreamTopologyBuilder {
     }
 
     @Bean
-    public static InstrumentKeeper instrumentKeeper(
+    public static InstrumentKeeperClient instrumentKeeper(
             @Value("${instrument-keeper.host}") String host,
             @Value("${instrument-keeper.port}") int port) {
-        return new InstrumentKeeper(host, port);
+        return new InstrumentKeeperClient(host, port);
     }
 }

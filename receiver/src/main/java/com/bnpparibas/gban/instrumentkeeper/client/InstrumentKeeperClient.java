@@ -1,15 +1,15 @@
-package com.bnpparibas.gban.instrumentnormalizer;
+package com.bnpparibas.gban.instrumentkeeper.client;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 
-public class InstrumentKeeper {
+public class InstrumentKeeperClient {
 
     public static final List<String> SECURITIES = new ArrayList<>(Arrays.asList("IBM", "NVDA", "MSFT"));
 
-    public InstrumentKeeper(String host, int port) {
+    public InstrumentKeeperClient(String host, int port) {
 
     }
 
@@ -19,7 +19,7 @@ public class InstrumentKeeper {
      * @param securityId
      * @return public instrument id or 0 if not found
      */
-    public long lookupInstrumentId(String securityId) {
+    public long lookupIdBy(String securityId, String qwe, String asd) {
         return SECURITIES.indexOf(securityId) + 1;
     }
 

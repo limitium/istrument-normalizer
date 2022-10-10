@@ -1,4 +1,4 @@
-package com.bnpparibas.gban.usstreetprocessor.external;
+package com.bnpparibas.gban.usstreetprocessor.common.external;
 
 import org.springframework.stereotype.Component;
 

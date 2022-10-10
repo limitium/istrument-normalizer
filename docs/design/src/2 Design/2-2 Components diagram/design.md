@@ -11,9 +11,10 @@ All action steps are almost one to one reflected in the corresponding component.
 
 ## Topics
 
-* `gba.{business-flow}.{event-type}.domain.normalizeInstrument` - incoming Instrument normalization requests from all business flows, consumed by `Receiver`
+* `gba.upstream.domain.{business-flow}.{event-type}.normalizeInstrument` - incoming Instrument normalization requests from all business flows, consumed by `Receiver`
 * `gba.instrument.internal.reduce.lookupInstrument` - Instrument normalization requests with missed instrument, consumed by `Reducer`
 * `gba.instrument.internal.lookupInstrument` - instrument lookup requests, consumed by `Seeker`
 * `gba.instrument.internal.instrumentLookuped` - instrument lookup responses, consumed by `Receiver`
+* `gba.instrument.internal.dlq` - DLQ for failed messages
 
 A component diagram describes the relationships between components and external entities:

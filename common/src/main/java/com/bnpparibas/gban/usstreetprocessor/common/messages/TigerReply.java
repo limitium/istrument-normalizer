@@ -1,4 +1,4 @@
-package com.bnpparibas.gban.usstreetprocessor;
+package com.bnpparibas.gban.usstreetprocessor.common.messages;
 
 import java.time.LocalDateTime;
 

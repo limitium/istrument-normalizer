@@ -31,17 +31,17 @@ System_Boundary(kafka, "Kafka boundary"){
     Component_Ext(downstreams, "Downstreams", "Flow specific Kafka consumers")
 }
 
-Rel(receiver, reducer, "Lookup instrument request", "kafka")
+Rel(receiver, reducer, "3.2 Lookup instrument request", "gba.instrument.internal.reduce.lookupInstrument")
 
-Rel(reducer, seeker, "Lookup instrument request", "kafka")
+Rel(reducer, seeker, "4. Lookup instrument request", "gba.instrument.internal.lookupInstrument")
 Rel(static_ext, seeker, "Instrument data", "pdl/rest")
 Rel(receiver, instr, "Store instrument", "gRPC")
-Rel(seeker, receiver, "Instrument lookup response", "kafka")
+Rel(seeker, receiver, "5. Instrument lookup response", "gba.instrument.internal.instrumentLookuped")
 
-Rel(receiver, downstreams, "Original message enriched with the instrument", "kafka, flow specific topic")
+Rel(receiver, downstreams, "3.1/6 Original message enriched with the instrument", "kafka, flow specific topic")
 
-Rel(upstreams, kafka_connect_in, "Incoming message", "solace")
-Rel(kafka_connect_in, receiver, "Normalization request", "kafka")
+Rel(upstreams, kafka_connect_in, "1. Incoming message", "solace")
+Rel(kafka_connect_in, receiver, "2. Normalization request", "gba.upstream.domain.{business-flow}.{event-type}.normalizeInstrument")
 
 BiRel(instr, db, "Select/Upsert", "jdbi")
 Rel(instr, receiver, "instrumentData", "gRPC")

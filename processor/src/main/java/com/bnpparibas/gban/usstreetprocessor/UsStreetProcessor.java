@@ -3,8 +3,13 @@ package com.bnpparibas.gban.usstreetprocessor;
 import com.bnpparibas.gban.bibliotheca.sequencer.Namespace;
 import com.bnpparibas.gban.bibliotheca.sequencer.Sequencer;
 import com.bnpparibas.gban.kscore.kstreamcore.KStreamInfraCustomizer;
-import com.bnpparibas.gban.usstreetprocessor.external.ClientKeeper;
-import com.bnpparibas.gban.usstreetprocessor.external.InstrumentKeeper;
+import com.bnpparibas.gban.usstreetprocessor.common.Topics;
+import com.bnpparibas.gban.usstreetprocessor.common.external.ClientKeeper;
+import com.bnpparibas.gban.usstreetprocessor.common.external.InstrumentKeeper;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.ReplyCode;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.TigerAllocation;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.TigerReply;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.UsStreetExecution;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.processor.api.Processor;
@@ -145,45 +150,54 @@ public class UsStreetProcessor implements KStreamInfraCustomizer.KStreamTopology
 
             switch (usStreetExecution.state) {
                 case "NEW" -> {
-                    logger.info("NEW,EXEC:{}", usStreetExecution.executionId);
-
-                    TigerAllocation tigerAllocation = new TigerAllocation();
-                    tigerAllocation.id = generateNextId();
-
-                    tigerAllocation.state = TigerAllocation.State.NEW_PENDING;
-                    tigerAllocation.executionId = usStreetExecution.executionId;
-
-                    fillFromExecution(tigerAllocation, usStreetExecution);
-
-                    enrichInstrumentData(tigerAllocation, usStreetExecution);
-                    enrichClientData(tigerAllocation, usStreetExecution);
-
+                    logger.info("New execution. Execution id: {}", usStreetExecution.executionId);
+                    TigerAllocation tigerAllocation = createTigerAllocation(usStreetExecution);
                     tigerAllocationsStore.put(tigerAllocation.id, tigerAllocation);
-                    executionAllocationRefsStore.put(usStreetExecution.executionId, tigerAllocation.id);
-
-                    logger.info("NEW,ALLOC:{}", tigerAllocation.id);
-                    context.forward(record.withValue(convertToCSV(tigerAllocation)), TIGER_ALLOCATION_SINK);
+                    executionAllocationRefsStore.put(
+                            usStreetExecution.executionId, tigerAllocation.id);
+                    logger.info("New allocation. Allocation id: {}", tigerAllocation.id);
+                    context.forward(
+                            record.withValue(convertToCSV(tigerAllocation)), TIGER_ALLOCATION_SINK);
                 }
                 case "CANCEL" -> {
-                    logger.info("CANCEL,EXEC:{}", usStreetExecution.executionId); //@todo: should be ref_exec_id
-
-                    long tigerAllocationId = executionAllocationRefsStore.get(usStreetExecution.executionId);
+                    logger.info(
+                            "Cancel execution. Execution id : {}",
+                            usStreetExecution.executionId); // todo: should be ref_exec_id
+                    long tigerAllocationId =
+                            executionAllocationRefsStore.get(usStreetExecution.executionId);
                     if (tigerAllocationId > 0) {
-                        TigerAllocation tigerAllocation = tigerAllocationsStore.get(tigerAllocationId);
+                        TigerAllocation tigerAllocation =
+                                tigerAllocationsStore.get(tigerAllocationId);
                         try {
-                            tigerAllocation.state.transferTo(TigerAllocation.State.CANCEL_PENDING);
-
-                            logger.info("CANCEL,ALLOC:{}", tigerAllocation.id);
-                            context.forward(record.withValue(convertToCSV(tigerAllocation)), TIGER_ALLOCATION_SINK);
+                            tigerAllocation.state =
+                                    tigerAllocation.state.transferTo(
+                                            TigerAllocation.State.CANCEL_PENDING);
+                            tigerAllocation.version++;
+                            logger.info("Cancel allocation. Allocation id: {}", tigerAllocation.id);
+                            context.forward(
+                                    record.withValue(convertToCSV(tigerAllocation)),
+                                    TIGER_ALLOCATION_SINK);
                         } catch (TigerAllocation.State.WrongStateTransitionException e) {
                             logger.error("Wrong state change request", e);
                         }
+                    } else {
+                        logger.warn(
+                                "Could not find tiger allocation by execution id {}",
+                                usStreetExecution.executionId);
                     }
                 }
-                default -> throw new RuntimeException("Wrong state");
-            }
+                default -> throw new RuntimeException("Wrong state " + usStreetExecution.state);
+            }        }
+        private TigerAllocation createTigerAllocation(UsStreetExecution usStreetExecution) {
+            TigerAllocation tigerAllocation = new TigerAllocation();
+            tigerAllocation.id = generateNextId();
+            tigerAllocation.state = TigerAllocation.State.NEW_PENDING;
+            tigerAllocation.executionId = usStreetExecution.executionId;
+            fillFromExecution(tigerAllocation, usStreetExecution);
+            enrichInstrumentData(tigerAllocation, usStreetExecution);
+            enrichClientData(tigerAllocation, usStreetExecution);
+            return tigerAllocation;
         }
-
         /**
          * Generate id with a partition information stored in sequence. Which will be used later for stream copartition
          *
@@ -214,7 +228,14 @@ public class UsStreetProcessor implements KStreamInfraCustomizer.KStreamTopology
         }
 
         private String convertToCSV(TigerAllocation tigerAllocation) {
-            return "1,2,3,,5";
+            return "test,"
+                    + tigerAllocation.executionId
+                    + ","
+                    + tigerAllocation.id
+                    + ","
+                    + tigerAllocation.version
+                    + ","
+                    + tigerAllocation.state;
         }
     }
 
@@ -258,7 +279,7 @@ public class UsStreetProcessor implements KStreamInfraCustomizer.KStreamTopology
      * Accepts raw reply in CSV format and coverts it to allocationId, {@link TigerReply} records.
      * Key with allocationId is used in sink in custom partitioner
      */
-    public static class TigerReplyCoProcessor implements Processor<String, String, Long, TigerReply> {
+    public static class TigerReplyCoProcessor implements Processor<Long, String, Long, TigerReply> {
 
         private static final int COLUMNS_IN_REPLY = 3;
         private static final int CORRELATION_PARTS = 4;
@@ -271,13 +292,13 @@ public class UsStreetProcessor implements KStreamInfraCustomizer.KStreamTopology
         }
 
         @Override
-        public void process(Record<String, String> record) {
+        public void process(Record<Long, String> record) {
             logger.info("RCVD:{}",record.value());
             ParsedReply parsedReply = parseReply(record.value());
 
             if (US_STREET_PROCESSOR_APP_NAME.equals(parsedReply.applicationId)) {
                 TigerReply tigerReply = new TigerReply(parsedReply.allocationId, parsedReply.allocationVersion, parsedReply.ackTimestamp, parsedReply.replyCode);
-                context.forward(new Record<Long, TigerReply>(parsedReply.allocationId, tigerReply, record.timestamp(), record.headers()), TIGER_REPLY_SINK);
+                context.forward(new Record<>(parsedReply.allocationId, tigerReply, record.timestamp(), record.headers()), TIGER_REPLY_SINK);
             } else {
                 logger.info("SKIP app:{}", parsedReply.applicationId);
             }

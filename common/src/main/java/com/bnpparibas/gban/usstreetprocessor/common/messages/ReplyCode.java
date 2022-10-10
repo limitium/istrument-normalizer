@@ -1,10 +1,10 @@
-package com.bnpparibas.gban.usstreetprocessor;
+package com.bnpparibas.gban.usstreetprocessor.common.messages;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-enum ReplyCode {
+public enum ReplyCode {
     OK("100", Constants.ACK_REASON),
     CAN_NOT_PARSE("001", "Message can not be parsed"),
     NEGATIVE_QTY("002", "Qty < 0"),

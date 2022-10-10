@@ -1,12 +1,19 @@
 package com.bnpparibas.gban.instrumentnormalizer;
 
+import static com.bnpparibas.gban.instrumentnormalizer.ReceiverTests.HAPPY_PATH_TOPIC;
+import static com.bnpparibas.gban.instrumentnormalizer.ReceiverTests.UPSTREAM_DOMAIN_USSTREETCASH_EXECUTION_NORMALIZE_INSTRUMENT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.bnpparibas.gban.communication.messages.domain.executionreports.flatbuffers.*;
 import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers.FBNormalizeInstrument;
 import com.bnpparibas.gban.flatbufferstooling.communication.NormalizeInstrument;
 import com.bnpparibas.gban.flatbufferstooling.communication.util.PrimitiveNulls;
+import com.bnpparibas.gban.instrumentkeeper.client.InstrumentKeeperClient;
 import com.bnpparibas.gban.kscore.test.BaseKStreamApplicationTests;
 import com.bnpparibas.gban.kscore.test.KafkaTest;
 import com.google.flatbuffers.FlatBufferBuilder;
+import java.nio.ByteBuffer;
+import java.util.Random;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.junit.jupiter.api.Test;
@@ -14,46 +21,55 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Random;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @KafkaTest(
         topics = {
-                "gba.upstream.domain.usstreetcash.execution.normalizeInstrument",
-                "gba.instrument.internal.instrumentLookuped",
-                "happy.path.topic"
+                UPSTREAM_DOMAIN_USSTREETCASH_EXECUTION_NORMALIZE_INSTRUMENT,
+                Topics.INSTRUMENT_LOOKUPED_TOPIC,
+                HAPPY_PATH_TOPIC
         },
-        consumers = {
-                "happy.path.topic"
-        })
+        consumers = {HAPPY_PATH_TOPIC})
 class ReceiverTests extends BaseKStreamApplicationTests {
-    @MockBean
-    @Autowired
-    InstrumentKeeper keeper;
 
+    public static final String UPSTREAM_DOMAIN_USSTREETCASH_EXECUTION_NORMALIZE_INSTRUMENT =
+            "gba.upstream.domain.usstreetcash.execution.normalizeInstrument";
+    public static final String HAPPY_PATH_TOPIC = "happy.path.topic";
+
+    @MockBean @Autowired InstrumentKeeperClient keeper;
     @Test
     void happyPath() {
-        Mockito.when(keeper.lookupInstrumentId(Mockito.anyString())).thenReturn(123L);
+        Mockito.when(
+                        keeper.lookupIdBy(
+                                Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+                .thenReturn(123L);
 
         FbUsStreetExecutionReport fbUsStreetExecutionReport = generateExecutionReport("IBM");
         String securityId = fbUsStreetExecutionReport.order().securityId();
 
-        FBNormalizeInstrument normalizeInstrument = NormalizeInstrument.wrapWithNormalizeInstrument(fbUsStreetExecutionReport, fbUsStreetExecutionReport.executionReport().id(), securityId, "order", "happy.path.topic");
+        FBNormalizeInstrument normalizeInstrument =
+                NormalizeInstrument.wrapWithNormalizeInstrument(
+                        fbUsStreetExecutionReport,
+                        fbUsStreetExecutionReport.executionReport().id(),
+                        securityId,
+                        "order",
+                        "happy.path.topic");
 
-        send("gba.upstream.domain.usstrreetcash.execution.normalizeInstrument", securityId.getBytes(StandardCharsets.UTF_8), normalizeInstrument.getByteBuffer().array());
+        send(
+                Topics.UPSTREAM,
+                UPSTREAM_DOMAIN_USSTREETCASH_EXECUTION_NORMALIZE_INSTRUMENT,
+                securityId,
+                normalizeInstrument);
 
-        ConsumerRecord<byte[], byte[]> record = waitForRecordFrom("happy.path.topic");
+        ConsumerRecord<byte[], byte[]> record = waitForRecordFrom(HAPPY_PATH_TOPIC);
 
         Long instrumentId = Serdes.Long().deserializer().deserialize(null, record.key());
         assertEquals(123L, instrumentId);
 
-        FbUsStreetExecutionReport report = FbUsStreetExecutionReport.getRootAsFbUsStreetExecutionReport(ByteBuffer.wrap(record.value()));
+        FbUsStreetExecutionReport report =
+                FbUsStreetExecutionReport.getRootAsFbUsStreetExecutionReport(
+                        ByteBuffer.wrap(record.value()));
         assertEquals(instrumentId, report.order().instrumentId());
 
-        ensureEmptyTopic("happy.path.topic");
+        ensureEmptyTopic(HAPPY_PATH_TOPIC);
     }
 
 
@@ -67,18 +83,18 @@ class ReceiverTests extends BaseKStreamApplicationTests {
                 (byte) random.nextInt(FbSide.names.length),
                 (byte) random.nextInt(FbOrderType.names.length),
                 (byte) random.nextInt(FbTimeInForce.names.length),
-                (byte) random.nextInt(FbCapacity.names.length),
+
                 builder.createString(securityId),
                 PrimitiveNulls.NULL_LONG,
+
                 builder.createString(randomString(random)),
                 PrimitiveNulls.NULL_LONG);
-        int convertFbExecutionSystem = FbExecutionSystem.createFbExecutionSystem(builder,
-                builder.createString(randomString(random)),
-                builder.createString(randomString(random)),
-                builder.createString(randomString(random)),
-                builder.createString(randomString(random)));
+
         int convertFbFrontOffice = FbFrontOffice.createFbFrontOffice(builder,
-                convertFbExecutionSystem,
+                builder.createString(randomString(random)),
+                builder.createString(randomString(random)),
+
+                builder.createString(randomString(random)),
                 builder.createString(randomString(random)),
                 builder.createString(randomString(random)));
         int convertFbCounterParty = FbCounterParty.createFbCounterParty(builder,
@@ -90,10 +106,12 @@ class ReceiverTests extends BaseKStreamApplicationTests {
         int convertFbExecutionReport = FbExecutionReport.createFbExecutionReport(builder,
                 System.nanoTime(),
                 (byte) random.nextInt(FbType.names.length),
+                (byte) random.nextInt(FbCapacity.names.length),
+
                 random.nextDouble(),
                 random.nextDouble(),
-                random.nextLong(),
-                builder.createString(randomString(random)));
+
+                random.nextLong());
 
         int reportOffset = FbUsStreetExecutionReport.createFbUsStreetExecutionReport(builder,
                 convertFbFrontOffice, convertFbOrder, convertFbCounterParty, convertFbExecutionReport);

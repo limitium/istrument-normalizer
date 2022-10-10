@@ -15,10 +15,11 @@ include 'seeker' //kafka stream application, provided as containerized applicati
 include 'combiner' //kafka stream application, provided as containerized application
 
 
-include 'stubs' // used as pseudo dev environment to send and received messages from kafka, no need to build
 include 'sequencer' // should be used as lib, in others projects
 
 include 'communication'
 
 include 'book-enricher'
 include 'processor'
+include 'common'
+

@@ -4,22 +4,16 @@ import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.
 import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers.FBInstrumentLookuped;
 import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers.FBLookupInstrument;
 import com.bnpparibas.gban.flatbufferstooling.communication.FlatbuffersSerde;
-import org.apache.kafka.common.serialization.Serde;
+import com.bnpparibas.gban.kscore.kstreamcore.Topic;
 import org.apache.kafka.common.serialization.Serdes;
 
 public class Topics {
-    public static class Topic<K, V> {
-        public String topic;
-        public Serde<K> keySerde;
-        public Serde<V> valueSerde;
 
-        public Topic(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
-            this.topic = topic;
-            this.keySerde = keySerde;
-            this.valueSerde = valueSerde;
-        }
-
-    }
+    public static final String UPSTREAM_PATTERN = "gba.upstream.domain.*.*.normalizeInstrument";
+    public static final String REDUCE_LOOKUP_INSTRUMENT_TOPIC = "gba.instrument.internal.reduce.lookupInstrument";
+    public static final String LOOKUP_INSTRUMENT_TOPIC = "gba.instrument.internal.lookupInstrument";
+    public static final String INSTRUMENT_LOOKUPED_TOPIC = "gba.instrument.internal.instrumentLookuped";
+    public static final String DLQ_TOPIC = "gba.instrument.internal.dlq";
 
     public static Topic<String, FBNormalizeInstrument> UPSTREAM;
     public static Topic<String, FBLookupInstrument> REDUCE_LOOKUP_INSTRUMENT;
@@ -28,19 +22,43 @@ public class Topics {
     public static Topic<String, FBNormalizeInstrument> DLQ; //DLQ message must be combined from incoming message and error information
 
     static {
+        FlatbuffersSerde<FBNormalizeInstrument> normalizeInstrumentSerde =
+                new FlatbuffersSerde<>(FBNormalizeInstrument.class);
 
-        FlatbuffersSerde<FBNormalizeInstrument> normalizeInstrumentSerde = new FlatbuffersSerde<>(FBNormalizeInstrument.class);
-        FlatbuffersSerde<FBInstrumentLookuped> instrumentLookupedSerde = new FlatbuffersSerde<>(FBInstrumentLookuped.class);
-        FlatbuffersSerde<FBLookupInstrument> lookupInstrumentSerde = new FlatbuffersSerde<>(FBLookupInstrument.class);
+        FlatbuffersSerde<FBInstrumentLookuped> instrumentLookupedSerde =
+                new FlatbuffersSerde<>(FBInstrumentLookuped.class);
 
-        Topics.UPSTREAM = new Topic<>("gba.upstream.domain.*.*.normalizeInstrument", Serdes.String(), normalizeInstrumentSerde);
-        Topics.REDUCE_LOOKUP_INSTRUMENT = new Topic<>("gba.instrument.internal.reduce.lookupInstrument", Serdes.String(), lookupInstrumentSerde);
-        Topics.LOOKUP_INSTRUMENT = new Topic<>("gba.instrument.internal.lookupInstrument", Serdes.String(), lookupInstrumentSerde);
-        Topics.INSTRUMENT_LOOKUPED = new Topic<>("gba.instrument.internal.instrumentLookuped", Serdes.String(), instrumentLookupedSerde);
+        FlatbuffersSerde<FBLookupInstrument> lookupInstrumentSerde =
+                new FlatbuffersSerde<>(FBLookupInstrument.class);
 
+        Topics.UPSTREAM =
+                new Topic<>(
+                        UPSTREAM_PATTERN,
+                        Serdes.String(),
+                        normalizeInstrumentSerde);
 
-        Topics.DLQ = new Topic<>("gba.instrument.internal.dlq", Serdes.String(), normalizeInstrumentSerde); //Generic DLQ serde required
+        Topics.REDUCE_LOOKUP_INSTRUMENT =
+                new Topic<>(
+                        REDUCE_LOOKUP_INSTRUMENT_TOPIC,
+                        Serdes.String(),
+                        lookupInstrumentSerde);
 
+        Topics.LOOKUP_INSTRUMENT =
+                new Topic<>(
+                        LOOKUP_INSTRUMENT_TOPIC,
+                        Serdes.String(),
+                        lookupInstrumentSerde);
 
+        Topics.INSTRUMENT_LOOKUPED =
+                new Topic<>(
+                        INSTRUMENT_LOOKUPED_TOPIC,
+                        Serdes.String(),
+                        instrumentLookupedSerde);
+
+        Topics.DLQ =
+                new Topic<>(
+                        DLQ_TOPIC,
+                        Serdes.String(),
+                        normalizeInstrumentSerde); // Generic DLQ serde required
     }
 }
