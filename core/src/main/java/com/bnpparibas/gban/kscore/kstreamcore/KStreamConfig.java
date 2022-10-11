@@ -38,7 +38,7 @@ public class KStreamConfig {
         return new KafkaStreamsConfiguration(Map.of(
                 StreamsConfig.APPLICATION_ID_CONFIG, appName,
                 StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootStrapServers,
-                StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE, kafkaStorePrefix != null ? kafkaStorePrefix + "." + appName.toLowerCase() + ".store" : appName
+                StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE, kafkaStorePrefix != null ? kafkaStorePrefix + ".store" : appName
         ));
     }
 
