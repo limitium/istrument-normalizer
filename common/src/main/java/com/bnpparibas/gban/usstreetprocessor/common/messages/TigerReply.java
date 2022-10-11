@@ -7,14 +7,15 @@ public class TigerReply {
     public int version;
     public LocalDateTime ackTimestamp;
     public ReplyCode replyCode;
+    public  ReplyTransactionType replyTransactionType;
 
-    public TigerReply() {
-    }
+    public TigerReply() {}
 
-    public TigerReply(long allocationId, int version, LocalDateTime ackTimestamp, ReplyCode replyCode) {
+    public TigerReply(long allocationId, int allocationVersion, LocalDateTime ackTimestamp, ReplyCode replyCode, ReplyTransactionType replyTransactionType) {
         this.allocationId = allocationId;
-        this.version = version;
+        this.version = allocationVersion;
         this.ackTimestamp = ackTimestamp;
         this.replyCode = replyCode;
+        this.replyTransactionType = replyTransactionType;
     }
 }

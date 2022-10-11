@@ -1,6 +1,5 @@
 spring.application.name: "Controller"
 
-__internal:
-  override:
-    topic:
-      prefix__: "gba.us-street-processor.store"
+kafka:
+  store:
+    prefix: "gba.us-street-processor"

@@ -32,7 +32,7 @@ public enum ReplyCode {
         Arrays.stream(ReplyCode.values()).forEach(replyCode -> codeToReply.put(replyCode.code, replyCode));
     }
 
-    public static ReplyCode getReplyCodeBy(String code) {
+    public static ReplyCode getBy(String code) {
         return codeToReply.get(code);
     }
 
