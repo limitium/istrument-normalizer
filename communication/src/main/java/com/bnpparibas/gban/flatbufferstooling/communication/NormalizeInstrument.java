@@ -7,6 +7,7 @@ import com.google.flatbuffers.Table;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * Utility class for wrapping business flatbuffers messages, with normalize instrument cmd.
@@ -26,7 +27,7 @@ public class NormalizeInstrument {
      *              executionReport, //root flatbuffers object
      *              1234, //object public id, should be uniq
      *              "IBM.N", // security id to be normalized
-     *              "upstream.order", // path from the root where instrument id should be injected.
+     *              ".upstream.order", // path from the root where instrument id should be injected.
      *              // will be resolved into call executionReport.upstream().order().mutateInstrumentId(instrumentId)
      *              "happy.path.topic" // topic where normalized message will be placed
      *          );
@@ -38,7 +39,7 @@ public class NormalizeInstrument {
      * @param fbTable               flatbuffers table for normalization
      * @param msgId                 uniq identifier of the message
      * @param securityId            alphanumeric non-normalized instrument identifier
-     * @param pathToInstrumentTable comma separated path of getters to table with instrument mutator, starting from root .
+     * @param pathToInstrumentTable comma separated path of getters to table with instrument mutator, starting from root `.`
      * @param egressTopic           topic which will be used for publishing business message with normalized instrument
      * @return {@link FBNormalizeInstrument} sized table
      */
@@ -127,8 +128,13 @@ public class NormalizeInstrument {
         Object instrumentTable = fbTable;
 
         if (pathToInstrumentTable != null) {
-            String[] getterNames = pathToInstrumentTable.split("\\.");
-            for (String getterName : getterNames) {
+            String[] pathParts = pathToInstrumentTable.split("\\.");
+            if (pathParts.length < 1) {
+                throw new RuntimeException("Empty path to instrument table");
+            }
+
+            String[] gettersName = Arrays.copyOfRange(pathParts, 1, pathParts.length);
+            for (String getterName : gettersName) {
                 try {
                     Method getter = instrumentTable.getClass().getMethod(getterName);
                     instrumentTable = getter.invoke(instrumentTable);

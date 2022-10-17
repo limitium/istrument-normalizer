@@ -50,7 +50,7 @@ class ReceiverTests extends BaseKStreamApplicationTests {
                         fbUsStreetExecutionReport,
                         fbUsStreetExecutionReport.executionReport().id(),
                         securityId,
-                        "order",
+                        ".order",
                         "happy.path.topic");
 
         send(
