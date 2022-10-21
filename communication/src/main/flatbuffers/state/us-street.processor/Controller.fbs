@@ -78,4 +78,38 @@ namespace com.bnpparibas.gban.communication.state.usstreetprocessor.flatbuffers;
      external_src_id: string;
  }
 
- root_type FbTigerAllocation;
+enum FBRequestType: byte {
+    NEW,
+    CANCEL
+}
+enum FBResponseType: byte {
+    ACK,
+    NACK
+}
+
+table FBBookingRequest {
+    id: long;
+    allocation_id: long;
+    allocation_version: int;
+    request_type: FBRequestType;
+    correlation_id: string;
+    sent_timestamp: long;
+
+    received_timestamp: long;
+    response_type: FBResponseType;
+    response_code: int;
+    response_message: string;
+}
+
+table FBBookingResponse {
+    correlation_id: string;
+    request_type: FBRequestType;
+    allocation_id: long;
+    allocation_version: int;
+    repsonse_type: FBResponseType;
+    timestamp: long;
+    response_code: int;
+    response_message: string;
+}
+
+root_type FbTigerAllocation;
