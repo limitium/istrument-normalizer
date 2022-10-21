@@ -20,6 +20,6 @@ include 'sequencer' // should be used as lib, in others projects
 include 'communication'
 
 include 'book-enricher'
-include 'processor'
+include 'controller'
 include 'common'
 

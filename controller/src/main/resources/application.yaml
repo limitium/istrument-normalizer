@@ -1,0 +1,5 @@
+spring.application.name: "Us.street.processor.Controller"
+
+kafka:
+  store:
+    prefix: "gba.us-street-processor"

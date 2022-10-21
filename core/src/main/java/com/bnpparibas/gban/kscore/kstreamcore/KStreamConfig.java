@@ -1,5 +1,6 @@
 package com.bnpparibas.gban.kscore.kstreamcore;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.processor.internals.ProcessorStateManager;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +39,10 @@ public class KStreamConfig {
         return new KafkaStreamsConfiguration(Map.of(
                 StreamsConfig.APPLICATION_ID_CONFIG, appName,
                 StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootStrapServers,
+                StreamsConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, "-1",
+                StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2,
+                CommonClientConfigs.HEARTBEAT_INTERVAL_MS_CONFIG, "2000",
+                CommonClientConfigs.SESSION_TIMEOUT_MS_CONFIG, "6000",
                 StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE, kafkaStorePrefix != null ? kafkaStorePrefix + ".store" : appName
         ));
     }
