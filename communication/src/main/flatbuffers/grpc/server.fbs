@@ -18,6 +18,7 @@ table FbId {
 */
 enum FbGrpcStatus: byte {
     SUCCESS,
+    NOT_FOUND,                                     // Nothing was found in lookup* call
     ERROR_CLIENT,                                  // No reason for retry. for ex. partially filled request.
     ERROR_SERVER                                   // Can be retried
 }
@@ -26,7 +27,7 @@ enum FbGrpcStatus: byte {
 * Wraps public id of any object or error message
 */
 table FbIdResponse {
-    id:                                long;
+    id:                                long;      // PrimitivesNulls.Long for not found or errors
     status:                            FbGrpcStatus;
     status_message:                    string;
 }
