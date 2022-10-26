@@ -1,4 +1,4 @@
-package com.bnpparibas.gban.usstreetcontroller.common.messages;
+package com.bnpparibas.gban.usstreetprocessor.common.messages;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

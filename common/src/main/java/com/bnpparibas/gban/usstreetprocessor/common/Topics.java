@@ -1,7 +1,7 @@
-package com.bnpparibas.gban.usstreetcontroller.common;
+package com.bnpparibas.gban.usstreetprocessor.common;
 
-import com.bnpparibas.gban.usstreetcontroller.common.messages.TigerReply;
-import com.bnpparibas.gban.usstreetcontroller.common.messages.UsStreetExecution;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.TigerReply;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.UsStreetExecution;
 import com.bnpparibas.gban.kscore.kstreamcore.Topic;
 import org.apache.kafka.common.serialization.Serdes;
 import org.springframework.kafka.support.serializer.JsonSerde;

@@ -1,12 +1,12 @@
-package com.bnpparibas.gban.usstreetcontroller;
+package com.bnpparibas.gban.usstreetprocessor;
 
 import com.bnpparibas.gban.bibliotheca.sequencer.Namespace;
 import com.bnpparibas.gban.bibliotheca.sequencer.Sequencer;
 import com.bnpparibas.gban.kscore.kstreamcore.KStreamInfraCustomizer;
-import com.bnpparibas.gban.usstreetcontroller.common.Topics;
-import com.bnpparibas.gban.usstreetcontroller.common.external.ClientKeeper;
-import com.bnpparibas.gban.usstreetcontroller.common.external.InstrumentKeeper;
-import com.bnpparibas.gban.usstreetcontroller.common.messages.*;
+import com.bnpparibas.gban.usstreetprocessor.common.Topics;
+import com.bnpparibas.gban.usstreetprocessor.common.external.ClientKeeper;
+import com.bnpparibas.gban.usstreetprocessor.common.external.InstrumentKeeper;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.*;
 
 import java.text.ParseException;
 import java.time.LocalDateTime;

@@ -1,4 +1,4 @@
-package com.bnpparibas.gban.usstreetcontroller.common.messages;
+package com.bnpparibas.gban.usstreetprocessor.common.messages;
 
 import java.util.Arrays;
 import java.util.HashMap;

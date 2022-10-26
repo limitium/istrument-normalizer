@@ -1,19 +1,19 @@
-package com.bnpparibas.gban.usstreetcontroller;
+package com.bnpparibas.gban.usstreetprocessor;
 
 import com.bnpparibas.gban.bibliotheca.sequencer.Namespace;
 import com.bnpparibas.gban.bibliotheca.sequencer.Sequencer;
 import com.bnpparibas.gban.kscore.test.BaseKStreamApplicationTests;
 import com.bnpparibas.gban.kscore.test.KafkaTest;
-import com.bnpparibas.gban.usstreetcontroller.common.Topics;
-import com.bnpparibas.gban.usstreetcontroller.common.messages.ReplyCode;
-import com.bnpparibas.gban.usstreetcontroller.common.messages.TigerReply;
-import com.bnpparibas.gban.usstreetcontroller.common.messages.UsStreetExecution;
+import com.bnpparibas.gban.usstreetprocessor.common.Topics;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.ReplyCode;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.TigerReply;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.UsStreetExecution;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
 
 import java.time.format.DateTimeFormatter;
 
-import static com.bnpparibas.gban.usstreetcontroller.UsStreetController.TigerReplyCoProcessor.TIGER_TIMESTAMP_FORMAT;
+import static com.bnpparibas.gban.usstreetprocessor.UsStreetController.TigerReplyCoProcessor.TIGER_TIMESTAMP_FORMAT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @KafkaTest(

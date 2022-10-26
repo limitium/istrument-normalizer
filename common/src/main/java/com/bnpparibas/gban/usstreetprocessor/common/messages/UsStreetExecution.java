@@ -1,4 +1,4 @@
-package com.bnpparibas.gban.usstreetcontroller.common.messages;
+package com.bnpparibas.gban.usstreetprocessor.common.messages;
 
 public class UsStreetExecution {
     public long executionId;
