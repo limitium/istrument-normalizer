@@ -79,15 +79,15 @@ class UsStreetApplicationControllerTests extends BaseKStreamApplicationTests {
     }
 
     private long getExecutionId(String csv) {
-        return Long.parseLong(csv.split(",")[1]);
+        return Long.parseLong(csv.split(",")[2]);
     }
 
     private String getExecutionStatus(String csv) {
-        return csv.split(",")[4];
+        return csv.split(",")[5];
     }
 
     private long getVersion(String csv) {
-        return Long.parseLong(csv.split(",")[3]);
+        return Long.parseLong(csv.split(",")[4]);
     }
 
 

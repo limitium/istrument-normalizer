@@ -6,8 +6,12 @@ import com.bnpparibas.gban.kscore.kstreamcore.KStreamInfraCustomizer;
 import com.bnpparibas.gban.usstreetprocessor.common.Topics;
 import com.bnpparibas.gban.usstreetprocessor.common.external.ClientKeeper;
 import com.bnpparibas.gban.usstreetprocessor.common.external.InstrumentKeeper;
-import com.bnpparibas.gban.usstreetprocessor.common.messages.*;
-
+import com.bnpparibas.gban.usstreetprocessor.common.messages.BookingRequest;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.ReplyCode;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.ReplyTransactionType;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.TigerAllocation;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.TigerReply;
+import com.bnpparibas.gban.usstreetprocessor.common.messages.UsStreetExecution;
 import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,9 +31,9 @@ import org.springframework.kafka.support.serializer.JsonSerde;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UsStreetController implements KStreamInfraCustomizer.KStreamTopologyBuilder {
+public class UsStreetProcessor implements KStreamInfraCustomizer.KStreamTopologyBuilder {
 
-    private static final Logger logger = LoggerFactory.getLogger(UsStreetController.class);
+    private static final Logger logger = LoggerFactory.getLogger(UsStreetProcessor.class);
 
     public static final String US_STREET_PROCESSOR_APP_NAME = "US_STREET_PROCESSOR";
 
@@ -39,6 +43,8 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
 
     private static final String EXECUTION_REPORTS_STORE = "execution_reports";
     private static final String TIGER_ALLOCATIONS_STORE = "tiger_allocations";
+
+    private static final String BOOKING_REQUESTS_STORE = "booking_requests";
     private static final String EXECUTION_ALLOCATION_REF_STORE = "execution_allocation_ref";
 
     private static final String EXECUTION_REPORT_PROCESSOR = "us_execution_report_processor";
@@ -65,6 +71,12 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
                         Stores.persistentKeyValueStore(TIGER_ALLOCATIONS_STORE),
                         Serdes.Long(),
                         new JsonSerde<>(TigerAllocation.class));
+
+        StoreBuilder<KeyValueStore<String, BookingRequest>> requestStore =
+                Stores.keyValueStoreBuilder(
+                        Stores.persistentKeyValueStore(BOOKING_REQUESTS_STORE),
+                        Serdes.String(),
+                        new JsonSerde<>(BookingRequest.class));
 
         StoreBuilder<KeyValueStore<Long, Long>> refStore =
                 Stores.keyValueStoreBuilder(
@@ -97,6 +109,7 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
                 .addStateStore(executionStore, EXECUTION_REPORT_PROCESSOR)
                 .addStateStore(allocationStore, EXECUTION_REPORT_PROCESSOR, TIGER_REPLY_PROCESSOR)
                 .addStateStore(refStore, EXECUTION_REPORT_PROCESSOR)
+                .addStateStore(requestStore, EXECUTION_REPORT_PROCESSOR, TIGER_REPLY_PROCESSOR)
                 .addSink(
                         TIGER_ALLOCATION_SINK,
                         Topics.BOOK_TIGER.topic,
@@ -132,6 +145,7 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
         private KeyValueStore<Long, TigerAllocation> tigerAllocationsStore;
 
         private KeyValueStore<Long, Long> executionAllocationRefsStore;
+        private KeyValueStore<String, BookingRequest> bookingRequestStore;
 
         private ProcessorContext<Long, String> context;
 
@@ -147,6 +161,7 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
             executionReportStore = context.getStateStore(EXECUTION_REPORTS_STORE);
             tigerAllocationsStore = context.getStateStore(TIGER_ALLOCATIONS_STORE);
             executionAllocationRefsStore = context.getStateStore(EXECUTION_ALLOCATION_REF_STORE);
+            bookingRequestStore = context.getStateStore(BOOKING_REQUESTS_STORE);
         }
 
         @Override
@@ -157,16 +172,17 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
                     "Stored execution. Execution id: {}, execution: {}",
                     record.key(),
                     usStreetExecution);
+
+            TigerAllocation tigerAllocation = null;
             switch (usStreetExecution.state) {
                 case "NEW" -> {
                     logger.info("New execution. Execution id: {}", usStreetExecution.executionId);
-                    TigerAllocation tigerAllocation = createTigerAllocation(usStreetExecution);
+                    tigerAllocation = createTigerAllocation(usStreetExecution);
                     tigerAllocationsStore.put(tigerAllocation.id, tigerAllocation);
                     executionAllocationRefsStore.put(
                             usStreetExecution.executionId, tigerAllocation.id);
                     logger.info("New allocation. Allocation id: {}", tigerAllocation.id);
-                    context.forward(
-                            record.withValue(convertToCSV(tigerAllocation)), TIGER_ALLOCATION_SINK);
+
                 }
                 case "CANCEL" -> {
                     logger.info(
@@ -175,7 +191,7 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
                     long tigerAllocationId =
                             executionAllocationRefsStore.get(usStreetExecution.executionId);
                     if (tigerAllocationId > 0) {
-                        TigerAllocation tigerAllocation =
+                        tigerAllocation =
                                 tigerAllocationsStore.get(tigerAllocationId);
                         try {
                             tigerAllocation.state =
@@ -183,9 +199,7 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
                                             TigerAllocation.State.CANCEL_PENDING);
                             tigerAllocation.version++;
                             logger.info("Cancel allocation. Allocation id: {}", tigerAllocation.id);
-                            context.forward(
-                                    record.withValue(convertToCSV(tigerAllocation)),
-                                    TIGER_ALLOCATION_SINK);
+
                         } catch (TigerAllocation.State.WrongStateTransitionException e) {
                             logger.error("Wrong state change request", e);
                         }
@@ -197,6 +211,24 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
                 }
                 default -> throw new RuntimeException("Wrong state " + usStreetExecution.state);
             }
+            String correlationId = generateCorrelationId(tigerAllocation);
+
+            BookingRequest bookingRequest = new BookingRequest(correlationId, tigerAllocation);
+            bookingRequestStore.put(bookingRequest.correlationId, bookingRequest);
+
+            context.forward(
+                    record.withValue(convertToCSV(correlationId, tigerAllocation)),
+                    TIGER_ALLOCATION_SINK);
+        }
+
+        private String generateCorrelationId(TigerAllocation tigerAllocation) {
+            //"<TransType(0: New, 2:Cancel)>-<TMInstance>-<AllocID>-<VersionID>";
+            return String.join("-",
+                    tigerAllocation.state == TigerAllocation.State.NEW_PENDING ? "0" : "2",
+                    US_STREET_PROCESSOR_APP_NAME,
+                    String.valueOf(tigerAllocation.id),
+                    String.valueOf(tigerAllocation.version)
+            );
         }
 
         private TigerAllocation createTigerAllocation(UsStreetExecution usStreetExecution) {
@@ -259,10 +291,12 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
             implements Processor<Long, TigerReply, Object, Object> {
 
         private KeyValueStore<Long, TigerAllocation> tigerAllocationsStore;
+        private KeyValueStore<String, BookingRequest> bookingRequestsStore;
 
         @Override
         public void init(ProcessorContext<Object, Object> context) {
             tigerAllocationsStore = context.getStateStore(TIGER_ALLOCATIONS_STORE);
+            bookingRequestsStore = context.getStateStore(BOOKING_REQUESTS_STORE);
         }
 
         @Override
@@ -272,13 +306,16 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
                     "Got reply from Tiger. Trade id:{}, state: {}",
                     tigerReply.allocationId,
                     tigerReply.replyCode.code);
+
+            BookingRequest bookingRequest = bookingRequestsStore.get(tigerReply.correlationId);
+            //get all requests related to allocation bookingRequestsIndex.stream(bookingRequest.allocatioinId)
+            //calculate allocation state bases on all requests state
+            TigerAllocation.State newState = null;
             TigerAllocation tigerAllocation = tigerAllocationsStore.get(tigerReply.allocationId);
 
             if (tigerAllocation != null) {
                 try {
-                    TigerAllocation.State newState = TigerAllocation.State.NEW_PENDING;
                     // todo: check version, should be skipped? Check current behavior
-                    // todo: check transaction type
                     // todo: generateNew state
                     // todo: set reason on nack
                     tigerAllocation.state.transferTo(newState);
@@ -317,6 +354,7 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
             if (US_STREET_PROCESSOR_APP_NAME.equals(parsedReply.applicationId)) {
                 TigerReply tigerReply =
                         new TigerReply(
+                                parsedReply.correlationId,
                                 parsedReply.allocationId,
                                 parsedReply.allocationVersion,
                                 parsedReply.ackTimestamp,
@@ -359,7 +397,8 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
             try {
                 ReplyCode replyCode = ReplyCode.getBy(columns[0]);
 
-                ReplyTransactionType transactionType = ReplyTransactionType.getBy(Integer.parseInt(correlationParts[0]));
+                ReplyTransactionType transactionType =
+                        ReplyTransactionType.getBy(Integer.parseInt(correlationParts[0]));
                 String applicationId = correlationParts[1];
                 long allocationId = Long.parseLong(correlationParts[2]);
                 int allocationVersion = Integer.parseInt(correlationParts[3]);
@@ -370,6 +409,7 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
                                 DateTimeFormatter.ofPattern(TIGER_TIMESTAMP_FORMAT, Locale.US));
 
                 return new ParsedReply(
+                        correlationId,
                         replyCode,
                         transactionType,
                         applicationId,
@@ -383,6 +423,7 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
 
         /** Intermediate structure with all information available in reply */
         public static class ParsedReply {
+            String correlationId;
             ReplyCode replyCode;
             ReplyTransactionType replyTransactionType;
             String applicationId;
@@ -392,12 +433,14 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
             LocalDateTime ackTimestamp;
 
             public ParsedReply(
+                    String correlationId,
                     ReplyCode replyCode,
                     ReplyTransactionType replyTransactionType,
                     String applicationId,
                     long allocationId,
                     int allocationVersion,
                     LocalDateTime ackTimestamp) {
+                this.correlationId = correlationId;
                 this.replyCode = replyCode;
                 this.replyTransactionType = replyTransactionType;
                 this.applicationId = applicationId;
@@ -420,8 +463,11 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
         }
     }
 
-    private static String convertToCSV(TigerAllocation tigerAllocation) {
+    private static String convertToCSV(String correlationId, TigerAllocation tigerAllocation) {
+        //CSV with 39 fields
         return "test,"
+                + correlationId
+                + ","
                 + tigerAllocation.executionId
                 + ","
                 + tigerAllocation.id

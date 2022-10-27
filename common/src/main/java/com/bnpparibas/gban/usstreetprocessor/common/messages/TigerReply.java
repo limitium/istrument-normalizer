@@ -3,6 +3,7 @@ package com.bnpparibas.gban.usstreetprocessor.common.messages;
 import java.time.LocalDateTime;
 
 public class TigerReply {
+    public String correlationId;
     public long allocationId;
     public int version;
     public LocalDateTime ackTimestamp;
@@ -11,7 +12,8 @@ public class TigerReply {
 
     public TigerReply() {}
 
-    public TigerReply(long allocationId, int allocationVersion, LocalDateTime ackTimestamp, ReplyCode replyCode, ReplyTransactionType replyTransactionType) {
+    public TigerReply(String correlationId, long allocationId, int allocationVersion, LocalDateTime ackTimestamp, ReplyCode replyCode, ReplyTransactionType replyTransactionType) {
+        this.correlationId = correlationId;
         this.allocationId = allocationId;
         this.version = allocationVersion;
         this.ackTimestamp = ackTimestamp;
