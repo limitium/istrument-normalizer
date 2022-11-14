@@ -23,4 +23,5 @@ include 'book-enricher'
 include 'controller'
 include 'common'
 include 'tiger-emulator'
+include 'storage'
 

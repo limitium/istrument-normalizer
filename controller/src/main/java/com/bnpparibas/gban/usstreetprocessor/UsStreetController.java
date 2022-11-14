@@ -31,9 +31,9 @@ import org.springframework.kafka.support.serializer.JsonSerde;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UsStreetProcessor implements KStreamInfraCustomizer.KStreamTopologyBuilder {
+public class UsStreetController implements KStreamInfraCustomizer.KStreamTopologyBuilder {
 
-    private static final Logger logger = LoggerFactory.getLogger(UsStreetProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(UsStreetController.class);
 
     public static final String US_STREET_PROCESSOR_APP_NAME = "US_STREET_PROCESSOR";
 

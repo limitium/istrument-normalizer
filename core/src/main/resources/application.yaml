@@ -9,7 +9,5 @@ management:
 kafka:
   bootstrap:
     servers: localhost:9092
-  store:
-    prefix: "gba.repository-name"
 
 logging.pattern.level: trace_id=%mdc{trace_id} span_id=%mdc{span_id} %5p

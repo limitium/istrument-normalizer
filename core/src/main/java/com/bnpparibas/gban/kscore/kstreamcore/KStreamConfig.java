@@ -27,24 +27,22 @@ public class KStreamConfig {
      * Sets kafka client configuration
      *
      * @param appName
-     * @param kafkaStorePrefix used in {@link ProcessorStateManager#changelogFor(String)}
      * @return
      */
     @Bean(name =
             KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)
     public KafkaStreamsConfiguration kStreamsConfigs(
-            @Value("${spring.application.name}") String appName,
-            @Value("${kafka.store.prefix:#{null}}") String kafkaStorePrefix
-    ) {
-        return new KafkaStreamsConfiguration(Map.of(
-                StreamsConfig.APPLICATION_ID_CONFIG, appName,
-                StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootStrapServers,
-                StreamsConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, "-1",
-                StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2,
-                CommonClientConfigs.HEARTBEAT_INTERVAL_MS_CONFIG, "2000",
-                CommonClientConfigs.SESSION_TIMEOUT_MS_CONFIG, "6000",
-                StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE, kafkaStorePrefix != null ? kafkaStorePrefix + ".store" : appName
-        ));
+            @Value("${spring.application.name}") String appName) {
+        return new KafkaStreamsConfiguration(
+                Map.of(
+                        StreamsConfig.APPLICATION_ID_CONFIG, appName,
+                        StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootStrapServers,
+                        StreamsConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, "-1",
+                        StreamsConfig.PROCESSING_GUARANTEE_CONFIG, "exactly_once_v2",
+                        CommonClientConfigs.HEARTBEAT_INTERVAL_MS_CONFIG, "2000",
+                        CommonClientConfigs.SESSION_TIMEOUT_MS_CONFIG, "6000",
+                        StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE, "gba." + appName + ".store"
+                ));
     }
 
     @Bean

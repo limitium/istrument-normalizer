@@ -1,5 +1,17 @@
-spring.application.name: "Us.street.processor.Controller"
+spring:
+  application:
+    name: qwe
+  main.web-application-type: NONE
+
+server.port: 9001
+management:
+  server.port: 9001
+  endpoints.web.exposure.include: "*"
 
 kafka:
+  bootstrap:
+    servers: localhost:9092
   store:
-    prefix: "gba.us-street-processor"
+    prefix: "gba.repository-name"
+
+logging.pattern.level: trace_id=%mdc{trace_id} span_id=%mdc{span_id} %5p
