@@ -1,0 +1,29 @@
+enum FbPartyRole: int {
+    EXECUTING_FIRM = 1,
+    EXCHANGE = 22,
+    AVP_ACCOUNT,
+    CLIENT_PORTFOLIO,
+    INTERCO_ACCOUNT,
+    WASH_ACCOUNT
+}
+
+enum FbPartyIdSource: int {
+    MIC = 107,  //'G'
+    BIC = 102,  //'B'
+    DTC = 124,  //'T'
+    CRDS_CODE,
+    BPS_CODE
+}
+
+enum FbPartySource: int {
+    PORTFOLIO,
+    BOOK,
+    EXECUTION_REPORT
+}
+
+table FbParty {
+    role:             FbPartyRole = EXCHANGE;
+    source:           FbPartySource = EXECUTION_REPORT;
+    id:               string;
+    id_source:        FbPartyIdSource = MIC;
+}

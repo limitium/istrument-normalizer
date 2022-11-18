@@ -1,57 +1,7 @@
 namespace com.bnpparibas.gban.communication.messages.domain.executionreports.flatbuffers;
 
-enum FbType: byte {
-    NEW,
-    CANCEL
-}
-
-enum FbSide: byte {
-    BUY               = 1,
-    SELL_LONG         = 2,
-    SELL_SHORT        = 5
-}
-
-enum FbTimeInForce: byte {
-    DAY               = 0,
-    GTC               = 1,
-    AT_OPEN           = 2,
-    IOC               = 3,
-    FOK               = 4,
-    GTD               = 6
-}
-
-enum FbCapacity: byte {
-    PRINCIPAL,                              // principal
-    AGENCY,                                 // agency and default
-    RISKLESS,                               // riskless principal
-    MARKET,                                 // mixed capacity
-}
-
-enum FbOrderType: byte {                    // Fix values are used
-    MARKET             = 1,
-    LIMIT              = 2,
-    STOP               = 3,
-    STOP_LIMIT         = 4,
-}
-
-enum FbCounterpartyCodeType: byte {
-    DTC,                                    // ATM8.ContraBroker DTC code of exchanges
-    BIC                                     // ATM8.ExecutingFirm 1st 4 chars of BIC or SWIFT codes
-}
-
-enum FbCounterpartyType: byte {
-    BROKER,                                 // ATM8.ExecutingFirm != null
-    EXCHANGE                                // ATM8.LastMkt != null, MIC name of market where execution was really executed
-}
-
-table FbCounterParty {
-    type:             FbCounterpartyType;   // ATM8.ExecutingFirm or ATM8.ContraBroker, todo: wtf LATAM empty contra but have last market
-    code:             string;               // ATM8.LastMkt or ATM8.ExecutingFirm
-    code_type:        FbCounterpartyCodeType;
-
-    execution_id:     string;               // ATM8.ExchangeExecID
-    order_id:         string;               // ATM8.ExchangeOrderID
-}
+include dictionaries/fix.fbs
+include dictionaries/party.fbs
 
 /**
   Representation of FO for concrete execution report. Some parts can be missed.
@@ -63,27 +13,27 @@ table FbFrontOffice { //todo: merge of US flow?
     execution_id:     string;               // ATM8.ExecID
     execution_ref_id: string;               // ATM8.ExecRefID
     order_id:         string;               // ATM8.OrderID
+
+    exch_execution_id:string;               // ATM8.ExchangeExecID ??? wrong place, move somewhere
+    exch_order_id:    string;               // ATM8.ExchangeOrderID
 }
 
 /**
   Representation of Order in FO in fact in order managment part
 */
 table FbOrder {
-    side:             FbSide      = BUY;    // ATM8.Side Side direction from client perspective
+    side:             FbSide = BUY;         // ATM8.Side Side direction from client perspective
     order_type:       FbOrderType = MARKET; // ATM8.OrderType
-    time_in_force:    FbTimeInForce;        // ATM8.TimeInForce
+    time_in_force:    FbTimeInForce = DAY;  // ATM8.TimeInForce
 
     security_id:      string;               // ATM8.SecurityID FO or client instrument identifier. Can ber RIC, ISIN etc
     instrument_id:    long;                 // gba instrument public identifier
-
-    portfolio_code:   string;               // ATM8.Portfolio todo:? FO representation of client AVP group
-    book_id:          long;                 // gba book public identifier
 }
 
 table FbExecutionReport {
     id:               long;                 // GBA generated public identifier
-    type:             FbType = NEW;         // ATM8.ExecType
-    capacity:         FbCapacity = AGENCY;  // ATM8.Capacity
+    type:             FbExecType = NEW;     // ATM8.ExecType
+    capacity:         FbCapacity = AGENT;   // ATM8.Capacity
 
     last_qty:         double;               // ATM8.LastQty
     last_price:       double;               // ATM8.LastPx
@@ -98,7 +48,8 @@ table FbExecutionReport {
 table FbUsStreetExecutionReport {
     front_office:     FbFrontOffice;
     order:            FbOrder;
-    counter_party:    FbCounterParty;
+    party:            FbParty;
+    counter_party:    FbParty;
     execution_report: FbExecutionReport;
 }
 

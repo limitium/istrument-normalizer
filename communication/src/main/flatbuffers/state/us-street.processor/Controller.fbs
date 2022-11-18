@@ -1,115 +1,59 @@
 namespace com.bnpparibas.gban.communication.state.usstreetprocessor.flatbuffers;
 
- enum FbSide: byte {
-     BUY               = 1,
-     SELL_LONG         = 2,
-     SELL_SHORT        = 5
- }
+include dictionaries/fix.fbs
+include dictionaries/party.fbs
+include dictionaries/booking.fbs
 
- enum FbTimeInForce: byte {
-     DAY               = 0,
-     GTC               = 1,
-     AT_OPEN           = 2,
-     IOC               = 3,
-     FOK               = 4,
-     GTD               = 6
- }
-
- enum FbCapacity: byte {
-     PRINCIPAL,                              // principal
-     AGENCY,                                 // agency and default
-     RISKLESS,                               // riskless principal
-     MIXED,                                  // mixed capacity
- }
-
- enum FbOrderType: byte {                    // Fix values are used
-     MARKET            = 1,
-     LIMIT             = 2,
-     STOP              = 3,
-     STOP_LIMIT        = 4,
- }
-
- enum FbMessageType: byte {
-     EXECUTION
- }
-
- enum FbActionCode: byte {
-     NEW,
-     BUSTED
- }
-
- table FbTigerAllocation {
-     message_type: FbMessageType;
-
-     action_code: FbActionCode;
-
-     src_id: string;
-     src_user_id: string;
-     exec_sys_instance_id: string;
-     exec_sys_order_id: string;
-     exec_sys_execution_id: string;
-     exec_sys_market_order_id: string;
-
-     market_execution_id: string;
-     market_order_id: string;
-
-     trade_type: FbSide = BUY;
-
-     executed_qty: double;
-     execution_price: double;
-
-     ticker: string;
-     isin: string;
-     sedol: string;
-
-     execution_time: string;
-     booking_account: string;
-     book: string; //"FLEX_BNP"
-     time_in_system: FbTimeInForce;
-     execution_venue: string;
-     capacity_code: FbCapacity;
-     order_type: FbOrderType = MARKET;
-     when_issued: bool = false;
-     firm_mnemonic: string;
-     business_line: string; //"GES"
-     is_international: bool = false;
-     product_ccy: string;
-
-     external_src_id: string;
- }
-
-enum FBRequestType: byte {
-    NEW,
-    CANCEL
-}
-enum FBResponseType: byte {
-    ACK,
-    NACK
+table FbFinance {
+    side: FbSide = BUY;
+    qty: double;
+    price: double;
+    gross_amt: double;
+    instrument_id: long;
+    currency: string;
 }
 
-table FBBookingRequest {
+table FbUsStreetAllocation {
+     id:               long;
+     state:            FbState = NEW_PENDING;
+     finance:          FbFinance;
+     party:            FbParty;
+     counter_party:    FbParty;
+     audit:            FbAudit;
+}
+
+table FbBookingRequest {
     id: long;
     allocation_id: long;
     allocation_version: int;
-    request_type: FBRequestType;
+    request_type: FbRequestType = NEW;
     correlation_id: string;
     sent_timestamp: long;
 
     received_timestamp: long;
-    response_type: FBResponseType;
+    response_type: FbResponseType = ACK;
     response_code: int;
     response_message: string;
 }
 
-table FBBookingResponse {
+table FbBookingResponse {
     correlation_id: string;
-    request_type: FBRequestType;
+    request_type: FbRequestType = NEW;
     allocation_id: long;
     allocation_version: int;
-    repsonse_type: FBResponseType;
+    repsonse_type: FbResponseType = ACK;
     timestamp: long;
     response_code: int;
     response_message: string;
 }
 
-root_type FbTigerAllocation;
+table FbAudit {
+    trace_id: long;
+    version: int;
+    creation_at: long;
+    modified_at: long;
+    modified_by: string;
+    removed: bool;
+}
+
+root_type FbUsStreetAllocation;

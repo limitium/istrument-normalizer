@@ -1,0 +1,44 @@
+enum FbExecType: ubyte {
+    NEW           = 48,//'0'
+    CANCELED      = 52,//'3'
+    REPLACED      = 53,//'5'
+    TRADE         = 70,//'F'
+    TRADE_CORRECT = 71,//'G'
+    TRADE_CANCEL  = 72,//'H'
+    ORDER_STATUS  = 73 //'I'
+}
+
+enum FbSide: ubyte {
+    BUY               = 49,//'1'
+    SELL              = 50,//'2'
+    SELL_SHORT        = 65,//'A'
+    BY_TO_COVER       = 132//'Z'
+}
+
+enum FbTimeInForce: ubyte {
+    DAY                  = 48,//'0'
+    GOOD_TILL_CANCEL     = 49,//'1'
+    AT_THE_OPENING       = 50,//'2'
+    IMMEDIATE_OR_CANCEL  = 51,//'3'
+    FILL_OR_KILL         = 52,//'4'
+    GOOD_TILL_DATE       = 53,//'5'
+    AT_THE_CLOSE         = 54,//'6'
+    GOOD_TROUGH_CROSSING = 55,//'7'
+    AT_THE_CROSSING      = 56 //'8'
+}
+
+enum FbCapacity: ubyte {
+    AGENT                   = 49,//'1'
+    CROSS_AS_AGENT          = 50,//'2'
+    CROSS_AS_PRINCIPAL      = 51,//'3'
+    PRINCIPAL               = 52,//'4'
+    RISKLESS_PRINCIPAL      = 53,//'5'
+    RISKLESS                = 82 //'R'
+}
+
+enum FbOrderType: ubyte {
+    MARKET             = 49,//'1'
+    LIMIT              = 50,//'2'
+    STOP               = 51,//'3'
+    STOP_LIMIT         = 53 //'4'
+}
