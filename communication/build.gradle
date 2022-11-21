@@ -76,4 +76,7 @@ dependencies {
     api "io.grpc:grpc-services:$grpcVersion" //used by generated classes
 
     api "io.grpc:grpc-netty:$grpcVersion" //used by client and server
+
+    implementation "org.apache.kafka:connect-api:3.2.1"
+    implementation 'org.slf4j:slf4j-api:1.7.36'
 }

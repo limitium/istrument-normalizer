@@ -1,44 +1,44 @@
-enum FbExecType: ubyte {
-    NEW           = 48,//'0'
-    CANCELED      = 52,//'3'
-    REPLACED      = 53,//'5'
-    TRADE         = 70,//'F'
-    TRADE_CORRECT = 71,//'G'
-    TRADE_CANCEL  = 72,//'H'
-    ORDER_STATUS  = 73 //'I'
-}
+    enum FbExecType: byte {
+        NEW                         = 0,//'0'
+        CANCELED                    = 1,//'3'
+        REPLACED                    = 2,//'5'
+        TRADE                       = 3,//'F'
+        TRADE_CORRECT               = 4,//'G'
+        TRADE_CANCEL                = 5,//'H'
+        ORDER_STATUS                = 6 //'I'
+    }
 
-enum FbSide: ubyte {
-    BUY               = 49,//'1'
-    SELL              = 50,//'2'
-    SELL_SHORT        = 65,//'A'
-    BY_TO_COVER       = 132//'Z'
-}
+    enum FbSide: byte {
+        BUY                         = 0,//'1'
+        SELL                        = 1,//'2'
+        SELL_SHORT                  = 2,//'A'
+        BUY_TO_COVER                = 3 //'Z'
+    }
 
-enum FbTimeInForce: ubyte {
-    DAY                  = 48,//'0'
-    GOOD_TILL_CANCEL     = 49,//'1'
-    AT_THE_OPENING       = 50,//'2'
-    IMMEDIATE_OR_CANCEL  = 51,//'3'
-    FILL_OR_KILL         = 52,//'4'
-    GOOD_TILL_DATE       = 53,//'5'
-    AT_THE_CLOSE         = 54,//'6'
-    GOOD_TROUGH_CROSSING = 55,//'7'
-    AT_THE_CROSSING      = 56 //'8'
-}
+    enum FbTimeInForce: byte {
+        DAY                         = 0,//'0'
+        GOOD_TILL_CANCEL            = 1,//'1'
+        AT_THE_OPENING              = 2,//'2'
+        IMMEDIATE_OR_CANCEL         = 3,//'3'
+        FILL_OR_KILL                = 4,//'4'
+        GOOD_TILL_DATE              = 5,//'5'
+        AT_THE_CLOSE                = 6,//'6'
+        GOOD_THROUGH_CROSSING       = 7,//'7'
+        AT_THE_CROSSING             = 8 //'8'
+    }
 
-enum FbCapacity: ubyte {
-    AGENT                   = 49,//'1'
-    CROSS_AS_AGENT          = 50,//'2'
-    CROSS_AS_PRINCIPAL      = 51,//'3'
-    PRINCIPAL               = 52,//'4'
-    RISKLESS_PRINCIPAL      = 53,//'5'
-    RISKLESS                = 82 //'R'
-}
+    enum FbCapacity: byte {
+        AGENT                       = 0,//'1'
+        CROSS_AS_AGENT              = 1,//'2'
+        CROSS_AS_PRINCIPAL          = 2,//'3'
+        PRINCIPAL                   = 3,//'4'
+        RISKLESS_PRINCIPAL          = 4,//'5'
+        RISKLESS                    = 5 //'R'
+    }
 
-enum FbOrderType: ubyte {
-    MARKET             = 49,//'1'
-    LIMIT              = 50,//'2'
-    STOP               = 51,//'3'
-    STOP_LIMIT         = 53 //'4'
-}
+    enum FbOrderType: byte {
+        MARKET                      = 0,//'1'
+        LIMIT                       = 1,//'2'
+        STOP                        = 2,//'3'
+        STOP_LIMIT                  = 3 //'4'
+    }

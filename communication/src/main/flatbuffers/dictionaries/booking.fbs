@@ -1,29 +1,29 @@
-enum FbState: ubyte {
-    NEW_ACCUMULATING,
-    NEW_APPROVAL_PENDING,
-    NEW_PENDING,
-    NEW_ACK,
-    NEW_NACK,
-    NEW_ERROR,
-    CANCEL_APPROVAL_PENDING,
-    CANCEL_PENDING,
-    CANCEL_ACK,
-    CANCEL_NACK,
-    AMEND_ACCUMULATING,
-    AMEND_APPROVAL_PENDING,
-    AMEND_PENDING,
-    AMEND_ACK,
-    AMEND_NACK,
-    AMEND_ERROR
+enum FbState: byte {
+    NEW_ACCUMULATING            = 0,
+    NEW_APPROVAL_PENDING        = 1,
+    NEW_PENDING                 = 2,
+    NEW_ACK                     = 3,
+    NEW_NACK                    = 4,
+    NEW_ERROR                   = 5,
+    CANCEL_APPROVAL_PENDING     = 6,
+    CANCEL_PENDING              = 7,
+    CANCEL_ACK                  = 8,
+    CANCEL_NACK                 = 9,
+    AMEND_ACCUMULATING          = 10,
+    AMEND_APPROVAL_PENDING      = 11,
+    AMEND_PENDING               = 12,
+    AMEND_ACK                   = 13,
+    AMEND_NACK                  = 14,
+    AMEND_ERROR                 = 15
 }
 
 enum FbRequestType: byte {
-    NEW,
-    CANCEL,
-    AMEND
+    NEW                         = 0,
+    CANCEL                      = 1,
+    AMEND                       = 2
 }
 
 enum FbResponseType: byte {
-    ACK,
-    NACK
+    ACK                         = 0,
+    NACK                        = 1
 }

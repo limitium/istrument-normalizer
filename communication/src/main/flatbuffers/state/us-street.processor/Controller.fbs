@@ -5,55 +5,55 @@ include dictionaries/party.fbs
 include dictionaries/booking.fbs
 
 table FbFinance {
-    side: FbSide = BUY;
-    qty: double;
-    price: double;
-    gross_amt: double;
-    instrument_id: long;
-    currency: string;
+    side:                       FbSide;
+    qty:                        double;
+    price:                      double;
+    gross_amt:                  double;
+    instrument_id:              long;
+    currency:                   string;
 }
 
 table FbUsStreetAllocation {
-     id:               long;
-     state:            FbState = NEW_PENDING;
-     finance:          FbFinance;
-     party:            FbParty;
-     counter_party:    FbParty;
-     audit:            FbAudit;
+    id:                         long;
+    state:                      FbState;
+    finance:                    FbFinance;
+    party:                      FbParty;
+    counterparty:               FbParty;
+    audit:                      FbAudit;
 }
 
 table FbBookingRequest {
-    id: long;
-    allocation_id: long;
-    allocation_version: int;
-    request_type: FbRequestType = NEW;
-    correlation_id: string;
-    sent_timestamp: long;
+    id:                         long;
+    allocation_id:              long;
+    allocation_version:         int;
+    request_type:               FbRequestType;
+    correlation_id:             string;
+    sent_timestamp:             long;
 
-    received_timestamp: long;
-    response_type: FbResponseType = ACK;
-    response_code: int;
-    response_message: string;
+    received_timestamp:         long;
+    response_type:              FbResponseType;
+    response_code:              int;
+    response_message:           string;
 }
 
 table FbBookingResponse {
-    correlation_id: string;
-    request_type: FbRequestType = NEW;
-    allocation_id: long;
-    allocation_version: int;
-    repsonse_type: FbResponseType = ACK;
-    timestamp: long;
-    response_code: int;
-    response_message: string;
+    correlation_id:             string;
+    request_type:               FbRequestType;
+    allocation_id:              long;
+    allocation_version:         int;
+    response_type:              FbResponseType;
+    timestamp:                  long;
+    response_code:              int;
+    response_message:           string;
 }
 
 table FbAudit {
-    trace_id: long;
-    version: int;
-    creation_at: long;
-    modified_at: long;
-    modified_by: string;
-    removed: bool;
+    trace_id:                   long;
+    version:                    int;
+    created_at:                 long;
+    modified_at:                long;
+    modified_by:                string;
+    removed:                    bool;
 }
 
 root_type FbUsStreetAllocation;

@@ -6,39 +6,39 @@ include dictionaries/party.fbs
 /**
   Representation of FO for concrete execution report. Some parts can be missed.
 */
-table FbFrontOffice { //todo: merge of US flow?
-    name:             string;               // ATM8.SrcSysID
-    instance:         string;               // ATM8.SourceSystemInstance
+table FbFrontOffice { //todo:           merge of US flow?
+    name:                       string;               // ATM8.SrcSysID
+    instance:                   string;               // ATM8.SourceSystemInstance
 
-    execution_id:     string;               // ATM8.ExecID
-    execution_ref_id: string;               // ATM8.ExecRefID
-    order_id:         string;               // ATM8.OrderID
+    execution_id:               string;               // ATM8.ExecID
+    execution_ref_id:           string;               // ATM8.ExecRefID
+    order_id:                   string;               // ATM8.OrderID
 
-    exch_execution_id:string;               // ATM8.ExchangeExecID ??? wrong place, move somewhere
-    exch_order_id:    string;               // ATM8.ExchangeOrderID
+    counterparty_execution_id:  string;               // ATM8.ExchangeExecID ??? wrong place, move somewhere
+    counterparty_order_id:      string;               // ATM8.ExchangeOrderID
 }
 
 /**
   Representation of Order in FO in fact in order managment part
 */
 table FbOrder {
-    side:             FbSide = BUY;         // ATM8.Side Side direction from client perspective
-    order_type:       FbOrderType = MARKET; // ATM8.OrderType
-    time_in_force:    FbTimeInForce = DAY;  // ATM8.TimeInForce
+    side:                       FbSide;               // ATM8.Side Side direction from client perspective
+    order_type:                 FbOrderType;          // ATM8.OrderType
+    time_in_force:              FbTimeInForce;        // ATM8.TimeInForce
 
-    security_id:      string;               // ATM8.SecurityID FO or client instrument identifier. Can ber RIC, ISIN etc
-    instrument_id:    long;                 // gba instrument public identifier
+    security_id:                string;               // ATM8.SecurityID FO or client instrument identifier. Can ber RIC, ISIN etc
+    instrument_id:              long;                 // gba instrument public identifier
 }
 
 table FbExecutionReport {
-    id:               long;                 // GBA generated public identifier
-    type:             FbExecType = NEW;     // ATM8.ExecType
-    capacity:         FbCapacity = AGENT;   // ATM8.Capacity
+    id:                         long;                 // GBA generated public identifier
+    exec_type:                  FbExecType;           // ATM8.ExecType
+    capacity:                   FbCapacity;           // ATM8.Capacity
 
-    last_qty:         double;               // ATM8.LastQty
-    last_price:       double;               // ATM8.LastPx
+    last_qty:                   double;               // ATM8.LastQty
+    last_price:                 double;               // ATM8.LastPx
 
-    transact_time:    long;                 // ATM8.TransactTime
+    transact_time:              long;                 // ATM8.TransactTime
 }
 
 //flowtype - low level, DCA category of flows low latencey direct market acess, low latency algo, Different desk. DMA diirect market acess mininal comission all by client , program trading per busket -> split, single stok - grate order to manual wrok on it.
@@ -46,11 +46,11 @@ table FbExecutionReport {
 //businesstype - GES and PB - cash agency and swap primery broker analog product type
 
 table FbUsStreetExecutionReport {
-    front_office:     FbFrontOffice;
-    order:            FbOrder;
-    party:            FbParty;
-    counter_party:    FbParty;
-    execution_report: FbExecutionReport;
+    front_office:               FbFrontOffice;
+    order:                      FbOrder;
+    party:                      FbParty;
+    counterparty:               FbParty;
+    execution_report:           FbExecutionReport;
 }
 
 root_type FbUsStreetExecutionReport;
