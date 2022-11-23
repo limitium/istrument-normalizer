@@ -1,44 +1,44 @@
-    enum FbExecType: byte {
-        NEW                         = 0,//'0'
-        CANCELED                    = 1,//'3'
-        REPLACED                    = 2,//'5'
-        TRADE                       = 3,//'F'
-        TRADE_CORRECT               = 4,//'G'
-        TRADE_CANCEL                = 5,//'H'
-        ORDER_STATUS                = 6 //'I'
-    }
+enum FbExecType: byte {
+    NEW                         = 0,//'0'
+    CANCELED                    = 1,//'3'
+    REPLACED                    = 2,//'5'
+    TRADE                       = 3,//'F'
+    TRADE_CORRECT               = 4,//'G'
+    TRADE_CANCEL                = 5,//'H'
+    ORDER_STATUS                = 6 //'I'
+}
 
-    enum FbSide: byte {
-        BUY                         = 0,//'1'
-        SELL                        = 1,//'2'
-        SELL_SHORT                  = 2,//'A'
-        BUY_TO_COVER                = 3 //'Z'
-    }
+enum FbSide: byte {
+    BUY                         = 0,//'1'
+    SELL                        = 1,//'2'
+    SELL_SHORT                  = 2,//'A'
+    BUY_TO_COVER                = 3 //'Z'
+}
 
-    enum FbTimeInForce: byte {
-        DAY                         = 0,//'0'
-        GOOD_TILL_CANCEL            = 1,//'1'
-        AT_THE_OPENING              = 2,//'2'
-        IMMEDIATE_OR_CANCEL         = 3,//'3'
-        FILL_OR_KILL                = 4,//'4'
-        GOOD_TILL_DATE              = 5,//'5'
-        AT_THE_CLOSE                = 6,//'6'
-        GOOD_THROUGH_CROSSING       = 7,//'7'
-        AT_THE_CROSSING             = 8 //'8'
-    }
+enum FbTimeInForce: byte {
+    DAY                         = 0,//'0'
+    GOOD_TILL_CANCEL            = 1,//'1'
+    AT_THE_OPENING              = 2,//'2'
+    IMMEDIATE_OR_CANCEL         = 3,//'3'
+    FILL_OR_KILL                = 4,//'4'
+    GOOD_TILL_DATE              = 5,//'5'
+    AT_THE_CLOSE                = 6,//'6'
+    GOOD_THROUGH_CROSSING       = 7,//'7'
+    AT_THE_CROSSING             = 8 //'8'
+}
 
-    enum FbCapacity: byte {
-        AGENT                       = 0,//'1'
-        CROSS_AS_AGENT              = 1,//'2'
-        CROSS_AS_PRINCIPAL          = 2,//'3'
-        PRINCIPAL                   = 3,//'4'
-        RISKLESS_PRINCIPAL          = 4,//'5'
-        RISKLESS                    = 5 //'R'
-    }
+enum FbCapacity: byte {
+    AGENT                       = 0,//'1'
+    CROSS_AS_AGENT              = 1,//'2'
+    CROSS_AS_PRINCIPAL          = 2,//'3'
+    PRINCIPAL                   = 3,//'4'
+    RISKLESS_PRINCIPAL          = 4,//'5'
+    RISKLESS                    = 5 //'R'
+}
 
-    enum FbOrderType: byte {
-        MARKET                      = 0,//'1'
-        LIMIT                       = 1,//'2'
-        STOP                        = 2,//'3'
-        STOP_LIMIT                  = 3 //'4'
-    }
+enum FbOrderType: byte {
+    MARKET                      = 0,//'1'
+    LIMIT                       = 1,//'2'
+    STOP                        = 2,//'3'
+    STOP_LIMIT                  = 3 //'4'
+}

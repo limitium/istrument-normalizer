@@ -1,7 +1,5 @@
 enum FbPartyRole: byte {
-    EXCHANGE                    = 0,
-    AVP_ACCOUNT                 = 1,
-    TRADING_ACCOUNT             = 2,
+    EXCHANGE                    = 0
 }
 
 enum FbPartyIdSource: byte {
@@ -16,9 +14,15 @@ enum FbPartySource: byte {
     EXECUTION_REPORT            = 2
 }
 
-table FbParty {
-    role:                       FbPartyRole;
-    source:                     FbPartySource;
+table FbTradingAccount {
     id:                         string;
-    id_source:                  FbPartyIdSource;
+    party_source:               FbPartySource;
+    party_id_source:            FbPartyIdSource;
+}
+
+table FbCounterParty {
+    id:                         string;
+    party_role:                 FbPartyRole;
+    party_source:               FbPartySource;
+    party_id_source:            FbPartyIdSource;
 }

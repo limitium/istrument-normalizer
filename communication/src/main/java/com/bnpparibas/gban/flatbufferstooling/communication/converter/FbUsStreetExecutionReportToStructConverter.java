@@ -36,14 +36,13 @@ public class FbUsStreetExecutionReportToStructConverter
                 .field("ORDER__INSTRUMENT_ID", Schema.OPTIONAL_INT64_SCHEMA)
                 .field("ORDER__SECURITY_ID", Schema.OPTIONAL_STRING_SCHEMA)
                 .field("ORDER__TIME_IN_FORCE", Schema.OPTIONAL_STRING_SCHEMA)
-                .field("PARTY__ROLE", Schema.OPTIONAL_STRING_SCHEMA)
-                .field("PARTY__SOURCE", Schema.OPTIONAL_STRING_SCHEMA)
                 .field("PARTY__ID", Schema.OPTIONAL_STRING_SCHEMA)
-                .field("PARTY__ID_SOURCE", Schema.OPTIONAL_STRING_SCHEMA)
-                .field("COUNTERPARTY__ROLE", Schema.OPTIONAL_STRING_SCHEMA)
-                .field("COUNTERPARTY__SOURCE", Schema.OPTIONAL_STRING_SCHEMA)
+                .field("PARTY__PARTY_SOURCE", Schema.OPTIONAL_STRING_SCHEMA)
+                .field("PARTY__PARTY_ID_SOURCE", Schema.OPTIONAL_STRING_SCHEMA)
                 .field("COUNTERPARTY__ID", Schema.OPTIONAL_STRING_SCHEMA)
-                .field("COUNTERPARTY__ID_SOURCE", Schema.OPTIONAL_STRING_SCHEMA);
+                .field("COUNTERPARTY__PARTY_ROLE", Schema.OPTIONAL_STRING_SCHEMA)
+                .field("COUNTERPARTY__PARTY_SOURCE", Schema.OPTIONAL_STRING_SCHEMA)
+                .field("COUNTERPARTY__PARTY_ID_SOURCE", Schema.OPTIONAL_STRING_SCHEMA);
     }
 
     @Override
@@ -87,21 +86,24 @@ public class FbUsStreetExecutionReportToStructConverter
         putEnumValueToStruct(
                 struct, "ORDER__TIME_IN_FORCE", FbTimeInForce.names, obj.order().timeInForce());
 
-        putEnumValueToStruct(struct, "PARTY__ROLE", FbPartyRole.names, obj.party().role());
-        putEnumValueToStruct(struct, "PARTY__SOURCE", FbPartySource.names, obj.party().source());
         putValueToStruct(struct, "PARTY__ID", obj.party().id());
         putEnumValueToStruct(
-                struct, "PARTY__ID_SOURCE", FbPartyIdSource.names, obj.party().idSource());
+                struct, "PARTY__PARTY_SOURCE", FbPartySource.names, obj.party().partySource());
+        putEnumValueToStruct(
+                struct, "PARTY__PARTY_ID_SOURCE", FbPartyIdSource.names, obj.party().partyIdSource());
 
-        putEnumValueToStruct(
-                struct, "COUNTERPARTY__ROLE", FbPartyRole.names, obj.counterparty().role());
-        putEnumValueToStruct(
-                struct, "COUNTERPARTY__SOURCE", FbPartySource.names, obj.counterparty().source());
         putValueToStruct(struct, "COUNTERPARTY__ID", obj.counterparty().id());
         putEnumValueToStruct(
+                struct, "COUNTERPARTY__PARTY_ROLE", FbPartyRole.names, obj.counterparty().partyRole());
+        putEnumValueToStruct(
                 struct,
-                "COUNTERPARTY__ID_SOURCE",
+                "COUNTERPARTY__PARTY_SOURCE",
+                FbPartySource.names,
+                obj.counterparty().partySource());
+        putEnumValueToStruct(
+                struct,
+                "COUNTERPARTY__PARTY_ID_SOURCE",
                 FbPartyIdSource.names,
-                obj.counterparty().idSource());
+                obj.counterparty().partyIdSource());
     }
 }
