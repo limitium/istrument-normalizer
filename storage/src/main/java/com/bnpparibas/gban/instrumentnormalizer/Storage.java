@@ -7,11 +7,14 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
-import org.apache.kafka.streams.state.KeyValueStore;
-import org.apache.kafka.streams.state.StoreBuilder;
+import org.apache.kafka.streams.state.IndexedKeyValueStore;
 import org.apache.kafka.streams.state.Stores;
+import org.apache.kafka.streams.state.Stores2;
+import org.apache.kafka.streams.state.internals.IndexedKeyValueStoreBuilder;
+import org.apache.kafka.streams.state.internals.WrappedStateStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.support.serializer.JsonSerde;
 import org.springframework.stereotype.Component;
 
 
@@ -24,17 +27,48 @@ public class Storage implements KStreamInfraCustomizer.KStreamTopologyBuilder {
     public static final String STR_IN = "in";
     public static final String PRC_UPD = "prc";
 
+    public static JsonSerde<User> userJsonSerde;
+
+    static {
+        userJsonSerde = new JsonSerde<>(User.class);
+
+    }
+
+    public static class User {
+        public long id;
+        public String name;
+        public String address;
+        public String occupation;
+
+        public User() {
+
+        }
+
+
+        public User(long id, String name, String address, String occupation) {
+
+            this.id = id;
+            this.name = name;
+            this.address = address;
+            this.occupation = occupation;
+        }
+    }
+
     @Override
     public void configureTopology(Topology topology) {
-        StoreBuilder<KeyValueStore<String, String>> normalKV =
-                Stores.keyValueStoreBuilder(
-                        Stores.persistentKeyValueStore(STR_KV),
-                        Serdes.String(),
-                        Serdes.String()
-                );
+
+
+        IndexedKeyValueStoreBuilder<Long, User> normalKV =
+                Stores2.keyValueStoreBuilder(
+                                Stores.persistentKeyValueStore(STR_KV),
+                                Serdes.Long(),
+                                userJsonSerde
+                        )
+                        .addUniqIndex("IDX_NAME", user -> user.name);
+
 
         topology
-                .addSource(SRC_TOPIC, Serdes.String().deserializer(), Serdes.String().deserializer(), "tpc1")
+                .addSource(SRC_TOPIC, Serdes.Long().deserializer(), userJsonSerde.deserializer(), "tpc1")
 
                 // add two processors one per source
                 .addProcessor(PRC_UPD, StateSaver::new, SRC_TOPIC)
@@ -44,22 +78,28 @@ public class Storage implements KStreamInfraCustomizer.KStreamTopologyBuilder {
     }
 
 
-    private static class StateSaver implements Processor<String, String, Object, Object> {
-        private KeyValueStore<String, String> normalKV;
-        private ProcessorContext<Object, Object> context;
+    private static class StateSaver implements Processor<Long, User, Long, User> {
+        private IndexedKeyValueStore<Long, User> indexedStore;
+        private ProcessorContext<Long, User> context;
 
         @Override
-        public void init(ProcessorContext<Object, Object> context) {
+        public void init(ProcessorContext<Long, User> context) {
             Processor.super.init(context);
             this.context = context;
-            normalKV = context.getStateStore(STR_KV);
-            System.out.println(1);
+            IndexedKeyValueStore<Long, User> indexedStore = ((WrappedStateStore<IndexedKeyValueStore<Long, User>, Long, User>)context.getStateStore(STR_KV)).wrapped();
+
+            indexedStore.rebuildIndexes();
+            System.out.println("Inited");
         }
 
         @Override
-        public void process(Record<String, String> record) {
-            normalKV.put(record.key(), record.value());
-        }
+        public void process(Record<Long, User> record) {
+            indexedStore.put(record.key(), record.value());
 
+            User user = indexedStore.getUnique("IDX_NAME", record.value().name);
+
+            System.out.println("record");
+            System.err.println(user);
+        }
     }
 }
