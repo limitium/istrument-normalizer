@@ -10,21 +10,23 @@ import static org.easymock.EasyMock.createMock;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class IndexedStoreBuilderTest {
-    private KeyValueBytesStoreSupplier supplier;
-
-    @BeforeEach
-    public void setUp() {
-        supplier = createMock(KeyValueBytesStoreSupplier.class);
-    }
 
     @Test
     void shouldThrowNullPointerIfIndexNameIsNull() {
-        assertThrows(NullPointerException.class, () -> Stores2.keyValueStoreBuilder(supplier, Serdes.String(), Serdes.String()).addUniqIndex(null, (v) -> null));
+        assertThrows(NullPointerException.class, () -> Stores2.keyValueStoreBuilder(createMock(KeyValueBytesStoreSupplier.class), Serdes.String(), Serdes.String()).addUniqIndex(null, (v) -> null));
+        assertThrows(NullPointerException.class, () -> Stores2.keyValueStoreBuilder(createMock(KeyValueBytesStoreSupplier.class), Serdes.String(), Serdes.String()).addNonUniqIndex(null, (v) -> null));
     }
 
     @Test
     void shouldThrowNullPointerIfKeyGeneratorIsNull() {
-        assertThrows(NullPointerException.class, () -> Stores2.keyValueStoreBuilder(supplier, Serdes.String(), Serdes.String()).addUniqIndex("index", null));
+        assertThrows(NullPointerException.class, () -> Stores2.keyValueStoreBuilder(createMock(KeyValueBytesStoreSupplier.class), Serdes.String(), Serdes.String()).addUniqIndex("index", null));
+        assertThrows(NullPointerException.class, () -> Stores2.keyValueStoreBuilder(createMock(KeyValueBytesStoreSupplier.class), Serdes.String(), Serdes.String()).addNonUniqIndex("nindex", null));
+    }
+
+    @Test
+    void shouldThrowRuntimeExceptionIfSameIndexNameIsUsed() {
+        assertThrows(RuntimeException.class, () -> Stores2.keyValueStoreBuilder(createMock(KeyValueBytesStoreSupplier.class), Serdes.String(), Serdes.String()).addUniqIndex("index", (v) -> v).addUniqIndex("index", (v) -> v));
+        assertThrows(RuntimeException.class, () -> Stores2.keyValueStoreBuilder(createMock(KeyValueBytesStoreSupplier.class), Serdes.String(), Serdes.String()).addNonUniqIndex("nindex", (v) -> v).addNonUniqIndex("nindex", (v) -> v));
     }
 
 }

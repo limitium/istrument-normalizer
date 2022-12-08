@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class IndexesStoreExceptionsTest {
+public class IndexesNonUniqStoreExceptionsTest {
     protected InternalMockProcessorContext<Integer, String> context;
     protected IndexedKeyValueStore<Integer, String> store;
     protected KeyValueStoreTestDriver<Integer, String> driver;
@@ -28,7 +28,7 @@ public class IndexesStoreExceptionsTest {
                         Serdes.Integer(),
                         Serdes.String())
                 //Return null key index
-                .addUniqIndex("idx", (v) -> null);
+                .addNonUniqIndex("nidx", (v) -> null);
 
         store = builder.build();
 
@@ -43,6 +43,6 @@ public class IndexesStoreExceptionsTest {
 
     @Test
     void shouldThrowRuntimeExceptionOnMissedRebuildIndexesCall() {
-        assertThrows(RuntimeException.class, () -> store.getUnique("idx", "a"));
+        assertThrows(RuntimeException.class, () -> store.getNonUnique("nidx", "a"));
     }
 }

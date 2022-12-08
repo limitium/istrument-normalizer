@@ -2,16 +2,23 @@ package org.apache.kafka.streams.state.indexed;
 
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.processor.StateStoreContext;
-import org.apache.kafka.streams.state.*;
+import org.apache.kafka.streams.state.IndexedKeyValueStore;
+import org.apache.kafka.streams.state.KeyValueStoreTestDriver;
+import org.apache.kafka.streams.state.Stores;
+import org.apache.kafka.streams.state.Stores2;
 import org.apache.kafka.streams.state.internals.IndexedKeyValueStoreBuilder;
 import org.apache.kafka.test.InternalMockProcessorContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.stream.Collectors;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItems;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class IndexedStoreTest {
+public class IndexedNonUniqStoreTest {
 
     protected InternalMockProcessorContext<Integer, String> context;
     protected IndexedKeyValueStore<Integer, String> store;
@@ -23,7 +30,6 @@ public class IndexedStoreTest {
         context = (InternalMockProcessorContext<Integer, String>) driver.context();
         context.setTime(10);
 
-
         store = createStore(context);
     }
 
@@ -32,8 +38,8 @@ public class IndexedStoreTest {
                         Stores.lruMap("my-store", 10),
                         Serdes.Integer(),
                         Serdes.String())
-                //Build uniq index based on first char
-                .addUniqIndex("idx", (v) -> String.valueOf(v.charAt(0)));
+                //Build non uniq index based on first char
+                .addNonUniqIndex("idx", (v) -> String.valueOf(v.charAt(0)));
 
         IndexedKeyValueStore<Integer, String> store = builder.build();
 
@@ -52,33 +58,23 @@ public class IndexedStoreTest {
     @Test
     void shouldReturnIndexedValue() {
         store.put(1, "aa");
-        store.put(2, "bb");
-        store.put(3, "cc");
+        store.put(2, "ab");
+        store.put(3, "ac");
+        store.put(4, "ba");
+        store.put(5, "cc");
 
-        assertEquals("aa", store.getUnique("idx", "a"));
-        assertEquals("bb", store.getUnique("idx", "b"));
-        assertEquals("cc", store.getUnique("idx", "c"));
-    }
+        assertThat(store.getNonUnique("idx", "a").collect(Collectors.toSet()), hasItems("aa", "ab", "ac"));
 
-    @Test
-    void shouldThrowUniqKeyViolationForTheSameIndexKey() {
-        store.put(1, "aa");
-        assertThrows(UniqKeyViolationException.class, () -> store.put(2, "ab"));
+        assertEquals(1, store.getNonUnique("idx", "b").count());
     }
 
     @Test
     void shouldRemoveValueFromIndexOnDelete() {
         store.put(1, "aa");
-        assertEquals("aa", store.getUnique("idx", "a"));
+        assertThat(store.getNonUnique("idx", "a").collect(Collectors.toSet()), hasItems("aa"));
 
         store.delete(1);
-        assertNull(store.getUnique("idx", "a"));
-    }
-
-    @Test
-    void shouldThrowRuntimeExceptionOnNonImplementedMethods() {
-        assertThrows(RuntimeException.class, () -> store.putAll(null));
-        assertThrows(RuntimeException.class, () -> store.putIfAbsent(null, null));
+        assertEquals(0, store.getNonUnique("idx", "a").count());
     }
 
     @Test
@@ -88,8 +84,8 @@ public class IndexedStoreTest {
         // Add any entries that will be restored to any store
         // that uses the driver's context ...
         driver.addEntryToRestoreLog(0, "aa");
-        driver.addEntryToRestoreLog(1, "bb");
-        driver.addEntryToRestoreLog(2, "cc");
+        driver.addEntryToRestoreLog(1, "ab");
+        driver.addEntryToRestoreLog(2, "ac");
         driver.addEntryToRestoreLog(2, null);
 
         // Create the store, which should register with the context and automatically
@@ -105,8 +101,6 @@ public class IndexedStoreTest {
         // and there are no other entries ...
         assertEquals(2, driver.sizeOf(store));
 
-        assertEquals("aa", store.getUnique("idx", "a"));
-        assertEquals("bb", store.getUnique("idx", "b"));
-        assertNull(store.getUnique("idx", "c"));
+        assertThat(store.getNonUnique("idx", "a").collect(Collectors.toSet()), hasItems("aa", "ab"));
     }
 }
