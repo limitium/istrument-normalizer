@@ -23,7 +23,6 @@ import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.apache.kafka.streams.processor.internals.metrics.StreamsMetricsImpl.maybeMeasureLatency;
@@ -41,8 +40,8 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
     private Sensor updateNonUniqIndexSensor;
     private Sensor removeNonUniqIndexSensor;
 
-    private final Map<String, Map<String, Bytes>> uniqIndexesData = new HashMap<>();
-    private final Map<String, Map<String, Set<Bytes>>> nonUniqIndexesData = new HashMap<>();
+    private final Map<String, Map<String, K>> uniqIndexesData = new HashMap<>();
+    private final Map<String, Map<String, Set<K>>> nonUniqIndexesData = new HashMap<>();
     private final Map<String, Function<V, String>> uniqIndexes;
     private final Map<String, Function<V, String>> nonUniqIndexes;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -62,9 +61,11 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
         this.uniqIndexes = ImmutableMap.copyOf(uniqIndexes);
         this.nonUniqIndexes = ImmutableMap.copyOf(nonUniqIndexes);
 
+
         this.uniqIndexes.forEach((name, generator) -> uniqIndexesData.put(name, new HashMap<>()));
         this.nonUniqIndexes.forEach((name, generator) -> nonUniqIndexesData.put(name, new HashMap<>()));
     }
+
 
     @Override
     public void init(StateStoreContext context, StateStore root) {
@@ -95,8 +96,11 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
                 while (kvIterator.hasNext()) {
                     KeyValue<Bytes, byte[]> kv = kvIterator.next();
 
-                    maybeMeasureLatency(() -> updateUniqIndexes(kv), time, rebuildUniqIndexSensor);
-                    maybeMeasureLatency(() -> updateNonUniqIndexes(kv), time, rebuildNonUniqIndexSensor);
+                    K key = deserKey(kv.key);
+                    V value = deserValue(kv.value);
+
+                    maybeMeasureLatency(() -> updateUniqIndexes(key, value), time, rebuildUniqIndexSensor);
+                    maybeMeasureLatency(() -> updateNonUniqIndexes(key, value), time, rebuildNonUniqIndexSensor);
                 }
             }
             indexesBuilt = true;
@@ -150,7 +154,7 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
         try {
             super.put(key, value);
             maybeMeasureLatency(() -> updateUniqIndexes(key, value), time, updateUniqIndexSensor);
-            maybeMeasureLatency(() -> updateNonUniqIndexes(key, value), time, updateUniqIndexSensor);
+            maybeMeasureLatency(() -> updateNonUniqIndexes(key, value), time, updateNonUniqIndexSensor);
         } finally {
             lock.writeLock().unlock();
         }
@@ -173,7 +177,7 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
             V deleted = super.delete(key);
             if (deleted != null) {
                 maybeMeasureLatency(() -> removeUniqIndex(key, deleted), time, removeUniqIndexSensor);
-                maybeMeasureLatency(() -> removeNonUniqIndex(key, deleted), time, removeUniqIndexSensor);
+                maybeMeasureLatency(() -> removeNonUniqIndex(key, deleted), time, removeNonUniqIndexSensor);
             }
             return deleted;
         } finally {
@@ -183,28 +187,18 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
 
 
     private K lookupUniqKey(String indexName, String indexKey) {
-        Map<String, Bytes> index = uniqIndexesData.get(indexName);
+        Map<String, K> index = uniqIndexesData.get(indexName);
         Objects.requireNonNull(index, "Index not found:" + indexName);
 
-        Bytes keyBytes = index.get(indexKey);
-        if (keyBytes == null) {
-            return null;
-        }
-
-        //Extra ser here, shouldn't be too expensive otherwise override the whole method {@link MeteredKeyValueStore#get(K key)}
-        return deserKey(keyBytes);
+        return index.get(indexKey);
     }
 
     private Stream<K> lookupNonUniqKeys(String indexName, String indexKey) {
-        Map<String, Set<Bytes>> index = nonUniqIndexesData.get(indexName);
+        Map<String, Set<K>> index = nonUniqIndexesData.get(indexName);
         Objects.requireNonNull(index, "Index not found:" + indexName);
 
-        Set<K> keys = Optional.ofNullable(index.get(indexKey))
-                .orElse(Collections.emptySet())
-                .stream()
-                .map(this::deserKey)
-                //Terminate stream to calculate lookup footprint
-                .collect(Collectors.toSet());
+        Set<K> keys = new HashSet<>(Optional.ofNullable(index.get(indexKey))
+                .orElse(Collections.emptySet()));
 
         return keys.stream();
     }
@@ -223,9 +217,9 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
             String indexKey = generateIndexKey(nonUniqIndexes, indexName, value);
 
             logger.debug("Remove from non uniq index `{}` key `{}`, for {}:{}", indexName, indexKey, key, value);
-            Set<Bytes> keys = indexData.get(indexKey);
+            Set<K> keys = indexData.get(indexKey);
             if (keys != null) {
-                keys.remove(keyBytes(key));
+                keys.remove(key);
                 if (keys.isEmpty()) {
                     indexData.remove(indexKey);
                 }
@@ -233,47 +227,22 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
         });
     }
 
-
-    private void updateUniqIndexes(KeyValue<Bytes, byte[]> kv) {
-        uniqIndexesData.forEach((indexName, indexData) -> {
-            V value = valueSerde.deserializer().deserialize(null, kv.value);
-            String indexKey = generateIndexKey(uniqIndexes, indexName, value);
-            Bytes prevStoredKey = indexData.put(indexKey, kv.key);
-
-            logger.debug("Update uniq index `{}` with key `{}`, for {}:{}", indexName, indexKey, kv.key, value);
-            if (prevStoredKey != null && !kv.key.equals(prevStoredKey)) {
-                throw new UniqKeyViolationException("Uniqueness violation of `" + indexName + "` index key:" + indexKey + ", for new key:" + deserKey(kv.key) + ", old key:" + deserKey(prevStoredKey) + ", value:" + deserValue(kv.value));
-            }
-        });
-    }
-
-    private void updateNonUniqIndexes(KeyValue<Bytes, byte[]> kv) {
-        nonUniqIndexesData.forEach((indexName, indexData) -> {
-            V value = valueSerde.deserializer().deserialize(null, kv.value);
-            String indexKey = generateIndexKey(nonUniqIndexes, indexName, value);
-
-            logger.debug("Update non uniq index `{}` with key `{}`, for {}:{}", indexName, indexKey, kv.key, value);
-            insertNonUniqKey(indexData, indexKey, kv.key);
-        });
-    }
-
-    private boolean insertNonUniqKey(Map<String, Set<Bytes>> indexData, String indexKey, Bytes key) {
+    private boolean insertNonUniqKey(Map<String, Set<K>> indexData, String indexKey, Bytes key) {
         if (!indexData.containsKey(indexKey)) {
             indexData.put(indexKey, new HashSet<>());
         }
-        return indexData.get(indexKey).add(key);
+        return indexData.get(indexKey).add(keySerde.deserializer().deserialize(null, key.get()));
     }
 
     private void updateUniqIndexes(K key, V value) {
         uniqIndexesData.forEach((indexName, indexData) -> {
-            Bytes keyBytes = keyBytes(key);
             String indexKey = generateIndexKey(uniqIndexes, indexName, value);
 
             logger.debug("Update uniq index `{}` with key `{}`, for {}:{}", indexName, indexKey, key, value);
 
-            Bytes prevStoredKey = indexData.put(indexKey, keyBytes);
-            if (prevStoredKey != null && !keyBytes.equals(prevStoredKey)) {
-                throw new UniqKeyViolationException("Uniqueness violation of `" + indexName + "` index key:" + indexKey + ", for new key:" + key + ", old key:" + deserKey(prevStoredKey) + ", value:" + value);
+            K prevStoredKey = indexData.put(indexKey, key);
+            if (prevStoredKey != null && !key.equals(prevStoredKey)) {
+                throw new UniqKeyViolationException("Uniqueness violation of `" + indexName + "` index key:" + indexKey + ", for new key:" + key + ", old key:" + prevStoredKey + ", value:" + value);
             }
         });
     }

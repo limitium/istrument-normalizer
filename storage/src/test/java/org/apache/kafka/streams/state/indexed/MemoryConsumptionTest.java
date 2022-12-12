@@ -17,13 +17,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MemoryConsumptionTest {
     Logger logger = LoggerFactory.getLogger(MemoryConsumptionTest.class);
 
     @Test
-    void inserts5kk() throws InterruptedException {
+    void inserts5kk() {
         KeyValueStoreTestDriver<Long, String> driver = KeyValueStoreTestDriver.create(Long.class, String.class);
         InternalMockProcessorContext<Long, String> context = (InternalMockProcessorContext<Long, String>) driver.context();
         context.setTime(10);
@@ -140,7 +140,9 @@ public class MemoryConsumptionTest {
 
         store.init((StateStoreContext) context, store);
 
+
         Sequencer sequencer = new Sequencer(System::nanoTime, Namespace.US_STREET_CASH_EQUITY, 0);
+        long start = System.currentTimeMillis();
         for (long i = 0; i < 5_000_000; i++) {
             long v = sequencer.getNext();
             store.put(v, String.valueOf(v));
@@ -148,8 +150,21 @@ public class MemoryConsumptionTest {
                 logger.info("Inserted: {}", i);
             }
         }
-        logger.info("done");
+        float insertTime = (System.currentTimeMillis() - start) / 1000f;
+        logger.info("done for: {}s", insertTime);
+
         System.gc();
-        logger.info("Mem: {}Mb",(Runtime.getRuntime().totalMemory()- Runtime.getRuntime().freeMemory())/1024/1024);
+        long memUsage = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024 / 1024;
+        logger.info("Mem: {}Mb", memUsage);
+
+        assertTrue(insertTime < 8);
+        assertTrue(memUsage < 2100);
+
+//        HashMap                      6.5 2068
+//        Object2LongArrayMap          ~   ~
+//        Object2LongOpenCustomHashMap 6.7 1867
+//        Object2LongOpenHashMap       6.7 1867
+//        Object2LongRBTreeMap         82  1958
+//        Object2LongAVLTreeMap        72  1958
     }
 }

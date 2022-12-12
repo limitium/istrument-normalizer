@@ -18,6 +18,8 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-stream'
     implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
     implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka-streams'
+    implementation 'net.jodah:typetools:0.6.3'
+    implementation 'it.unimi.dsi:fastutil:8.5.11'
     implementation project(":core")
 
     testImplementation 'org.apache.kafka:kafka-streams-test-utils'
