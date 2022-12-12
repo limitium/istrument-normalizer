@@ -1,7 +1,5 @@
 package org.apache.kafka.streams.state.indexed;
 
-import com.bnpparibas.gban.bibliotheca.sequencer.Namespace;
-import com.bnpparibas.gban.bibliotheca.sequencer.Sequencer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
@@ -141,10 +139,10 @@ public class MemoryConsumptionTest {
         store.init((StateStoreContext) context, store);
 
 
-        Sequencer sequencer = new Sequencer(System::nanoTime, Namespace.US_STREET_CASH_EQUITY, 0);
+        long startSeq = System.nanoTime();
         long start = System.currentTimeMillis();
         for (long i = 0; i < 5_000_000; i++) {
-            long v = sequencer.getNext();
+            long v = startSeq++;
             store.put(v, String.valueOf(v));
             if (i % 100_000 == 0) {
                 logger.info("Inserted: {}", i);
@@ -157,14 +155,9 @@ public class MemoryConsumptionTest {
         long memUsage = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024 / 1024;
         logger.info("Mem: {}Mb", memUsage);
 
-        assertTrue(insertTime < 8);
-        assertTrue(memUsage < 2100);
-
-//        HashMap                      6.5 2068
-//        Object2LongArrayMap          ~   ~
-//        Object2LongOpenCustomHashMap 6.7 1867
-//        Object2LongOpenHashMap       6.7 1867
-//        Object2LongRBTreeMap         82  1958
-//        Object2LongAVLTreeMap        72  1958
+        assertTrue(insertTime < 4);
+        assertTrue(memUsage < 1500);
     }
 }
+
+}|

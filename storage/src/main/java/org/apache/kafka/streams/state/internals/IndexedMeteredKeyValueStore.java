@@ -1,7 +1,6 @@
 package org.apache.kafka.streams.state.internals;
 
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.kafka.common.metrics.Sensor;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.utils.Bytes;
@@ -58,8 +57,8 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
         logger.debug("Store `{}` created with {} uniq, {} non uniq indexes", name(), uniqIndexes.size(), nonUniqIndexes.size());
 
         this.metricsScope = metricsScope;
-        this.uniqIndexes = ImmutableMap.copyOf(uniqIndexes);
-        this.nonUniqIndexes = ImmutableMap.copyOf(nonUniqIndexes);
+        this.uniqIndexes = uniqIndexes;
+        this.nonUniqIndexes = nonUniqIndexes;
 
 
         this.uniqIndexes.forEach((name, generator) -> uniqIndexesData.put(name, new HashMap<>()));
