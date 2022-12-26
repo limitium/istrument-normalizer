@@ -1,14 +1,6 @@
 package com.bnpparibas.gban.kscore.test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import com.bnpparibas.gban.kscore.kstreamcore.Topic;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.PostConstruct;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +14,15 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
+
+import javax.annotation.PostConstruct;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class BaseKStreamApplicationTests {
     public static String[] consumerTopics;
@@ -47,7 +48,8 @@ public class BaseKStreamApplicationTests {
 
             private static final Logger LOGGER = LoggerFactory.getLogger(KafkaProducer.class);
 
-            @Autowired private KafkaTemplate<byte[], byte[]> kafkaTemplate;
+            @Autowired
+            private KafkaTemplate<byte[], byte[]> kafkaTemplate;
 
             public void send(String topic, byte[] key, byte[] value) {
                 LOGGER.info("sending to topic='{}' payload='{}'", value, topic);
@@ -82,9 +84,10 @@ public class BaseKStreamApplicationTests {
             public ConsumerRecord<byte[], byte[]> waitForRecordFrom(String topic) {
                 assertTopic(topic);
                 try {
+                    int timeout = 10;
                     ConsumerRecord<byte[], byte[]> record =
-                            received.get(topic).poll(10, TimeUnit.SECONDS);
-                    assertNotNull(record);
+                            received.get(topic).poll(timeout, TimeUnit.SECONDS);
+                    assertNotNull(record, "Topic `" + topic + "` is empty after "+ timeout +"s");
                     return record;
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -96,7 +99,7 @@ public class BaseKStreamApplicationTests {
                 try {
                     ConsumerRecord<byte[], byte[]> mustBeEmpty =
                             received.get(topic).poll(100, TimeUnit.MILLISECONDS);
-                    assertNull(mustBeEmpty);
+                    assertNull(mustBeEmpty, "Topic `" + topic + "` is not empty");
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -111,9 +114,11 @@ public class BaseKStreamApplicationTests {
         }
     }
 
-    @Autowired private BaseKafkaTestConfig.KafkaConsumer consumer;
+    @Autowired
+    private BaseKafkaTestConfig.KafkaConsumer consumer;
 
-    @Autowired private BaseKafkaTestConfig.KafkaProducer producer;
+    @Autowired
+    private BaseKafkaTestConfig.KafkaProducer producer;
 
     /**
      * Sends key and value in {@link Topic#topic}
@@ -136,7 +141,7 @@ public class BaseKStreamApplicationTests {
      *
      * @param topic
      * @param topicName Overrides topic if it has `*` as a subscription pattern in {@link
-     *     Topic#topic}
+     *                  Topic#topic}
      * @param key
      * @param value
      * @param <K>
@@ -183,6 +188,7 @@ public class BaseKStreamApplicationTests {
     protected <K, V> void ensureEmptyTopic(Topic<K, V> topic) {
         consumer.ensureEmpty(topic.topic);
     }
+
     protected void ensureEmptyTopic(String topic) {
         consumer.ensureEmpty(topic);
     }
