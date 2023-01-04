@@ -157,7 +157,7 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
 
         @Override
         public void init(ProcessorContext<Long, String> context) {
-            this.context = context;
+        this.context = context;
             executionReportStore = context.getStateStore(EXECUTION_REPORTS_STORE);
             tigerAllocationsStore = context.getStateStore(TIGER_ALLOCATIONS_STORE);
             executionAllocationRefsStore = context.getStateStore(EXECUTION_ALLOCATION_REF_STORE);
@@ -260,7 +260,7 @@ public class UsStreetController implements KStreamInfraCustomizer.KStreamTopolog
                                                             + " partition for Sequencer"))
                             .partition();
 
-            return new Sequencer(System::nanoTime, Namespace.US_STREET_CASH_EQUITY, partition)
+            return new Sequencer(System::nanoTime, Namespace.US_STREET_CASH_EQUITY.ordinal(), partition)
                     .getNext();
         }
 

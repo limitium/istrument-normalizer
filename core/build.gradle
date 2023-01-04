@@ -27,6 +27,8 @@ dependencies {
     testImplementation 'org.junit.platform:junit-platform-launcher:1.9.0'
 
     implementation project(":communication")
+    implementation project(":sequencer")
+    implementation project(":storage")
 }
 
 springBoot {

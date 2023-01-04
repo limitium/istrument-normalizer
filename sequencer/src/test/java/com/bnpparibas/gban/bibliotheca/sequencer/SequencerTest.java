@@ -14,7 +14,7 @@ class SequencerTest {
 
     @Test
     void basicTest() {
-        Sequencer sequencer = new Sequencer(() -> EPOCH_RESET + 1, Namespace.US_STREET_CASH_FUTURES, 1);
+        Sequencer sequencer = new Sequencer(() -> EPOCH_RESET + 1, Namespace.US_STREET_CASH_FUTURES.ordinal(), 1);
 
         String bits = String.format("%064d", new BigInteger(Long.toBinaryString(sequencer.getNext())));
         assertEquals("0000000000000000000000000000000000000000100000010000010000000000", bits);
@@ -30,10 +30,10 @@ class SequencerTest {
         long currentTimeMillis = System.currentTimeMillis();
         String formattedTime = DateTimeFormatter.ofPattern(TIME_PATTERN).format(ZonedDateTime.ofInstant(Instant.ofEpochMilli(currentTimeMillis), ZONE_OFFSET));
 
-        Sequencer sequencer = new Sequencer(() -> currentTimeMillis, Namespace.US_STREET_CASH_FUTURES, 3);
+        Sequencer sequencer = new Sequencer(() -> currentTimeMillis, Namespace.US_STREET_CASH_FUTURES.ordinal(), 3);
         assertEquals("{time:\"" + formattedTime + "\",namespace:\"US_STREET_CASH_FUTURES\",partition:\"3\", sequence:\"0\"}", Sequencer.parse(sequencer.getNext()));
 
-        sequencer = new Sequencer(() -> currentTimeMillis, Namespace.US_STREET_CASH_EQUITY, 2);
+        sequencer = new Sequencer(() -> currentTimeMillis, Namespace.US_STREET_CASH_EQUITY.ordinal(), 2);
         assertEquals("{time:\"" + formattedTime + "\",namespace:\"US_STREET_CASH_EQUITY\",partition:\"2\", sequence:\"0\"}", Sequencer.parse(sequencer.getNext()));
         assertEquals("{time:\"" + formattedTime + "\",namespace:\"US_STREET_CASH_EQUITY\",partition:\"2\", sequence:\"1\"}", Sequencer.parse(sequencer.getNext()));
     }

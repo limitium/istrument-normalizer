@@ -99,7 +99,7 @@ class UsStreetApplicationControllerTests extends BaseKStreamApplicationTests {
     }
 
     private void testConverterAndCopartitioning(int partition) {
-        long allocationId = new Sequencer(() -> 0, Namespace.US_STREET_CASH_EQUITY, partition).getNext();
+        long allocationId = new Sequencer(() -> 0, Namespace.US_STREET_CASH_EQUITY.ordinal(), partition).getNext();
         int allocationVersion = 3;
         ReplyCode replyCode = ReplyCode.OK;
         String ackTimestamp = "20220603-11:05:12";

@@ -37,17 +37,17 @@ public class Sequencer {
     private long sequence = 0L;
     private long prevMillis;
 
-    public Sequencer(Clock clock, Namespace namespace, int partition) {
+    public Sequencer(Clock clock, int namespace, int partition) {
         if (partition < 0 || partition > 63) {
             throw new IllegalArgumentException("Partition must be >= 0 and < 64, current value is " + partition);
         }
-        if (namespace.ordinal() > 127) {
-            throw new IllegalArgumentException("Sequencer type must be < 128, current value is " + namespace.ordinal());
+        if (namespace > 127) {
+            throw new IllegalArgumentException("Sequencer type must be < 128, current value is " + namespace);
         }
 
         this.clock = clock;
 
-        this.sequencerBits = (NAMESPACE_MASK & namespace.ordinal()) << (PARTITION_BITS + SEQUENCE_BITS)
+        this.sequencerBits = (NAMESPACE_MASK & namespace) << (PARTITION_BITS + SEQUENCE_BITS)
                 | (partition & PARTITION_MASK) << SEQUENCE_BITS;
     }
 
@@ -78,8 +78,13 @@ public class Sequencer {
 
     private long waitForNextMillis(long prevMillis) {
         long millis = clock.millis();
+        long waitStart = System.currentTimeMillis();
         while (millis == prevMillis) {
             millis = clock.millis();
+            int awaitTime = 100;
+            if (System.currentTimeMillis() - waitStart > awaitTime) {
+                throw new RuntimeException("Clock isn't moving, unable to wait for next tick for " + awaitTime + "ms");
+            }
         }
         return millis;
     }
