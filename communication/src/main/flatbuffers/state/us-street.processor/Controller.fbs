@@ -17,8 +17,8 @@ table FbUsStreetAllocation {
     id:                         long;
     state:                      FbState;
     finance:                    FbFinance;
-    party:                      FbTradingAccount;
-    counterparty:               FbCounterParty;
+    trading_account:            FbTradingAccount;
+    counter_party:              FbCounterParty;
     audit:                      FbAudit;
 }
 

@@ -48,8 +48,8 @@ table FbExecutionReport {
 table FbUsStreetExecutionReport {
     front_office:               FbFrontOffice;
     order:                      FbOrder;
-    party:                      FbTradingAccount;
-    counterparty:               FbCounterParty;
+    trading_account:            FbTradingAccount;
+    counter_party:              FbCounterParty;
     execution_report:           FbExecutionReport;
 }
 
