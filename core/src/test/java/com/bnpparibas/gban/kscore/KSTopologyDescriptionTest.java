@@ -1,4 +1,4 @@
-package com.bnpparibas.gban.kscore.test;
+package com.bnpparibas.gban.kscore;
 
 import com.bnpparibas.gban.kscore.kstreamcore.KSProcessor;
 import com.bnpparibas.gban.kscore.kstreamcore.KSTopology;
