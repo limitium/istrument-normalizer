@@ -15,14 +15,14 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
 @SpringBootTest
-@EmbeddedKafka(brokerProperties = {
-        "listeners=PLAINTEXT://localhost:9092",
-        "port=9092",
+@EmbeddedKafka(
+        bootstrapServersProperty = "spring.kafka.bootstrap-servers",
+        brokerProperties = {
         "offsets.topic.replication.factor=1",
         "transaction.state.log.replication.factor=1",
         "transaction.state.log.min.isr=1"
 })
-@TestPropertySource(properties = {"kafka.bootstrap.servers=localhost:9092"})
+@TestPropertySource(properties = {"kafka.bootstrap.servers=${spring.kafka.bootstrap-servers}"})
 @TestExecutionListeners(
         listeners = {
                 DependencyInjectionTestExecutionListener.class,
