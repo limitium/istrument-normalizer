@@ -38,10 +38,10 @@ public class KSTopology {
         KSProcessor<kI, vI, kO, vO> get();
     }
 
-    record SourceDefinition<K, V>(@Nonnull Topic<K, V> topic, boolean isPattern) {
+    public record SourceDefinition<K, V>(@Nonnull Topic<K, V> topic, boolean isPattern) {
     }
 
-    record SinkDefinition<K, V>(@Nonnull Topic<K, V> topic,
+    public record SinkDefinition<K, V>(@Nonnull Topic<K, V> topic,
                                 @Nullable TopicNameExtractor<K, V> topicNameExtractor,
                                 @Nullable StreamPartitioner<K, V> streamPartitioner) {
     }
@@ -50,9 +50,9 @@ public class KSTopology {
 
         private final KSTopology ksTopology;
         private final KSProcessorSupplier<kI, vI, kO, vO> processorSupplier;
-        private Set<SourceDefinition<kI, vI>> sources = new HashSet<>();
-        private Set<SinkDefinition<kO, vO>> sinks = new HashSet<>();
-        private Set<StoreBuilder<?>> stores;
+        private Set<SourceDefinition<? extends kI, ? extends vI>> sources = new HashSet<>();
+        private Set<SinkDefinition<? extends kO, ? extends vO>> sinks = new HashSet<>();
+        private Set<StoreBuilder<?>> stores = Collections.EMPTY_SET;
 
         public ProcessorDefinition(KSTopology ksTopology, KSProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
             this.ksTopology = ksTopology;
@@ -65,11 +65,11 @@ public class KSTopology {
          * @param topic
          * @return
          */
-        public ProcessorDefinition<kI, vI, kO, vO> withSource(Topic<kI, vI> topic) {
+        public ProcessorDefinition<kI, vI, kO, vO> withSource(Topic<? extends kI, ? extends vI> topic) {
             return withSource(new SourceDefinition<>(topic, false));
         }
 
-        public ProcessorDefinition<kI, vI, kO, vO> withSource(SourceDefinition<kI, vI> source) {
+        public ProcessorDefinition<kI, vI, kO, vO> withSource(SourceDefinition<? extends kI, ? extends vI> source) {
             sources.add(source);
             return this;
         }
@@ -91,11 +91,11 @@ public class KSTopology {
          * @param topic
          * @return
          */
-        public ProcessorDefinition<kI, vI, kO, vO> withSink(Topic<kO, vO> topic) {
+        public ProcessorDefinition<kI, vI, kO, vO> withSink(Topic<? extends kO, ? extends vO> topic) {
             return withSink(new SinkDefinition<>(topic, null, null));
         }
 
-        public ProcessorDefinition<kI, vI, kO, vO> withSink(SinkDefinition<kO, vO> sink) {
+        public ProcessorDefinition<kI, vI, kO, vO> withSink(SinkDefinition<? extends kO, ? extends vO> sink) {
             sinks.add(sink);
             return this;
         }
