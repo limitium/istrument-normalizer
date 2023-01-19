@@ -1,5 +1,6 @@
 package com.bnpparibas.gban.kscore;
 
+import com.bnpparibas.gban.kscore.kstreamcore.KSDLQTransformer;
 import com.bnpparibas.gban.kscore.kstreamcore.KSProcessor;
 import com.bnpparibas.gban.kscore.kstreamcore.KStreamInfraCustomizer;
 import com.bnpparibas.gban.kscore.kstreamcore.Topic;
@@ -22,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
         topics = {"test.in.topic.1"},
         consumers = {
                 "test.out.topic.1",
-                "test.out.topic.2"
+                "test.out.topic.2",
+                "test.out.dlq.1"
         },
         configs = {
                 KStreamApplication.class,
@@ -34,6 +36,7 @@ class KSTopologyTest extends BaseKStreamApplicationTests {
     public static final Topic<Integer, Long> SOURCE = new Topic<>("test.in.topic.1", Serdes.Integer(), Serdes.Long());
     public static final Topic<String, String> SINK1 = new Topic<>("test.out.topic.1", Serdes.String(), Serdes.String());
     public static final Topic<String, String> SINK2 = new Topic<>("test.out.topic.2", Serdes.String(), Serdes.String());
+    public static final Topic<Integer, String> DLQ = new Topic<>("test.out.dlq.1", Serdes.Integer(), Serdes.String());
 
     @Configuration
     public static class TopologyConfig {
@@ -49,6 +52,11 @@ class KSTopologyTest extends BaseKStreamApplicationTests {
 
             @Override
             public void process(Record<Integer, Long> record) {
+                if (record.value() < 0) {
+                    sendToDLQ(record, "negative");
+                    return;
+                }
+
                 inMemKv.putIfAbsent(record.key(), 0L);
                 inMemKv.put(record.key(), inMemKv.get(record.key()) + record.value());
 
@@ -70,6 +78,7 @@ class KSTopologyTest extends BaseKStreamApplicationTests {
                         .withStores(store)
                         .withSink(SINK1)
                         .withSink(SINK2)
+                        .withDLQ(DLQ, (failed, fromTopic, partition, offset, errorMessage, exception) -> failed.withValue(errorMessage))
                         .done();
             };
 
@@ -89,5 +98,14 @@ class KSTopologyTest extends BaseKStreamApplicationTests {
 
         assertEquals("k_1", out.key());
         assertEquals("v_3", out.value());
+    }
+
+    @Test
+    void testDQL() {
+        send(SOURCE, 1, -1L);
+        ConsumerRecord<Integer, String> out = waitForRecordFrom(DLQ);
+
+        assertEquals(1, out.key());
+        assertEquals("negative", out.value());
     }
 }

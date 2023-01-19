@@ -108,7 +108,7 @@ public class BaseKStreamApplicationTests {
             private void assertTopic(String topic) {
                 if (!received.containsKey(topic)) {
                     throw new RuntimeException(
-                            "Topic `" + topic + "` wasn't set as consumer in @KafkaTest");
+                            "Topic `" + topic + "` wasn't set as consumer in @KafkaTest annotation");
                 }
             }
         }

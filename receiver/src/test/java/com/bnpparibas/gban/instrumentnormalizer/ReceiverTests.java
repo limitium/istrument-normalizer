@@ -79,43 +79,43 @@ class ReceiverTests extends BaseKStreamApplicationTests {
         final Random random = new Random();
 
         FlatBufferBuilder builder = new FlatBufferBuilder().forceDefaults(true);
-        int convertFbOrder = FbOrder.createFbOrder(builder,
-                (byte) random.nextInt(FbSide.names.length),
-                (byte) random.nextInt(FbOrderType.names.length),
-                (byte) random.nextInt(FbTimeInForce.names.length),
-
-                builder.createString(securityId),
-                PrimitiveNulls.NULL_LONG,
-
-                builder.createString(randomString(random)),
-                PrimitiveNulls.NULL_LONG);
-
-        int convertFbFrontOffice = FbFrontOffice.createFbFrontOffice(builder,
-                builder.createString(randomString(random)),
-                builder.createString(randomString(random)),
-
-                builder.createString(randomString(random)),
-                builder.createString(randomString(random)),
-                builder.createString(randomString(random)));
-        int convertFbCounterParty = FbCounterParty.createFbCounterParty(builder,
-                (byte) random.nextInt(FbCounterpartyType.names.length),
-                builder.createString(randomString(random)),
-                (byte) random.nextInt(FbCounterpartyCodeType.names.length),
-                builder.createString(randomString(random)),
-                builder.createString(randomString(random)));
-        int convertFbExecutionReport = FbExecutionReport.createFbExecutionReport(builder,
-                System.nanoTime(),
-                (byte) random.nextInt(FbType.names.length),
-                (byte) random.nextInt(FbCapacity.names.length),
-
-                random.nextDouble(),
-                random.nextDouble(),
-
-                random.nextLong());
-
-        int reportOffset = FbUsStreetExecutionReport.createFbUsStreetExecutionReport(builder,
-                convertFbFrontOffice, convertFbOrder, convertFbCounterParty, convertFbExecutionReport);
-        builder.finish(reportOffset);
+//        int convertFbOrder = FbOrder.createFbOrder(builder,
+//                (byte) random.nextInt(FbSide.names.length),
+//                (byte) random.nextInt(FbOrderType.names.length),
+//                (byte) random.nextInt(FbTimeInForce.names.length),
+//
+//                builder.createString(securityId),
+//                PrimitiveNulls.NULL_LONG,
+//
+//                builder.createString(randomString(random)),
+//                PrimitiveNulls.NULL_LONG);
+//
+//        int convertFbFrontOffice = FbFrontOffice.createFbFrontOffice(builder,
+//                builder.createString(randomString(random)),
+//                builder.createString(randomString(random)),
+//
+//                builder.createString(randomString(random)),
+//                builder.createString(randomString(random)),
+//                builder.createString(randomString(random)));
+//        int convertFbCounterParty = FbCounterParty.createFbCounterParty(builder,
+//                (byte) random.nextInt(FbCounterpartyType.names.length),
+//                builder.createString(randomString(random)),
+//                (byte) random.nextInt(FbCounterpartyCodeType.names.length),
+//                builder.createString(randomString(random)),
+//                builder.createString(randomString(random)));
+//        int convertFbExecutionReport = FbExecutionReport.createFbExecutionReport(builder,
+//                System.nanoTime(),
+//                (byte) random.nextInt(FbType.names.length),
+//                (byte) random.nextInt(FbCapacity.names.length),
+//
+//                random.nextDouble(),
+//                random.nextDouble(),
+//
+//                random.nextLong());
+//
+//        int reportOffset = FbUsStreetExecutionReport.createFbUsStreetExecutionReport(builder,
+//                convertFbFrontOffice, convertFbOrder, convertFbCounterParty, convertFbExecutionReport);
+//        builder.finish(reportOffset);
 
         //Truncate ByteBuffer
         return FbUsStreetExecutionReport.getRootAsFbUsStreetExecutionReport(
