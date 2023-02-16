@@ -38,6 +38,8 @@ public class BaseKStreamApplicationTests {
     @DynamicPropertySource
     public static void testConsumerTopics(DynamicPropertyRegistry registry) {
         registry.add("test.consumer.topics", () -> consumerTopics);
+        registry.add("spring.kafka.streams.cleanup.on-startup", () -> true);
+        registry.add("spring.kafka.streams.cleanup.on-shutdown", () -> true);
     }
 
     @Configuration
