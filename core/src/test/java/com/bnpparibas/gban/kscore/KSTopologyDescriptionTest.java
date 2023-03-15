@@ -7,14 +7,23 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
+import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.processor.api.Record;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration;
+import org.springframework.kafka.config.KafkaStreamsConfiguration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class KSTopologyDescriptionTest {
 
+
+    @Autowired
+    @Qualifier(KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)
+    KafkaStreamsConfiguration streamsConfig;
 
     static class A {
     }
@@ -127,7 +136,7 @@ public class KSTopologyDescriptionTest {
     @Test
     void build() {
         Topology topology = new Topology();
-        KSTopology ksTopology = new KSTopology(topology);
+        KSTopology ksTopology = new KSTopology(topology, streamsConfig);
 
 
         ksTopology.addProcessor(TestProcessor::new)

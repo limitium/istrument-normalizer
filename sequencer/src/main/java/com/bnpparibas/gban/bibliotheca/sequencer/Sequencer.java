@@ -9,12 +9,12 @@ import java.time.format.DateTimeFormatter;
 /**
  * Sequencer layout for 64bit long storage.
  * <p>
- * 0_0000000000000000000000000000000000000000_0000000_000000_0000000000
+ * 0_0000000000000000000000000000000000000000_000000_000000_00000000000
  * ^1 bit, always 0 for positive values
  * __^40 bit, 2^40/(1000*60*60*24*365) = 34 years in millis, from epoch reset
- * ___________________________________________^7 bit, 128 sequencer types
+ * ___________________________________________^6 bit, 64 sequencer types
  * ___________________________________________________^6 bit, 64 partition
- * _________________________________________________________^10 bit, 1024 counter per ms,
+ * _________________________________________________________^11 bit, 2048 counter per ms,
  */
 
 public class Sequencer {
@@ -25,8 +25,8 @@ public class Sequencer {
     private static final int MILLIS_BITS = 40;
     private static final int PARTITION_BITS = 6;
     public static final long PARTITION_MASK = ~(-1L << PARTITION_BITS);
-    private static final int SEQUENCE_BITS = 10;
-    private static final int NAMESPACE_BITS = 7;
+    private static final int SEQUENCE_BITS = 11;
+    private static final int NAMESPACE_BITS = 6;
     public static final long NAMESPACE_MASK = ~(-1L << NAMESPACE_BITS);
     private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
     private static final long MILLIS_MASK = ~(-1L << MILLIS_BITS);
@@ -41,8 +41,8 @@ public class Sequencer {
         if (partition < 0 || partition > 63) {
             throw new IllegalArgumentException("Partition must be >= 0 and < 64, current value is " + partition);
         }
-        if (namespace > 127) {
-            throw new IllegalArgumentException("Sequencer type must be < 128, current value is " + namespace);
+        if (namespace > 64) {
+            throw new IllegalArgumentException("Sequencer namespace must be < 64, current value is " + namespace);
         }
 
         this.clock = clock;
@@ -67,7 +67,7 @@ public class Sequencer {
                 millis = waitForNextMillis(prevMillis);
             }
         } else {
-            throw new RuntimeException("Clock went back");
+            throw new ClockWentBackException("Clock went back");
         }
 
         prevMillis = millis;
@@ -83,7 +83,7 @@ public class Sequencer {
             millis = clock.millis();
             int awaitTime = 100;
             if (System.currentTimeMillis() - waitStart > awaitTime) {
-                throw new RuntimeException("Clock isn't moving, unable to wait for next tick for " + awaitTime + "ms");
+                throw new ClockStuckException("Clock isn't moving, unable to wait for next tick for " + awaitTime + "ms");
             }
         }
         return millis;
@@ -116,13 +116,8 @@ public class Sequencer {
      * @param sequence previously generated sequence
      * @return
      */
-    public static Namespace getNamespace(long sequence) {
-        int ordinal = (int) (sequence >> (SEQUENCE_BITS + PARTITION_BITS) & NAMESPACE_MASK);
-        try {
-            return Namespace.values()[ordinal];
-        } catch (Exception e) {
-            throw new RuntimeException("Wrong namespace encoding", e);
-        }
+    public static int getNamespace(long sequence) {
+        return (int) (sequence >> (SEQUENCE_BITS + PARTITION_BITS) & NAMESPACE_MASK);
     }
 
     public static class SystemClock implements Clock {

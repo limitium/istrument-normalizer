@@ -1,13 +1,15 @@
 spring:
   main.web-application-type: NONE
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      max-poll-records: 512 #must be max-poll-records * (number of sequences) < 2048, must take less than max.poll.interval.ms
+      fetch-max-wait: 123
+
 server.port: 9001
 management:
   server.port: 9001
   endpoints.web.exposure.include: "*"
-
-kafka:
-  bootstrap:
-    servers: localhost:9092
 
 logging.pattern.level: trace_id=%mdc{trace_id} span_id=%mdc{span_id} %5p

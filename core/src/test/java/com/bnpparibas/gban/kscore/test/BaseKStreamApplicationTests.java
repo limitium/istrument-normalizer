@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class BaseKStreamApplicationTests {
+    public static final int DEFAULT_READ_TIMEOUT = 10;
     public static String[] consumerTopics;
 
     public static class CustomExecutionListener implements TestExecutionListener {
@@ -83,10 +84,9 @@ public class BaseKStreamApplicationTests {
                 received.get(consumerRecord.topic()).add(consumerRecord);
             }
 
-            public ConsumerRecord<byte[], byte[]> waitForRecordFrom(String topic) {
+            public ConsumerRecord<byte[], byte[]> waitForRecordFrom(String topic, int timeout) {
                 assertTopic(topic);
                 try {
-                    int timeout = 10;
                     ConsumerRecord<byte[], byte[]> record =
                             received.get(topic).poll(timeout, TimeUnit.SECONDS);
                     assertNotNull(record, "Topic `" + topic + "` is empty after "+ timeout +"s");
@@ -165,15 +165,17 @@ public class BaseKStreamApplicationTests {
     }
 
     /**
-     * Wait for a single message in a concrete topic
+     * Wait for a single message in a concrete {@link Topic}
      *
-     * @param topic
-     * @param <K>
-     * @param <V>
+     * @param topic read topic with key and value serdes
+     * @param timeout await timout
      * @return
+     * @param <K> expected key type
+     * @param <V> expected value type
+     * @see BaseKStreamApplicationTests#waitForRecordFrom(Topic)
      */
-    protected <K, V> ConsumerRecord<K, V> waitForRecordFrom(Topic<K, V> topic) {
-        ConsumerRecord<byte[], byte[]> record = waitForRecordFrom(topic.topic);
+    protected <K, V> ConsumerRecord<K, V> waitForRecordFrom(Topic<K, V> topic, int timeout) {
+        ConsumerRecord<byte[], byte[]> record = waitForRecordFrom(topic.topic, timeout);
 
         return new ConsumerRecord<>(
                 record.topic(),
@@ -183,8 +185,15 @@ public class BaseKStreamApplicationTests {
                 topic.valueSerde.deserializer().deserialize(record.topic(), record.value()));
     }
 
+    protected <K, V> ConsumerRecord<K, V> waitForRecordFrom(Topic<K, V> topic) {
+        return waitForRecordFrom(topic, DEFAULT_READ_TIMEOUT);
+    }
+
     protected ConsumerRecord<byte[], byte[]> waitForRecordFrom(String topic) {
-        return consumer.waitForRecordFrom(topic);
+        return waitForRecordFrom(topic, DEFAULT_READ_TIMEOUT);
+    }
+    protected ConsumerRecord<byte[], byte[]> waitForRecordFrom(String topic, int timeout) {
+        return consumer.waitForRecordFrom(topic, timeout);
     }
 
     protected <K, V> void ensureEmptyTopic(Topic<K, V> topic) {

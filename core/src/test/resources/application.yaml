@@ -1,2 +1,9 @@
-spring.application.name: core-app
-spring.cloud.config.enabled: false
+spring:
+  application.name: core-app
+  cloud.config.enabled: false
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      max-poll-records: 512 #must be max-poll-records * (number of sequences) < 2048, must take less than max.poll.interval.ms
+      fetch-max-wait: 123

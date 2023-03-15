@@ -1,10 +1,12 @@
 package com.bnpparibas.gban.kscore.kstreamcore;
 
+import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 import org.apache.kafka.streams.processor.TopicNameExtractor;
 import org.apache.kafka.streams.processor.api.ProcessorSupplier;
 import org.apache.kafka.streams.state.StoreBuilder;
+import org.springframework.kafka.config.KafkaStreamsConfiguration;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -20,10 +22,12 @@ import static com.bnpparibas.gban.kscore.kstreamcore.KSTopology.TopologyNameGene
  */
 public class KSTopology {
     final Topology topology;
+    private final KafkaStreamsConfiguration config;//@todo: hash app.name to sequencer.namespace
     final Set<ProcessorDefinition<?, ?, ?, ?>> processors = new HashSet<>();
 
-    public KSTopology(Topology topology) {
+    public KSTopology(Topology topology, KafkaStreamsConfiguration config) {
         this.topology = topology;
+        this.config = config;
     }
 
     /**
