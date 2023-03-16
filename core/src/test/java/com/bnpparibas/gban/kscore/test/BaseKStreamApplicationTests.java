@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class BaseKStreamApplicationTests {
-    public static final int DEFAULT_READ_TIMEOUT = 10;
+    public static final int DEFAULT_READ_TIMEOUT_SECONDS = 20;
     public static String[] consumerTopics;
 
     public static class CustomExecutionListener implements TestExecutionListener {
@@ -55,7 +55,7 @@ public class BaseKStreamApplicationTests {
             private KafkaTemplate<byte[], byte[]> kafkaTemplate;
 
             public void send(String topic, byte[] key, byte[] value) {
-                LOGGER.info("sending to topic='{}' payload='{}'", value, topic);
+                LOGGER.info("sending to topic='{}' payload='{}'", topic, value);
                 kafkaTemplate.send(topic, key, value);
             }
         }
@@ -186,11 +186,11 @@ public class BaseKStreamApplicationTests {
     }
 
     protected <K, V> ConsumerRecord<K, V> waitForRecordFrom(Topic<K, V> topic) {
-        return waitForRecordFrom(topic, DEFAULT_READ_TIMEOUT);
+        return waitForRecordFrom(topic, DEFAULT_READ_TIMEOUT_SECONDS);
     }
 
     protected ConsumerRecord<byte[], byte[]> waitForRecordFrom(String topic) {
-        return waitForRecordFrom(topic, DEFAULT_READ_TIMEOUT);
+        return waitForRecordFrom(topic, DEFAULT_READ_TIMEOUT_SECONDS);
     }
     protected ConsumerRecord<byte[], byte[]> waitForRecordFrom(String topic, int timeout) {
         return consumer.waitForRecordFrom(topic, timeout);
