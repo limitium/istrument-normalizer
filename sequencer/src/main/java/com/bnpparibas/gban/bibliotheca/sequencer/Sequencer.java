@@ -67,7 +67,7 @@ public class Sequencer {
                 millis = waitForNextMillis(prevMillis);
             }
         } else {
-            throw new ClockWentBackException("Clock went back");
+            throw new ClockWentBackException("Clock went back from:" + prevMillis + ", to:" + millis);
         }
 
         prevMillis = millis;
@@ -83,7 +83,7 @@ public class Sequencer {
             millis = clock.millis();
             int awaitTime = 100;
             if (System.currentTimeMillis() - waitStart > awaitTime) {
-                throw new ClockStuckException("Clock isn't moving, unable to wait for next tick for " + awaitTime + "ms");
+                throw new ClockStuckException("Clock isn't moving from:" + millis + ", unable to wait for next tick for " + awaitTime + "ms");
             }
         }
         return millis;
