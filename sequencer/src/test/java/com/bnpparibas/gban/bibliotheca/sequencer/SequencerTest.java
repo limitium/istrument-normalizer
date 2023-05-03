@@ -17,11 +17,11 @@ class SequencerTest {
         Sequencer sequencer = new Sequencer(() -> EPOCH_RESET + 1, 1, 1);
 
         String bits = String.format("%064d", new BigInteger(Long.toBinaryString(sequencer.getNext())));
-        assertEquals("0000000000000000000000000000000000000000100000100000100000000000", bits);
+        assertEquals("0000000000000000000000000000000000000000100000100000010000000000", bits);
         bits = String.format("%064d", new BigInteger(Long.toBinaryString(sequencer.getNext())));
-        assertEquals("0000000000000000000000000000000000000000100000100000100000000001", bits);
+        assertEquals("0000000000000000000000000000000000000000100000100000010000000001", bits);
         bits = String.format("%064d", new BigInteger(Long.toBinaryString(sequencer.getNext())));
-        assertEquals("0000000000000000000000000000000000000000100000100000100000000010", bits);
+        assertEquals("0000000000000000000000000000000000000000100000100000010000000010", bits);
     }
 
     //todo: test overflow

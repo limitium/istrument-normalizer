@@ -13,8 +13,8 @@ import java.time.format.DateTimeFormatter;
  * ^1 bit, always 0 for positive values
  * __^40 bit, 2^40/(1000*60*60*24*365) = 34 years in millis, from epoch reset
  * ___________________________________________^6 bit, 64 sequencer types
- * ___________________________________________________^6 bit, 64 partition
- * _________________________________________________________^11 bit, 2048 counter per ms,
+ * ___________________________________________________^7 bit, 128 partition
+ * _________________________________________________________^10 bit, 1024 counter per ms,
  */
 
 public class Sequencer {
@@ -23,9 +23,9 @@ public class Sequencer {
      */
     public static final long EPOCH_RESET = 1653220000000L;
     private static final int MILLIS_BITS = 40;
-    private static final int PARTITION_BITS = 6;
+    private static final int PARTITION_BITS = 7;
     public static final long PARTITION_MASK = ~(-1L << PARTITION_BITS);
-    private static final int SEQUENCE_BITS = 11;
+    private static final int SEQUENCE_BITS = 10;
     private static final int NAMESPACE_BITS = 6;
     public static final long NAMESPACE_MASK = ~(-1L << NAMESPACE_BITS);
     private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
@@ -38,8 +38,8 @@ public class Sequencer {
     private long prevMillis;
 
     public Sequencer(Clock clock, int namespace, int partition) {
-        if (partition < 0 || partition > 63) {
-            throw new IllegalArgumentException("Partition must be >= 0 and < 64, current value is " + partition);
+        if (partition < 0 || partition > 128) {
+            throw new IllegalArgumentException("Partition must be >= 0 and < 128, current value is " + partition);
         }
         if (namespace > 64) {
             throw new IllegalArgumentException("Sequencer namespace must be < 64, current value is " + namespace);
