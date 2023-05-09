@@ -23,7 +23,7 @@ public abstract class KSProcessor<KIn, VIn, KOut, VOut> implements Processor<KIn
     public void init(ProcessorContext<KOut, VOut> context) {
         this.context = context;
         Processor.super.init(this.context);
-        sequencer = new Sequencer(context::currentStreamTimeMs, getApplicationNamespace(), context.taskId().partition());
+        sequencer = new Sequencer(context::currentSystemTimeMs, getApplicationNamespace(), context.taskId().partition());
     }
 
     /**

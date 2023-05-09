@@ -18,6 +18,7 @@ import org.springframework.kafka.config.KafkaStreamsConfiguration;
 import org.springframework.kafka.config.KafkaStreamsInfrastructureCustomizer;
 import org.springframework.kafka.config.StreamsBuilderFactoryBeanConfigurer;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.kafka.streams.StreamsConfig.EXACTLY_ONCE_V2;
@@ -52,15 +53,27 @@ public class KStreamConfig {
         streamsProperties.put(StreamsConfig.APPLICATION_ID_CONFIG, appName);
         streamsProperties.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, EXACTLY_ONCE_V2);
 
+        List.of(
+                ConsumerConfig.MAX_POLL_RECORDS_CONFIG,
+                CommonClientConfigs.HEARTBEAT_INTERVAL_MS_CONFIG,
+                CommonClientConfigs.MAX_POLL_INTERVAL_MS_CONFIG,
+                CommonClientConfigs.SESSION_TIMEOUT_MS_CONFIG,
+                StreamsConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG,
+                StreamsConfig.STATE_DIR_CONFIG
+        ).forEach(propName -> {
+            String propValue = getKafkaStreamProperty(propName, env);
+            if (propValue != null){
+                streamsProperties.put(propName, propValue);
+            }
+        });
 
-        streamsProperties.put(StreamsConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, "-1");
-        streamsProperties.put(CommonClientConfigs.HEARTBEAT_INTERVAL_MS_CONFIG, "2000");
-        streamsProperties.put(CommonClientConfigs.MAX_POLL_INTERVAL_MS_CONFIG, "30000");
-        streamsProperties.put(CommonClientConfigs.SESSION_TIMEOUT_MS_CONFIG, "6000");
-
-        streamsProperties.put(StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE, "gba." + appName + ".store");
+        streamsProperties.put(StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE, appName + ".store");
 
         return new KafkaStreamsConfiguration(streamsProperties);
+    }
+
+    private String getKafkaStreamProperty(String propName, Environment env) {
+        return env.getProperty("kafka.streams." + propName);
     }
 
     @Bean

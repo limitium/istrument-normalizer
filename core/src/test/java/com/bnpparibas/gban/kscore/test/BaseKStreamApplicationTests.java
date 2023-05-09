@@ -2,6 +2,8 @@ package com.bnpparibas.gban.kscore.test;
 
 import com.bnpparibas.gban.kscore.kstreamcore.Topic;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.serialization.Serde;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,10 +18,12 @@ import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
 
 import javax.annotation.PostConstruct;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -32,7 +36,9 @@ public class BaseKStreamApplicationTests {
 
         @Override
         public void beforeTestClass(TestContext testContext) {
-            consumerTopics = testContext.getTestClass().getAnnotation(KafkaTest.class).consumers();
+            consumerTopics = Arrays.stream(testContext.getTestClass().getAnnotation(KafkaTest.class).consumers())
+                    .filter(Predicate.not(String::isBlank))
+                    .toArray(String[]::new);
         }
     }
 
@@ -177,12 +183,9 @@ public class BaseKStreamApplicationTests {
     protected <K, V> ConsumerRecord<K, V> waitForRecordFrom(Topic<K, V> topic, int timeout) {
         ConsumerRecord<byte[], byte[]> record = waitForRecordFrom(topic.topic, timeout);
 
-        return new ConsumerRecord<>(
-                record.topic(),
-                record.partition(),
-                record.offset(),
-                topic.keySerde.deserializer().deserialize(record.topic(), record.key()),
-                topic.valueSerde.deserializer().deserialize(record.topic(), record.value()));
+        Serde<K> keySerde = topic.keySerde;
+        Serde<V> valueSerde = topic.valueSerde;
+        return createConsumedRecord(record, keySerde, valueSerde);
     }
 
     protected <K, V> ConsumerRecord<K, V> waitForRecordFrom(Topic<K, V> topic) {
@@ -192,8 +195,23 @@ public class BaseKStreamApplicationTests {
     protected ConsumerRecord<byte[], byte[]> waitForRecordFrom(String topic) {
         return waitForRecordFrom(topic, DEFAULT_READ_TIMEOUT_SECONDS);
     }
+
     protected ConsumerRecord<byte[], byte[]> waitForRecordFrom(String topic, int timeout) {
         return consumer.waitForRecordFrom(topic, timeout);
+    }
+
+    protected <K,V>  ConsumerRecord<K, V>  waitForRecordFrom(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
+        return createConsumedRecord(waitForRecordFrom(topic, DEFAULT_READ_TIMEOUT_SECONDS), keySerde, valueSerde);
+    }
+
+    @NotNull
+    private <K, V> ConsumerRecord<K, V> createConsumedRecord(ConsumerRecord<byte[], byte[]> record, Serde<K> keySerde, Serde<V> valueSerde) {
+        return new ConsumerRecord<>(
+                record.topic(),
+                record.partition(),
+                record.offset(),
+                keySerde.deserializer().deserialize(record.topic(), record.key()),
+                valueSerde.deserializer().deserialize(record.topic(), record.value()));
     }
 
     protected <K, V> void ensureEmptyTopic(Topic<K, V> topic) {

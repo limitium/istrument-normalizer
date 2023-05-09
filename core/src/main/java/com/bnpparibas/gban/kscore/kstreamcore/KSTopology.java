@@ -1,15 +1,18 @@
 package com.bnpparibas.gban.kscore.kstreamcore;
 
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 import org.apache.kafka.streams.processor.TopicNameExtractor;
 import org.apache.kafka.streams.processor.api.ProcessorSupplier;
 import org.apache.kafka.streams.state.StoreBuilder;
+import org.apache.kafka.streams.state.internals.AbstractStoreBuilder;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -24,6 +27,7 @@ public class KSTopology {
     final Topology topology;
     private final KafkaStreamsConfiguration config;//@todo: hash app.name to sequencer.namespace
     final Set<ProcessorDefinition<?, ?, ?, ?>> processors = new HashSet<>();
+    private Set<StoreBuilder<?>> injectableStores;
 
     public KSTopology(Topology topology, KafkaStreamsConfiguration config) {
         this.topology = topology;
@@ -109,7 +113,7 @@ public class KSTopology {
                 return pClass.getName().replace(pClass.getPackageName() + ".", "");
             }
 
-            public <DLQm> void setDLQ(Topic<kI, DLQm> dlq, KSDLQTransformer<kI, vI, ?super DLQm> dlqTransformer) {
+            public <DLQm> void setDLQ(Topic<kI, DLQm> dlq, KSDLQTransformer<kI, vI, ? super DLQm> dlqTransformer) {
                 this.dlq = dlq;
                 this.dlqTransformer = dlqTransformer;
             }
@@ -120,6 +124,7 @@ public class KSTopology {
         private final Set<SourceDefinition<kI, ? extends vI>> sources = new HashSet<>();
         private final Set<SinkDefinition<? extends kO, ? extends vO>> sinks = new HashSet<>();
         private Set<StoreBuilder<?>> stores = new HashSet<>();
+        private Set<StoreBuilder<?>> injectableStores = new HashSet<>();
 
         public ProcessorDefinition(KSTopology ksTopology, KSProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
             this.ksTopology = ksTopology;
@@ -172,10 +177,10 @@ public class KSTopology {
         /**
          * Adds DQL to processor.
          *
-         * @param dlq topic
+         * @param dlq            topic
          * @param dlqTransformer transforms failed income message into a DLQ record
+         * @param <DLQm>         dlq topic value type
          * @return processor builder
-         * @param <DLQm> dlq topic value type
          */
         @SuppressWarnings({"unchecked", "rawtypes"})
         public <DLQm> ProcessorDefinition<kI, vI, kO, vO> withDLQ(Topic<kI, DLQm> dlq, KSDLQTransformer<kI, vI, ? super DLQm> dlqTransformer) {
@@ -266,6 +271,16 @@ public class KSTopology {
         return processorDefinition.done();
     }
 
+    /**
+     * Add injectors to stores, that allows direct store modification via source topic {application_name}.store-{store_name}-inject
+     *
+     * @param stores
+     * @return
+     */
+    public KSTopology addInjectors(StoreBuilder<?>... stores) {
+        this.injectableStores = Arrays.stream(stores).collect(Collectors.toSet());
+        return this;
+    }
 
     /**
      * Shouldn't be called directly.
@@ -276,6 +291,17 @@ public class KSTopology {
 
         Map<SinkDefinition<?, ?>, Set<ProcessorDefinition<?, ?, ?, ?>>> sinksForProcessors = new HashMap<>();
         Map<StoreBuilder<?>, Set<ProcessorDefinition<?, ?, ?, ?>>> storeForProcessors = new HashMap<>();
+
+        if (injectableStores != null) {
+            injectableStores.forEach((store -> {
+                String injectTopic = config.asProperties().getProperty(StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE) + "-" + store.name() + "-inject";
+                Topic topic = new Topic(injectTopic, getStoreSerde(store, "keySerde"), getStoreSerde(store, "valueSerde"));
+
+                createProcessor(new ProcessorDefinition(this, () -> new KSInjectProcessor(store))
+                        .withSource(topic)
+                        .withStores(store));
+            }));
+        }
 
         processors.forEach((processor -> {
             processor.sources.forEach(source -> {
@@ -365,10 +391,26 @@ public class KSTopology {
         });
     }
 
+    @SuppressWarnings("rawtypes")
+    private Serde getStoreSerde(StoreBuilder<?> store, String serdeFieldName) {
+        try {
+            Field serdeField = AbstractStoreBuilder.class.getDeclaredField(serdeFieldName);
+            serdeField.setAccessible(true);
+            return (Serde) serdeField.get(store);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static class TopologyNameGenerator {
         @Nonnull
         public static String processorName(ProcessorDefinition.CachedProcessorSupplier<?, ?, ?, ?> supplier) {
-            return "prc__" + supplier.getProcessorSimpleClassName();
+            return processorName(supplier.getProcessorSimpleClassName());
+        }
+
+        @Nonnull
+        public static String processorName(String processorName) {
+            return "prc__" + processorName;
         }
 
         @Nonnull
@@ -378,7 +420,12 @@ public class KSTopology {
 
         @Nonnull
         public static String sourceName(Topic<?, ?> topic) {
-            return "src__" + topic.topic;
+            return sourceName(topic.topic);
+        }
+
+        @Nonnull
+        public static String sourceName(String topic) {
+            return "src__" + topic;
         }
     }
 }
