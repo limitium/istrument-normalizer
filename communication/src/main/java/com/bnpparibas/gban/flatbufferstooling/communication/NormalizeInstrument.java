@@ -175,9 +175,13 @@ public class NormalizeInstrument {
 
     private static Object findInstrumentTable(Table fbTable, String pathToInstrumentTable) {
         Object instrumentTable = fbTable;
+        if (".".equalsIgnoreCase(pathToInstrumentTable)) {
+            return instrumentTable;
+        }
 
         if (pathToInstrumentTable != null) {
             String[] pathParts = pathToInstrumentTable.split("\\.");
+
             if (pathParts.length < 1) {
                 throw new RuntimeException("Empty path to instrument table");
             }

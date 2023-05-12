@@ -29,7 +29,7 @@ public class NormalizeInstrumentTests {
     @Test
     public void mutateInstrumentId() {
         FbFixMsg originalMsg = generateFb();
-        FBNormalizeInstrument normalizeInstrument = NormalizeInstrument.wrapWithNormalizeInstrument(originalMsg, 1L, "asd", null, "topic");
+        FBNormalizeInstrument normalizeInstrument = NormalizeInstrument.wrapWithNormalizeInstrument(originalMsg, 1L, "asd", ".", "topic");
 
         NormalizeInstrument.mutateInstrumentId(normalizeInstrument, Long.MAX_VALUE);
         byte[] bytes = NormalizeInstrument.cutOriginalMessageFrom(normalizeInstrument);
