@@ -5,7 +5,7 @@ plugins {
 group 'com.bnpparibas.gban.communication'
 version '0.1-SNAPSHOT'
 
-sourceCompatibility = '11'
+sourceCompatibility = '17'
 
 ext {
     flatbuffersVersion = '2.0.3'
@@ -56,6 +56,18 @@ task flatc() {
     }
 }
 
+tasks.withType(JavaCompile) {
+    options.compilerArgs += "--enable-preview"
+}
+
+tasks.withType(Test) {
+    jvmArgs += "--enable-preview"
+}
+
+tasks.withType(JavaExec) {
+    jvmArgs += '--enable-preview'
+}
+
 sourceSets {
     main {
         java {
@@ -77,6 +89,13 @@ dependencies {
 
     api "io.grpc:grpc-netty:$grpcVersion" //used by client and server
 
+    implementation 'org.apache.bcel:bcel:6.7.0'
+
     implementation "org.apache.kafka:connect-api:3.2.1"
     implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
 }

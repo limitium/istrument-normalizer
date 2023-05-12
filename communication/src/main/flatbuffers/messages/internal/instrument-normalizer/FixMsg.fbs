@@ -1,0 +1,15 @@
+namespace com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers;
+
+table FbTable1 {
+    byte_field1:               byte;
+    instrument_id:             long;
+    string_field1:             string;
+    byte_field2:               byte;
+    long_field2:               long;
+}
+
+table FbFixMsg {
+    byte_field:               byte;
+    table1:                   FbTable1;
+    instrument_id:            long;
+}
