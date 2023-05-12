@@ -13,6 +13,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Utility class for wrapping business flatbuffers messages, with normalize instrument cmd.
@@ -66,25 +68,47 @@ public class NormalizeInstrument {
 
     private static int getInstrumentIdOffset(Table originalMessage, String pathToInstrumentTable) {
         Table instrumentTable = (Table) findInstrumentTable(originalMessage, pathToInstrumentTable);
-        return getOffsetForField(instrumentTable, MUTATE_INSTRUMENT_ID);
+        return getOffsetForField(instrumentTable);
     }
 
-    private static int getOffsetForField(Table table, String mutatorName) {
-        try {
-            //VTable offset in bb
-            Field bbPosField = table.getClass().getSuperclass().getDeclaredField("bb_pos");
-            bbPosField.setAccessible(true);
+    static Map<Class<? extends Table>, CachedOffsetMeta> cachedOffset = new HashMap<>();
+
+    static class CachedOffsetMeta {
+        //@todo: move to VH if performance lack
+        Field bbPosField;
+        java.lang.reflect.Method offsetMethod;
+        int fieldRefOffset;
+
+        public CachedOffsetMeta(Field bbPosField, Method offsetMethod, int fieldRefOffset) {
+            this.bbPosField = bbPosField;
+            this.offsetMethod = offsetMethod;
+            this.fieldRefOffset = fieldRefOffset;
+        }
+
+        int getOffset(Table table) throws IllegalAccessException, InvocationTargetException {
             Integer bbPos = (Integer) bbPosField.get(table);
+            return bbPos + (int) offsetMethod.invoke(table, fieldRefOffset);
+        }
+    }
 
-            //Field reference offset in vtable
-            int fieldOffset = lookupFieldOffsetInVtable(table.getClass(), mutatorName);
+    private static int getOffsetForField(Table table) {
+        try {
+            if (!cachedOffset.containsKey(table.getClass())) {
+                //VTable offset in bb
+                Field bbPosField = table.getClass().getSuperclass().getDeclaredField("bb_pos");
+                bbPosField.setAccessible(true);
 
-            //Field value offset in vtable
-            java.lang.reflect.Method offsetMethod = table.getClass().getSuperclass().getDeclaredMethod("__offset", int.class);
-            offsetMethod.setAccessible(true);
-            int offset = (int) offsetMethod.invoke(table, fieldOffset);
+                //Field reference offset in vtable
+                int fieldOffset = lookupFieldOffsetInVtable(table.getClass(), MUTATE_INSTRUMENT_ID);
 
-            return bbPos + offset;
+                //Field value offset in vtable
+                java.lang.reflect.Method offsetMethod = table.getClass().getSuperclass().getDeclaredMethod("__offset", int.class);
+                offsetMethod.setAccessible(true);
+
+                cachedOffset.put(table.getClass(), new CachedOffsetMeta(bbPosField, offsetMethod, fieldOffset));
+            }
+
+            return cachedOffset.get(table.getClass()).getOffset(table);
         } catch (NoSuchFieldException | ClassNotFoundException | IllegalAccessException | NoSuchMethodException |
                  InvocationTargetException e) {
             throw new RuntimeException(e);
