@@ -5,6 +5,6 @@ table FBNormalizeInstrument {
     original_message_class:   string;
     original_message:         [ubyte];
     original_message_id:      long;
-    instrument_id_offsest:    int;
+    instrument_id_offest:    int;
     egress_topic:             string;
 }

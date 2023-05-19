@@ -14,30 +14,31 @@ services:
     environment:
       KAFKA_ADVERTISED_HOST_NAME: localhost
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-  storage:
-    image: openzipkin/zipkin-elasticsearch7
-    container_name: elasticsearch
-    ports:
-      - 9200:9200
-
-  zipkin:
-    image: openzipkin/zipkin
-    container_name: zipkin
-    environment:
-      - STORAGE_TYPE:elasticsearch
-      - "ES_HOSTS=elasticsearch:9300"
-    ports:
-      - 9411:9411
-    depends_on:
-      - storage
-
-  dependencies:
-    image: openzipkin/zipkin-dependencies
-    container_name: dependencies
-    entrypoint: crond -f
-    depends_on:
-      - storage
-    environment:
-      - STORAGE_TYPE=elasticsearch
-      - "ES_HOSTS=elasticsearch:9300"
-      - "ES_NODES_WAN_ONLY=true"
+      KAFKA_LOG_MESSAGE_TIMESTAMP_TYPE: LogAppendTime
+#  storage:
+#    image: openzipkin/zipkin-elasticsearch7
+#    container_name: elasticsearch
+#    ports:
+#      - 9200:9200
+#
+#  zipkin:
+#    image: openzipkin/zipkin
+#    container_name: zipkin
+#    environment:
+#      - STORAGE_TYPE:elasticsearch
+#      - "ES_HOSTS=elasticsearch:9300"
+#    ports:
+#      - 9411:9411
+#    depends_on:
+#      - storage
+#
+#  dependencies:
+#    image: openzipkin/zipkin-dependencies
+#    container_name: dependencies
+#    entrypoint: crond -f
+#    depends_on:
+#      - storage
+#    environment:
+#      - STORAGE_TYPE=elasticsearch
+#      - "ES_HOSTS=elasticsearch:9300"
+#      - "ES_NODES_WAN_ONLY=true"

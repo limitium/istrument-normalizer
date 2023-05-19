@@ -128,12 +128,7 @@ public class NormalizeInstrument {
                 for (InstructionHandle ih = mg.getInstructionList().getStart();
                      ih != null; ih = ih.getNext()) {
                     if (ih.getPosition() == 1) {
-                        return switch (ih.getInstruction()) {
-                            case BIPUSH bipush -> bipush.getValue().intValue();
-                            case ICONST iconst -> iconst.getValue().intValue();
-                            default ->
-                                    throw new RuntimeException("Unsupported 1st opcode" + ih.getInstruction() + "in " + tableClass + "#" + mutatorName);
-                        };
+                        return extractOffsetFromInstruction(tableClass, mutatorName, ih.getInstruction());
                     }
                 }
             }
@@ -141,15 +136,24 @@ public class NormalizeInstrument {
         throw new RuntimeException("Offset wasn't found in " + tableClass + "#" + mutatorName);
     }
 
+    private static int extractOffsetFromInstruction(Class<? extends Table> tableClass, String mutatorName, Instruction instruction) {
+        if (instruction instanceof BIPUSH bipush) {
+            return bipush.getValue().intValue();
+        } else if (instruction instanceof ICONST iconst) {
+            return iconst.getValue().intValue();
+        }
+        throw new RuntimeException("Unsupported 1st opcode" + instruction + "in " + tableClass + "#" + mutatorName);
+    }
+
     /**
-     * Mutates instrument id in a table of the original message according to {@link FBNormalizeInstrument#instrumentIdOffsest()} ()}
+     * Mutates instrument id in a table of the original message according to {@link FBNormalizeInstrument#instrumentIdOffest()} ()}
      *
      * @param normalizeInstrument request with original flatbuffers message to be mutated
      * @param instrumentId        public instrument id to be set in the original message
      */
     public static void mutateInstrumentId(FBNormalizeInstrument normalizeInstrument, long instrumentId) {
         ByteBuffer byteBuffer = normalizeInstrument.originalMessageAsByteBuffer();
-        byteBuffer.putLong(byteBuffer.position() + normalizeInstrument.instrumentIdOffsest(), instrumentId);
+        byteBuffer.putLong(byteBuffer.position() + normalizeInstrument.instrumentIdOffest(), instrumentId);
     }
 
     /**
