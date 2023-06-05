@@ -59,10 +59,12 @@ public class KStreamConfig {
                 CommonClientConfigs.MAX_POLL_INTERVAL_MS_CONFIG,
                 CommonClientConfigs.SESSION_TIMEOUT_MS_CONFIG,
                 StreamsConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG,
+                StreamsConfig.STATE_DIR_CONFIG,
+                StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG,
                 StreamsConfig.STATE_DIR_CONFIG
         ).forEach(propName -> {
             String propValue = getKafkaStreamProperty(propName, env);
-            if (propValue != null){
+            if (propValue != null) {
                 streamsProperties.put(propName, propValue);
             }
         });

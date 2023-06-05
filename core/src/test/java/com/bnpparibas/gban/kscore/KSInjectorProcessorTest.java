@@ -77,7 +77,7 @@ public class KSInjectorProcessorTest extends BaseKStreamApplicationTests {
     }
 
     @Test
-    void testTopology() {
+    void testDirectInject() {
         send(SOURCE, 1, 2);
         ConsumerRecord<Integer, Integer> changed = waitForRecordFrom(CHANGELOG);
 

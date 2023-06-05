@@ -124,7 +124,6 @@ public class KSTopology {
         private final Set<SourceDefinition<kI, ? extends vI>> sources = new HashSet<>();
         private final Set<SinkDefinition<? extends kO, ? extends vO>> sinks = new HashSet<>();
         private Set<StoreBuilder<?>> stores = new HashSet<>();
-        private Set<StoreBuilder<?>> injectableStores = new HashSet<>();
 
         public ProcessorDefinition(KSTopology ksTopology, KSProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
             this.ksTopology = ksTopology;
@@ -181,11 +180,16 @@ public class KSTopology {
          * @param dlqTransformer transforms failed income message into a DLQ record
          * @param <DLQm>         dlq topic value type
          * @return processor builder
+         * @see #withDLQ(DLQ) 
          */
         @SuppressWarnings({"unchecked", "rawtypes"})
         public <DLQm> ProcessorDefinition<kI, vI, kO, vO> withDLQ(Topic<kI, DLQm> dlq, KSDLQTransformer<kI, vI, ? super DLQm> dlqTransformer) {
             this.processorSupplier.setDLQ(dlq, dlqTransformer);
             return withSink((Topic) dlq);
+        }
+
+        public <DLQm> ProcessorDefinition<kI, vI, kO, vO> withDLQ(DLQ<kI,vI, DLQm> dlq) {
+            return withDLQ(dlq.topic, dlq.transformer);
         }
 
         public KSTopology done() {
