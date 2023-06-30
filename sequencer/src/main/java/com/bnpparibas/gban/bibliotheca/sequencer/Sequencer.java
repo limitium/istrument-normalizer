@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter;
 /**
  * Sequencer layout for 64bit long storage.
  * <p>
- * 0_0000000000000000000000000000000000000000_000000_000000_00000000000
+ * 0_0000000000000000000000000000000000000000_000000_0000000_0000000000
  * ^1 bit, always 0 for positive values
  * __^40 bit, 2^40/(1000*60*60*24*365) = 34 years in millis, from epoch reset
  * ___________________________________________^6 bit, 64 sequencer types
@@ -23,10 +23,10 @@ public class Sequencer {
      */
     public static final long EPOCH_RESET = 1653220000000L;
     private static final int MILLIS_BITS = 40;
-    private static final int PARTITION_BITS = 7;
+    public static final int PARTITION_BITS = 7;
     public static final long PARTITION_MASK = ~(-1L << PARTITION_BITS);
     private static final int SEQUENCE_BITS = 10;
-    private static final int NAMESPACE_BITS = 6;
+    public static final int NAMESPACE_BITS = 6;
     public static final long NAMESPACE_MASK = ~(-1L << NAMESPACE_BITS);
     private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
     private static final long MILLIS_MASK = ~(-1L << MILLIS_BITS);
