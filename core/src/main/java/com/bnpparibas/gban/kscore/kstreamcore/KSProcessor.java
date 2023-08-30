@@ -1,14 +1,18 @@
 package com.bnpparibas.gban.kscore.kstreamcore;
 
 import com.bnpparibas.gban.bibliotheca.sequencer.Sequencer;
+import com.bnpparibas.gban.kscore.kstreamcore.downstream.DownstreamDefinition;
+import com.bnpparibas.gban.kscore.kstreamcore.downstream.state.Request;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.processor.api.RecordMetadata;
 import org.apache.kafka.streams.state.IndexedKeyValueStore;
+import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.internals.WrappedStateStore;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.Objects;
 
 public abstract class KSProcessor<KIn, VIn, KOut, VOut> implements Processor<KIn, VIn, KOut, VOut> {
@@ -52,8 +56,8 @@ public abstract class KSProcessor<KIn, VIn, KOut, VOut> implements Processor<KIn
     /**
      * Sends message to sink topic
      *
-     * @param topic sink topic
-     * @param record message to send
+     * @param topic   sink topic
+     * @param record  message to send
      * @param <KOutl> topic key type
      * @param <VOutl> topic value type
      */
@@ -73,9 +77,9 @@ public abstract class KSProcessor<KIn, VIn, KOut, VOut> implements Processor<KIn
     /**
      * Sends message to DLQ topic.
      *
-     * @param failed incoming message
+     * @param failed       incoming message
      * @param errorMessage additional explanation
-     * @param exception if occurs
+     * @param exception    if occurs
      * @see #sendToDLQ(Record, String)
      * @see #sendToDLQ(Record, Throwable)
      */
@@ -114,5 +118,44 @@ public abstract class KSProcessor<KIn, VIn, KOut, VOut> implements Processor<KIn
         Objects.requireNonNull(context, "Context is missed. Probably KSProcessor.super.init() call is absent");
 
         return ((WrappedStateStore<IndexedKeyValueStore<KS, VS>, KS, VS>) context.getStateStore(name)).wrapped();
+    }
+
+
+    public void setDownstreamDefinitions(Map<String, DownstreamDefinition<?, ? extends KOut, ? extends VOut>> downstreamDefinitions) {
+        this.downstreamDefinitions = downstreamDefinitions;
+    }
+
+    Map<String, DownstreamDefinition<?, ? extends KOut, ? extends VOut>> downstreamDefinitions;
+
+    @SuppressWarnings("unchecked")
+    protected <RequestData> Downstream<RequestData, KOut, VOut> getDownstream(String name) {
+        Objects.requireNonNull(context, "Context is missed. Probably KSProcessor.super.init() call is absent");
+
+        DownstreamDefinition<RequestData, KOut, VOut> downstreamDefinition = (DownstreamDefinition<RequestData, KOut, VOut>) downstreamDefinitions.get(name);
+        if (downstreamDefinition == null) {
+            throw new RuntimeException("Unable to find downstream with name:" + name + ", in " + this);
+        }
+
+        KeyValueStore<Long, RequestData> requestDataOriginals = context.getStateStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUEST_DATA_ORIGINALS_NAME));
+        KeyValueStore<Long, RequestData> requestDataOverrides = context.getStateStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUEST_DATA_OVERRIDES_NAME));
+        IndexedKeyValueStore<String, Request> requests = getIndexedStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUESTS_NAME));
+
+        //todo: make init or move to proc init
+        requests.rebuildIndexes();
+
+        //todo: wrap with api w/o out generics kout vout
+        //todo: pass context, take partition, take traceid? wrapped processor with access to incoming record
+        return new Downstream<>(
+                name,
+                this,
+                downstreamDefinition.requestDataOverrider,
+                downstreamDefinition.requestConverter,
+                downstreamDefinition.correlationIdGenerator,
+                requestDataOriginals,
+                requestDataOverrides,
+                requests,
+                downstreamDefinition.sink.topic(),
+                downstreamDefinition.replyDefinition == null
+        );
     }
 }

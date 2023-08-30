@@ -26,6 +26,9 @@ public class TopologyProvider {
                 Record toSend = record;
                 if (statelessProcessorDefinition instanceof Converter processorDefinition) {
                     toSend = processorDefinition.convert(record);
+                    if (toSend == null) {
+                        return;
+                    }
                 }
                 send(statelessProcessorDefinition.outputTopic(), toSend);
             } catch (Converter.ConvertException e) {
@@ -45,11 +48,16 @@ public class TopologyProvider {
             if (statelessProcessorDefinition instanceof Partitioner partitioner) {
                 streamPartitioner = partitioner::partition;
             }
-            topology.addProcessor(() -> new StatelessProcessor(statelessProcessorDefinition))
+
+            KSTopology.ProcessorDefinition processorDefinition = topology.addProcessor(() -> new StatelessProcessor(statelessProcessorDefinition))
                     .withSource(statelessProcessorDefinition.inputTopic())
-                    .withSink(new KSTopology.SinkDefinition(statelessProcessorDefinition.outputTopic(), null, streamPartitioner))
-                    .withDLQ(statelessProcessorDefinition.dlq())
-                    .done();
+                    .withSink(new KSTopology.SinkDefinition(statelessProcessorDefinition.outputTopic(), null, streamPartitioner));
+
+            if (statelessProcessorDefinition.dlq() != null) {
+                processorDefinition.withDLQ(statelessProcessorDefinition.dlq());
+            }
+
+            processorDefinition.done();
         };
     }
 }

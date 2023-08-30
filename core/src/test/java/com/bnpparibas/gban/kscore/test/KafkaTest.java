@@ -8,9 +8,11 @@ import java.lang.annotation.Target;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
+import org.springframework.test.context.support.DirtiesContextTestExecutionListener;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.ANNOTATION_TYPE})
@@ -26,8 +28,10 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
 @TestExecutionListeners(
         listeners = {
                 DependencyInjectionTestExecutionListener.class,
-                BaseKStreamApplicationTests.CustomExecutionListener.class
+                BaseKStreamApplicationTests.CustomExecutionListener.class,
+                DirtiesContextTestExecutionListener.class
         })
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public @interface KafkaTest {
     @AliasFor(annotation = EmbeddedKafka.class, attribute = "topics")
     String[] topics() default "";

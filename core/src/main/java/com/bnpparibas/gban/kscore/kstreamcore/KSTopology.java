@@ -1,6 +1,8 @@
 package com.bnpparibas.gban.kscore.kstreamcore;
 
+import com.bnpparibas.gban.kscore.kstreamcore.downstream.*;
 import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.processor.StreamPartitioner;
@@ -15,6 +17,7 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -87,6 +90,8 @@ public class KSTopology {
             private final KSProcessor<kI, vI, kO, vO> metaProcessor;
             private Topic<kI, ?> dlq;
             private KSDLQTransformer<kI, vI, ?> dlqTransformer;
+            private Set<DownstreamDefinition<?, ? extends kO, ? extends vO>> downstreams = new HashSet<>();
+            private String customName;
 
             public CachedProcessorSupplier(KSProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
                 this.processorSupplier = processorSupplier;
@@ -99,6 +104,9 @@ public class KSTopology {
             private KSProcessor<kI, vI, kO, vO> getProcessor() {
                 KSProcessor<kI, vI, kO, vO> ksProcessor = processorSupplier.get();
                 ksProcessor.setDLQRecordGenerator((Topic) dlq, dlqTransformer);
+
+                Map<String, DownstreamDefinition<?, ? extends kO, ? extends vO>> downstreamDefinitionMap = downstreams.stream().collect(Collectors.toMap(DownstreamDefinition::getName, Function.identity()));
+                ksProcessor.setDownstreamDefinitions(downstreamDefinitionMap);
                 return ksProcessor;
             }
 
@@ -109,6 +117,9 @@ public class KSTopology {
             }
 
             String getProcessorSimpleClassName() {
+                if (this.customName != null) {
+                    return customName;
+                }
                 Class<?> pClass = metaProcessor.getClass();
                 return pClass.getName().replace(pClass.getPackageName() + ".", "");
             }
@@ -117,13 +128,22 @@ public class KSTopology {
                 this.dlq = dlq;
                 this.dlqTransformer = dlqTransformer;
             }
+
+            public void addDownstream(DownstreamDefinition<?, kO, vO> downstreamDefinition) {
+                this.downstreams.add(downstreamDefinition);
+            }
+
+            public void setCustomName(String name) {
+                this.customName = name;
+            }
         }
 
         private final KSTopology ksTopology;
         private final CachedProcessorSupplier<kI, vI, kO, vO> processorSupplier;
         private final Set<SourceDefinition<kI, ? extends vI>> sources = new HashSet<>();
         private final Set<SinkDefinition<? extends kO, ? extends vO>> sinks = new HashSet<>();
-        private Set<StoreBuilder<?>> stores = new HashSet<>();
+        private Set<DownstreamDefinition<?, ? extends kO, ? extends vO>> downstreams = new HashSet<>();
+        private final Set<StoreBuilder<?>> stores = new HashSet<>();
 
         public ProcessorDefinition(KSTopology ksTopology, KSProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
             this.ksTopology = ksTopology;
@@ -153,7 +173,7 @@ public class KSTopology {
          * @return
          */
         public ProcessorDefinition<kI, vI, kO, vO> withStores(StoreBuilder<?>... stores) {
-            this.stores = Arrays.stream(stores).collect(Collectors.toSet());
+            this.stores.addAll(Set.of(stores));
             return this;
         }
 
@@ -180,7 +200,7 @@ public class KSTopology {
          * @param dlqTransformer transforms failed income message into a DLQ record
          * @param <DLQm>         dlq topic value type
          * @return processor builder
-         * @see #withDLQ(DLQ) 
+         * @see #withDLQ(DLQ)
          */
         @SuppressWarnings({"unchecked", "rawtypes"})
         public <DLQm> ProcessorDefinition<kI, vI, kO, vO> withDLQ(Topic<kI, DLQm> dlq, KSDLQTransformer<kI, vI, ? super DLQm> dlqTransformer) {
@@ -188,8 +208,33 @@ public class KSTopology {
             return withSink((Topic) dlq);
         }
 
-        public <DLQm> ProcessorDefinition<kI, vI, kO, vO> withDLQ(DLQ<kI,vI, DLQm> dlq) {
+        public <DLQm> ProcessorDefinition<kI, vI, kO, vO> withDLQ(DLQ<kI, vI, DLQm> dlq) {
             return withDLQ(dlq.topic, dlq.transformer);
+        }
+
+        /**
+         * Add downstream to processor
+         *
+         * @param                downstreamDefinition
+         * @return
+         * @param <RequestData> internal downstream data model
+         */
+        public <RequestData> ProcessorDefinition<kI, vI, kO, vO> withDownstream(DownstreamDefinition<RequestData, kO, vO> downstreamDefinition) {
+            this.downstreams.add(downstreamDefinition);
+            this.sinks.add(downstreamDefinition.sink);
+            this.processorSupplier.addDownstream(downstreamDefinition);
+            return this;
+        }
+
+        /**
+         * Override default processor naming strategy with a custom name
+         *
+         * @param name          name to override
+         * @return              processor builder
+         */
+        private ProcessorDefinition<kI, vI, kO, vO> withCustomName(String name) {
+            this.processorSupplier.setCustomName(name);
+            return this;
         }
 
         public KSTopology done() {
@@ -296,16 +341,59 @@ public class KSTopology {
         Map<SinkDefinition<?, ?>, Set<ProcessorDefinition<?, ?, ?, ?>>> sinksForProcessors = new HashMap<>();
         Map<StoreBuilder<?>, Set<ProcessorDefinition<?, ?, ?, ?>>> storeForProcessors = new HashMap<>();
 
+        //Define axillary processors for injectable stores
         if (injectableStores != null) {
             injectableStores.forEach((store -> {
                 String injectTopic = config.asProperties().getProperty(StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE) + "-" + store.name() + "-inject";
                 Topic topic = new Topic(injectTopic, getStoreSerde(store, "keySerde"), getStoreSerde(store, "valueSerde"));
 
                 createProcessor(new ProcessorDefinition(this, () -> new KSInjectProcessor(store))
+                        .withCustomName("KSInjectProcessor-" + store.name())
                         .withSource(topic)
                         .withStores(store));
             }));
         }
+
+
+        //Collect all downstream from all mentions
+        Set<DownstreamDefinition<?, ?, ?>> downstreamDefinitions = processors.stream()
+                .flatMap((processorDefinition) -> processorDefinition.downstreams.stream())
+                .collect(Collectors.toSet());
+
+        String appName = config.asProperties().getProperty(StreamsConfig.APPLICATION_ID_CONFIG);
+
+        //Define axillary processors around downstream
+        downstreamDefinitions.forEach(downstreamDefinition -> {
+            if (downstreamDefinition.replyDefinition != null) {
+                createProcessor(new ProcessorDefinition(this, () -> new DownstreamReplyProcessor(downstreamDefinition.name, downstreamDefinition.replyDefinition.replyConsumer()))
+                        .withCustomName("DownstreamReplyProcessor-" + downstreamDefinition.name)
+                        .withSource(downstreamDefinition.replyDefinition.source())
+                        .withDownstream(downstreamDefinition));
+            }
+            createProcessor(new ProcessorDefinition(this, () -> new DownstreamOverrideProcessor(downstreamDefinition.name))
+                    .withCustomName("DownstreamOverrideProcessor-" + downstreamDefinition.name)
+                    .withSource(new Topic(appName + ".downstream-" + downstreamDefinition.name + "-override", Serdes.Long(), downstreamDefinition.requestDataSerde))
+                    .withDownstream(downstreamDefinition));
+            createProcessor(new ProcessorDefinition(this, () -> new DownstreamResendProcessor(downstreamDefinition.name))
+                    .withCustomName("DownstreamResendProcessor-" + downstreamDefinition.name)
+                    .withSource(new Topic(appName + ".downstream-" + downstreamDefinition.name + "-resend", Serdes.Long(), Serdes.String()))
+                    .withDownstream(downstreamDefinition));
+            createProcessor(new ProcessorDefinition(this, () -> new DownstreamCancelProcessor(downstreamDefinition.name))
+                    .withCustomName("DownstreamCancelProcessor-" + downstreamDefinition.name)
+                    .withSource(new Topic(appName + ".downstream-" + downstreamDefinition.name + "-cancel", Serdes.Long(), Serdes.Long()))
+                    .withDownstream(downstreamDefinition));
+        });
+
+        //Connect dowstreams stores to related processors
+        processors.stream().
+                filter(processorDefinition -> !processorDefinition.downstreams.isEmpty())
+                .forEach(processorDefinition -> {
+                    StoreBuilder[] downstreamsStores = processorDefinition.downstreams
+                            .stream()
+                            .flatMap(downstreamDefinition -> downstreamDefinition.buildOrGetStores().stream())
+                            .toArray(StoreBuilder[]::new);
+                    processorDefinition.withStores(downstreamsStores);
+                });
 
         processors.forEach((processor -> {
             processor.sources.forEach(source -> {

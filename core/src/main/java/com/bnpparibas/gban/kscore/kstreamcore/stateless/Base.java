@@ -30,5 +30,7 @@ public interface Base<KIn, VIn, KOut, VOut, DLQm> {
      * Defines dlq topic and transformer for failed convertations
      * @return
      */
-    DLQ<KIn, VIn, DLQm> dlq();
+    default DLQ<KIn, VIn, DLQm> dlq(){
+        return null;
+    }
 }

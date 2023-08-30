@@ -18,9 +18,7 @@ import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
 
 import javax.annotation.PostConstruct;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -36,9 +34,25 @@ public class BaseKStreamApplicationTests {
 
         @Override
         public void beforeTestClass(TestContext testContext) {
-            consumerTopics = Arrays.stream(testContext.getTestClass().getAnnotation(KafkaTest.class).consumers())
+            consumerTopics = Arrays.stream(getTestClassesHierarchy(testContext.getTestClass())
+                            .stream()
+                            .map(c -> c.getAnnotation(KafkaTest.class))
+                            .filter(Objects::nonNull).findFirst()
+                            .map(KafkaTest::consumers)
+                            .orElse(new String[0]))
                     .filter(Predicate.not(String::isBlank))
                     .toArray(String[]::new);
+        }
+
+        public static List<Class<?>> getTestClassesHierarchy(Class<?> testClass) {
+            List<Class<?>> classList = new ArrayList<>();
+            Class<?> superclass = testClass.getSuperclass();
+            classList.add(testClass);
+            while (superclass != null) {
+                classList.add(superclass);
+                superclass = superclass.getSuperclass();
+            }
+            return classList;
         }
     }
 
@@ -60,9 +74,9 @@ public class BaseKStreamApplicationTests {
             @Autowired
             private KafkaTemplate<byte[], byte[]> kafkaTemplate;
 
-            public void send(String topic, byte[] key, byte[] value) {
+            public void send(String topic, Integer partition, byte[] key, byte[] value) {
                 LOGGER.info("sending to topic='{}' payload='{}'", topic, value);
-                kafkaTemplate.send(topic, key, value);
+                kafkaTemplate.send(topic, partition, key, value);
             }
         }
 
@@ -95,7 +109,7 @@ public class BaseKStreamApplicationTests {
                 try {
                     ConsumerRecord<byte[], byte[]> record =
                             received.get(topic).poll(timeout, TimeUnit.SECONDS);
-                    assertNotNull(record, "Topic `" + topic + "` is empty after "+ timeout +"s");
+                    assertNotNull(record, "Topic `" + topic + "` is empty after " + timeout + "s");
                     return record;
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -157,27 +171,50 @@ public class BaseKStreamApplicationTests {
      */
     protected <K, V> void send(Topic<K, V> topic, String topicName, K key, V value) {
         send(
+                topic,
+                null,
                 topicName,
+                key,
+                value);
+    }
+
+    protected <K, V> void send(Topic<K, V> topic, Integer partition, K key, V value) {
+        send(
+                topic,
+                partition,
+                topic.topic,
+                key,
+                value);
+    }
+
+    protected <K, V> void send(Topic<K, V> topic, Integer partition, String topicName, K key, V value) {
+        send(
+                topicName,
+                partition,
                 topic.keySerde.serializer().serialize(topicName, key),
                 topic.valueSerde.serializer().serialize(topicName, value));
     }
 
     protected void send(String topic, byte[] value) {
-        producer.send(topic, null, value);
+        send(topic, null, null, value);
     }
 
     protected void send(String topic, byte[] key, byte[] value) {
-        producer.send(topic, key, value);
+        send(topic, null, key, value);
+    }
+
+    protected void send(String topic, Integer partition, byte[] key, byte[] value) {
+        producer.send(topic, partition, key, value);
     }
 
     /**
      * Wait for a single message in a concrete {@link Topic}
      *
-     * @param topic read topic with key and value serdes
+     * @param topic   read topic with key and value serdes
      * @param timeout await timout
+     * @param <K>     expected key type
+     * @param <V>     expected value type
      * @return
-     * @param <K> expected key type
-     * @param <V> expected value type
      * @see BaseKStreamApplicationTests#waitForRecordFrom(Topic)
      */
     protected <K, V> ConsumerRecord<K, V> waitForRecordFrom(Topic<K, V> topic, int timeout) {
@@ -200,7 +237,7 @@ public class BaseKStreamApplicationTests {
         return consumer.waitForRecordFrom(topic, timeout);
     }
 
-    protected <K,V>  ConsumerRecord<K, V>  waitForRecordFrom(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
+    protected <K, V> ConsumerRecord<K, V> waitForRecordFrom(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
         return createConsumedRecord(waitForRecordFrom(topic, DEFAULT_READ_TIMEOUT_SECONDS), keySerde, valueSerde);
     }
 

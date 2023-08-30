@@ -35,7 +35,7 @@ public interface Converter<KIn, VIn, KOut, VOut, DLQm> extends Base<KIn, VIn, KO
      * Converts incoming record from {@link Base#inputTopic()} into outgoing record to {@link Base#outputTopic()}
      *
      * @param toConvert incoming record for convertation
-     * @return
+     * @return new record to be sent or null to skip sending
      * @throws ConvertException real business exceptions which must be settled into {@link Base#dlq()}
      */
     Record<KOut, VOut> convert(Record<KIn, VIn> toConvert) throws ConvertException;
