@@ -31,7 +31,7 @@ class KSStatelessTopologyTest extends BaseKStreamApplicationTests {
     public static final Topic<Integer, Integer> SOURCE = new Topic<>("test.in.ss.1", Serdes.Integer(), Serdes.Integer());
     public static final Topic<Integer, Integer> SINK1 = new Topic<>("test.out.ss.1", Serdes.Integer(), Serdes.Integer());
     public static final Topic<Integer, String> DLQ_TOPIC = new Topic<>("test.out.dlq.1", Serdes.Integer(), Serdes.String());
-    public static final DLQ<Integer, Integer, String> DLQ_MAIN = new DLQ<>(DLQ_TOPIC, (failed, fromTopic, partition, offset, errorMessage, exception) -> failed.withValue(errorMessage));
+    public static final DLQ<Integer, Integer, String> DLQ_MAIN = new DLQ<>(DLQ_TOPIC, (exceptionId, failed, fromTopic, partition, offset, errorMessage, exception) -> failed.withValue(errorMessage));
 
     @Configuration
     public static class ProcessorConfig {

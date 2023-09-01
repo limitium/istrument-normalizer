@@ -94,6 +94,7 @@ public abstract class KSProcessor<KIn, VIn, KOut, VOut> implements Processor<KIn
         int partition = context.recordMetadata().map(RecordMetadata::partition).orElse(-1);
 
         Record dlqRecord = dlqTransformer.transform(
+                getNextSequence(),
                 failed,
                 fromTopic,
                 partition,

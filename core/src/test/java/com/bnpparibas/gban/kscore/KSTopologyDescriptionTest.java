@@ -7,7 +7,6 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
-import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.processor.api.Record;
 import org.junit.jupiter.api.Test;
@@ -143,7 +142,7 @@ public class KSTopologyDescriptionTest {
                 .withSource(topicIntC)
                 .withSink(topicLongZ)
                 .withSink(topicLongY1)
-                .withDLQ(dlq, (failed, fromTopic, partition, offset, errorMessage, exception) -> null)
+                .withDLQ(dlq, (exceptionId, failed, fromTopic, partition, offset, errorMessage, exception) -> null)
                 .done()
                 .addProcessor(() -> new KSProcessor<Integer, A, Long, Y2>() {
                     @Override

@@ -1,6 +1,5 @@
 package com.bnpparibas.gban.kscore;
 
-import com.bnpparibas.gban.kscore.kstreamcore.KSDLQTransformer;
 import com.bnpparibas.gban.kscore.kstreamcore.KSProcessor;
 import com.bnpparibas.gban.kscore.kstreamcore.KStreamInfraCustomizer;
 import com.bnpparibas.gban.kscore.kstreamcore.Topic;
@@ -78,7 +77,7 @@ class KSTopologyTest extends BaseKStreamApplicationTests {
                         .withStores(store)
                         .withSink(SINK1)
                         .withSink(SINK2)
-                        .withDLQ(DLQ, (failed, fromTopic, partition, offset, errorMessage, exception) -> failed.withValue(errorMessage))
+                        .withDLQ(DLQ, (exceptionId, failed, fromTopic, partition, offset, errorMessage, exception) -> failed.withValue(errorMessage))
                         .done();
             };
 
