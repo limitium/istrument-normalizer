@@ -4,4 +4,4 @@ Default settings for `THROTTLE_TIME` will be one `LookupInstrument` per instrume
 
 `Reducer` shouldn't be aware about an actual message and works with serialized byte[].
 
-Throttle state should be stored in `InMemoryKeyValueStore` and linked with a topic key (securityId in current case)
+Throttle requestState should be stored in `InMemoryKeyValueStore` and linked with a topic key (securityId in current case)

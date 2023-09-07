@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-group 'com.bnpparibas.gban.communication'
+group 'com.limitium.gban.communication'
 version '0.1-SNAPSHOT'
 
 sourceCompatibility = '17'

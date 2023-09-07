@@ -1,12 +1,12 @@
-package com.bnpparibas.gban.instrumentnormalizer;
+package com.limitium.gban.instrumentnormalizer;
 
 
-import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers.FBNormalizeInstrument;
-import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers.FBInstrumentLookuped;
-import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers.FBLookupInstrument;
-import com.bnpparibas.gban.flatbufferstooling.communication.NormalizeInstrument;
-import com.bnpparibas.gban.instrumentkeeper.client.InstrumentKeeperClient;
-import com.bnpparibas.gban.kscore.kstreamcore.KStreamInfraCustomizer;
+import com.limitium.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers.FBNormalizeInstrument;
+import com.limitium.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers.FBInstrumentLookuped;
+import com.limitium.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers.FBLookupInstrument;
+import com.limitium.gban.flatbufferstooling.communication.NormalizeInstrument;
+import com.limitium.gban.instrumentkeeper.client.InstrumentKeeperClient;
+import com.limitium.gban.kscore.kstreamcore.KStreamInfraCustomizer;
 import com.google.flatbuffers.FlatBufferBuilder;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.Serdes;

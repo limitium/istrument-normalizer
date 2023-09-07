@@ -1,6 +1,6 @@
-package com.bnpparibas.gban.instrumentnormalizer;
+package com.limitium.gban.instrumentnormalizer;
 
-import com.bnpparibas.gban.kscore.kstreamcore.KStreamInfraCustomizer;
+import com.limitium.gban.kscore.kstreamcore.KStreamInfraCustomizer;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Produced;

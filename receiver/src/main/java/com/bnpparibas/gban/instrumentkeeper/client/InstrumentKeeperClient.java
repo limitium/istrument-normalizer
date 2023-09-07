@@ -1,4 +1,4 @@
-package com.bnpparibas.gban.instrumentkeeper.client;
+package com.limitium.gban.instrumentkeeper.client;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -1,16 +1,16 @@
-package com.bnpparibas.gban.instrumentnormalizer;
+package com.limitium.gban.instrumentnormalizer;
 
-import static com.bnpparibas.gban.instrumentnormalizer.ReceiverTests.HAPPY_PATH_TOPIC;
-import static com.bnpparibas.gban.instrumentnormalizer.ReceiverTests.UPSTREAM_DOMAIN_USSTREETCASH_EXECUTION_NORMALIZE_INSTRUMENT;
+import static com.limitium.gban.instrumentnormalizer.ReceiverTests.HAPPY_PATH_TOPIC;
+import static com.limitium.gban.instrumentnormalizer.ReceiverTests.UPSTREAM_DOMAIN_USSTREETCASH_EXECUTION_NORMALIZE_INSTRUMENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.bnpparibas.gban.communication.messages.domain.executionreports.flatbuffers.*;
-import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers.FBNormalizeInstrument;
-import com.bnpparibas.gban.flatbufferstooling.communication.NormalizeInstrument;
-import com.bnpparibas.gban.flatbufferstooling.communication.util.PrimitiveNulls;
-import com.bnpparibas.gban.instrumentkeeper.client.InstrumentKeeperClient;
-import com.bnpparibas.gban.kscore.test.BaseKStreamApplicationTests;
-import com.bnpparibas.gban.kscore.test.KafkaTest;
+import com.limitium.gban.communication.messages.domain.executionreports.flatbuffers.*;
+import com.limitium.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers.FBNormalizeInstrument;
+import com.limitium.gban.flatbufferstooling.communication.NormalizeInstrument;
+import com.limitium.gban.flatbufferstooling.communication.util.PrimitiveNulls;
+import com.limitium.gban.instrumentkeeper.client.InstrumentKeeperClient;
+import com.limitium.gban.kscore.test.BaseKStreamApplicationTests;
+import com.limitium.gban.kscore.test.KafkaTest;
 import com.google.flatbuffers.FlatBufferBuilder;
 import java.nio.ByteBuffer;
 import java.util.Random;

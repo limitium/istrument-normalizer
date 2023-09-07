@@ -1,4 +1,4 @@
-namespace com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers;
+namespace com.limitium.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers;
 
 table FbTable1 {
     byte_field1:               byte;

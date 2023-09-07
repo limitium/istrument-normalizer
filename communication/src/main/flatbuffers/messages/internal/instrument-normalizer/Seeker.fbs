@@ -1,4 +1,4 @@
-namespace com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers;
+namespace com.limitium.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers;
 
 include tables/instrument.fbs
 

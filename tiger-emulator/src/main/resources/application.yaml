@@ -1,5 +1,0 @@
-spring.application.name: tiger-emulator
-consolatio:
-  inQueuePrefix:  conq.tiger-emulator.
-  ingressTopic: dt/GBA/AMER/PROD/ALREMEA/TIGERAMERCSV
-  egressTopic: dt/GBA/EMEA/RECEIVER_TIGER_REPLY/CSV

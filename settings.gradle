@@ -9,19 +9,19 @@ rootProject.name = 'instrument-normalizer'
 
 include 'core' //general dependency for all kafka stream applications, provided as lib
 
-include 'receiver' //kafka stream application, provided as containerized application
-include 'reducer' //kafka stream application, provided as containerized application
-include 'seeker' //kafka stream application, provided as containerized application
-include 'combiner' //kafka stream application, provided as containerized application
+//include 'receiver' //kafka stream application, provided as containerized application
+//include 'reducer' //kafka stream application, provided as containerized application
+//include 'seeker' //kafka stream application, provided as containerized application
+//include 'combiner' //kafka stream application, provided as containerized application
 
 
 include 'sequencer' // should be used as lib, in others projects
 
 include 'communication'
 
-include 'book-enricher'
+//include 'book-enricher'
 include 'controller'
 include 'common'
-include 'tiger-emulator'
 include 'storage'
+include 'otel'
 

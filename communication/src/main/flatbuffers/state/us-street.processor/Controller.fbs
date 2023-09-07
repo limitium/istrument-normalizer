@@ -1,4 +1,4 @@
-namespace com.bnpparibas.gban.communication.state.usstreetprocessor.flatbuffers;
+namespace com.limitium.gban.communication.requestState.usstreetprocessor.flatbuffers;
 
 include dictionaries/fix.fbs
 include dictionaries/party.fbs
@@ -15,7 +15,7 @@ table FbFinance {
 
 table FbUsStreetAllocation {
     id:                         long;
-    state:                      FbState;
+    requestState:                      FbState;
     finance:                    FbFinance;
     trading_account:            FbTradingAccount;
     counter_party:              FbCounterParty;

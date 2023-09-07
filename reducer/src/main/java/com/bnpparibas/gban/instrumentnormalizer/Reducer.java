@@ -1,7 +1,7 @@
-package com.bnpparibas.gban.instrumentnormalizer;
+package com.limitium.gban.instrumentnormalizer;
 
-import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers.FBLookupInstrument;
-import com.bnpparibas.gban.kscore.kstreamcore.KStreamInfraCustomizer;
+import com.limitium.gban.communication.messages.internal.instrumentnormalizer.seeker.flatbuffers.FBLookupInstrument;
+import com.limitium.gban.kscore.kstreamcore.KStreamInfraCustomizer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.Topology;

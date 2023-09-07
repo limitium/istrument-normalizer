@@ -33,7 +33,7 @@ dependencies {
 }
 
 springBoot {
-    mainClassName = 'com.bnpparibas.gban.kscore.KStreamApplication'
+    mainClassName = 'com.limitium.gban.kscore.KStreamApplication'
 }
 
 dependencyManagement {

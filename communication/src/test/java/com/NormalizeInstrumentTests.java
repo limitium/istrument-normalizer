@@ -1,9 +1,9 @@
 package com;
 
-import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers.FBNormalizeInstrument;
-import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers.FbFixMsg;
-import com.bnpparibas.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers.FbTable1;
-import com.bnpparibas.gban.flatbufferstooling.communication.NormalizeInstrument;
+import com.limitium.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers.FBNormalizeInstrument;
+import com.limitium.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers.FbFixMsg;
+import com.limitium.gban.communication.messages.internal.instrumentnormalizer.receiver.flatbuffers.FbTable1;
+import com.limitium.gban.flatbufferstooling.communication.NormalizeInstrument;
 import com.google.flatbuffers.FlatBufferBuilder;
 import org.junit.jupiter.api.Test;
 

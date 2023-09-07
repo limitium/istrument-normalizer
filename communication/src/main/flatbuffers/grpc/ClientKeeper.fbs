@@ -1,4 +1,4 @@
-namespace com.bnpparibas.gban.communication.grpc.clientkeeper.flatbuffers;
+namespace com.limitium.gban.communication.grpc.clientkeeper.flatbuffers;
 
 include grpc/server.fbs
 

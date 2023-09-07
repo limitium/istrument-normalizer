@@ -1,9 +1,9 @@
-package com.bnpparibas.gban.usstreetprocessor.bookenricher;
+package com.limitium.gban.usstreetprocessor.bookenricher;
 
 
-import com.bnpparibas.gban.kscore.kstreamcore.KStreamInfraCustomizer;
-import com.bnpparibas.gban.usstreetprocessor.common.Topics;
-import com.bnpparibas.gban.usstreetprocessor.common.external.ClientKeeper;
+import com.limitium.gban.kscore.kstreamcore.KStreamInfraCustomizer;
+import com.limitium.gban.usstreetprocessor.common.Topics;
+import com.limitium.gban.usstreetprocessor.common.external.ClientKeeper;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Branched;
 import org.apache.kafka.streams.kstream.Consumed;

@@ -1,4 +1,4 @@
-namespace com.bnpparibas.gban.communication.grpc.instrumentkeeper.flatbuffers;
+namespace com.limitium.gban.communication.grpc.instrumentkeeper.flatbuffers;
 
 include grpc/server.fbs
 include tables/instrument.fbs
