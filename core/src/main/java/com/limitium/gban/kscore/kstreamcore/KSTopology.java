@@ -1,6 +1,9 @@
 package com.limitium.gban.kscore.kstreamcore;
 
 import com.limitium.gban.kscore.kstreamcore.downstream.*;
+import com.limitium.gban.kscore.kstreamcore.processor.BaseProcessor;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessor;
+import com.limitium.gban.kscore.kstreamcore.processor.ProcessorMeta;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
@@ -8,6 +11,7 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 import org.apache.kafka.streams.processor.TopicNameExtractor;
 import org.apache.kafka.streams.processor.api.ProcessorSupplier;
+import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.internals.AbstractStoreBuilder;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
@@ -45,9 +49,8 @@ public class KSTopology {
      * @param <kO>
      * @param <vO>
      */
-    public interface KSProcessorSupplier<kI, vI, kO, vO> extends ProcessorSupplier<kI, vI, kO, vO> {
-        @Override
-        KSProcessor<kI, vI, kO, vO> get();
+    public interface ExtendedProcessorSupplier<kI, vI, kO, vO> {
+        ExtendedProcessor<kI, vI, kO, vO> get();
     }
 
     /**
@@ -84,53 +87,43 @@ public class KSTopology {
      * @param <vO>
      */
     public static class ProcessorDefinition<kI, vI, kO, vO> {
-        public static class CachedProcessorSupplier<kI, vI, kO, vO> implements KSProcessorSupplier<kI, vI, kO, vO> {
-            private final AtomicReference<KSProcessor<kI, vI, kO, vO>> cachedProcessor = new AtomicReference<>();
-            private final KSProcessorSupplier<kI, vI, kO, vO> processorSupplier;
-            private final KSProcessor<kI, vI, kO, vO> metaProcessor;
-            private Topic<kI, ?> dlq;
-            private KSDLQTransformer<kI, vI, ?> dlqTransformer;
-            private Set<DownstreamDefinition<?, ? extends kO, ? extends vO>> downstreams = new HashSet<>();
+        public static class CachedProcessorSupplier<kI, vI, kO, vO> implements ProcessorSupplier<kI, vI, kO, vO> {
+            private final AtomicReference<ExtendedProcessor<kI, vI, kO, vO>> cachedProcessor = new AtomicReference<>();
+            private final ExtendedProcessorSupplier<kI, vI, kO, vO> processorSupplier;
+            private final ProcessorMeta<kI, vI, kO, vO> processorMeta;
             private String customName;
 
-            public CachedProcessorSupplier(KSProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
+            public CachedProcessorSupplier(ExtendedProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
+                this.processorMeta = new ProcessorMeta<>();
                 this.processorSupplier = processorSupplier;
 
-                metaProcessor = getProcessor();
-                this.cachedProcessor.set(metaProcessor);
-            }
+                ExtendedProcessor<kI, vI, kO, vO> firstCachedProcessor = processorSupplier.get();
+                this.cachedProcessor.set(firstCachedProcessor);
 
-            @SuppressWarnings({"unchecked", "rawtypes"})
-            private KSProcessor<kI, vI, kO, vO> getProcessor() {
-                KSProcessor<kI, vI, kO, vO> ksProcessor = processorSupplier.get();
-                ksProcessor.setDLQRecordGenerator((Topic) dlq, dlqTransformer);
-
-                Map<String, DownstreamDefinition<?, ? extends kO, ? extends vO>> downstreamDefinitionMap = downstreams.stream().collect(Collectors.toMap(DownstreamDefinition::getName, Function.identity()));
-                ksProcessor.setDownstreamDefinitions(downstreamDefinitionMap);
-                return ksProcessor;
+                @SuppressWarnings("rawtypes")
+                Class<? extends ExtendedProcessor>  extendedProcessorClass= firstCachedProcessor.getClass();
+                setCustomName(extendedProcessorClass.getName().replace(extendedProcessorClass.getPackageName() + ".", ""));
             }
 
             @Override
-            public KSProcessor<kI, vI, kO, vO> get() {
-                return Optional.ofNullable(cachedProcessor.getAndSet(null))
-                        .orElse(getProcessor());
+            public BaseProcessor<kI, vI, kO, vO> get() {
+                ExtendedProcessor<kI, vI, kO, vO> processor = Optional.ofNullable(cachedProcessor.getAndSet(null))
+                        .orElse(processorSupplier.get());
+
+                return new BaseProcessor<>(processor, processorMeta);
             }
 
             String getProcessorSimpleClassName() {
-                if (this.customName != null) {
-                    return customName;
-                }
-                Class<?> pClass = metaProcessor.getClass();
-                return pClass.getName().replace(pClass.getPackageName() + ".", "");
+                return customName;
             }
 
-            public <DLQm> void setDLQ(Topic<kI, DLQm> dlq, KSDLQTransformer<kI, vI, ? super DLQm> dlqTransformer) {
-                this.dlq = dlq;
-                this.dlqTransformer = dlqTransformer;
+            public <DLQm> void setDLQ(Topic<kI, DLQm> dlq, DLQTransformer<kI, vI, ? super DLQm> dlqTransformer) {
+                processorMeta.dlqTopic=dlq;
+                processorMeta.dlqTransformer=dlqTransformer;
             }
 
             public void addDownstream(DownstreamDefinition<?, kO, vO> downstreamDefinition) {
-                this.downstreams.add(downstreamDefinition);
+                processorMeta.downstreamDefinitions.put(downstreamDefinition.name,downstreamDefinition);
             }
 
             public void setCustomName(String name) {
@@ -145,7 +138,7 @@ public class KSTopology {
         private Set<DownstreamDefinition<?, ? extends kO, ? extends vO>> downstreams = new HashSet<>();
         private final Set<StoreBuilder<?>> stores = new HashSet<>();
 
-        public ProcessorDefinition(KSTopology ksTopology, KSProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
+        public ProcessorDefinition(KSTopology ksTopology, ExtendedProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
             this.ksTopology = ksTopology;
             this.processorSupplier = new CachedProcessorSupplier<>(processorSupplier);
         }
@@ -203,7 +196,7 @@ public class KSTopology {
          * @see #withDLQ(DLQ)
          */
         @SuppressWarnings({"unchecked", "rawtypes"})
-        public <DLQm> ProcessorDefinition<kI, vI, kO, vO> withDLQ(Topic<kI, DLQm> dlq, KSDLQTransformer<kI, vI, ? super DLQm> dlqTransformer) {
+        public <DLQm> ProcessorDefinition<kI, vI, kO, vO> withDLQ(Topic<kI, DLQm> dlq, DLQTransformer<kI, vI, ? super DLQm> dlqTransformer) {
             this.processorSupplier.setDLQ(dlq, dlqTransformer);
             return withSink((Topic) dlq);
         }
@@ -259,27 +252,27 @@ public class KSTopology {
      * @see ProcessorDefinition#withSource(Topic)
      * @see ProcessorDefinition#withStores(StoreBuilder[])
      * @see ProcessorDefinition#withSink(Topic)
-     * @see ProcessorDefinition#withDLQ(Topic, KSDLQTransformer)
+     * @see ProcessorDefinition#withDLQ(Topic, DLQTransformer)
      */
-    public <kI, vI, kO, vO> ProcessorDefinition<kI, vI, kO, vO> addProcessor(KSProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
+    public <kI, vI, kO, vO> ProcessorDefinition<kI, vI, kO, vO> addProcessor(ExtendedProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
         return new ProcessorDefinition<>(this, processorSupplier);
     }
 
     public <kIl, vIl, kOl, vOl> KSTopology addProcessor(
-            @Nonnull KSProcessorSupplier<kIl, vIl, kOl, vOl> processorSupplier,
+            @Nonnull ExtendedProcessorSupplier<kIl, vIl, kOl, vOl> processorSupplier,
             @Nonnull Topic<kIl, vIl> source) {
         return addProcessor(processorSupplier, source, null, new StoreBuilder[]{});
     }
 
     public <kIl, vIl, kOl, vOl> KSTopology addProcessor(
-            @Nonnull KSProcessorSupplier<kIl, vIl, kOl, vOl> processorSupplier,
+            @Nonnull ExtendedProcessorSupplier<kIl, vIl, kOl, vOl> processorSupplier,
             @Nonnull Topic<kIl, vIl> source,
             @Nonnull StoreBuilder<?>... stores) {
         return addProcessor(processorSupplier, source, null, stores);
     }
 
     public <kIl, vIl, kOl, vOl> KSTopology addProcessor(
-            @Nonnull KSProcessorSupplier<kIl, vIl, kOl, vOl> processorSupplier,
+            @Nonnull ExtendedProcessorSupplier<kIl, vIl, kOl, vOl> processorSupplier,
             @Nonnull Topic<kIl, vIl> source,
             @Nonnull Topic<kOl, vOl> sink) {
         return addProcessor(processorSupplier, source, sink, new StoreBuilder[]{});
@@ -297,13 +290,13 @@ public class KSTopology {
      * @param <kOl>
      * @param <vOl>
      * @return
-     * @see #addProcessor(KSProcessorSupplier, Topic)
-     * @see #addProcessor(KSProcessorSupplier, Topic, Topic)
-     * @see #addProcessor(KSProcessorSupplier, Topic, StoreBuilder[])
-     * @see #addProcessor(KSProcessorSupplier, Topic, Topic, StoreBuilder[])
+     * @see #addProcessor(ExtendedProcessorSupplier, Topic)
+     * @see #addProcessor(ExtendedProcessorSupplier, Topic, Topic)
+     * @see #addProcessor(ExtendedProcessorSupplier, Topic, StoreBuilder[])
+     * @see #addProcessor(ExtendedProcessorSupplier, Topic, Topic, StoreBuilder[])
      */
     public <kIl, vIl, kOl, vOl> KSTopology addProcessor(
-            @Nonnull KSProcessorSupplier<kIl, vIl, kOl, vOl> processorSupplier,
+            @Nonnull ExtendedProcessorSupplier<kIl, vIl, kOl, vOl> processorSupplier,
             @Nonnull Topic<kIl, vIl> source,
             @Nullable Topic<kOl, vOl> sink,
             @Nullable StoreBuilder<?>... stores) {

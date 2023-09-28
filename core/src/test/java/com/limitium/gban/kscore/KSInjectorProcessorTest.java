@@ -1,13 +1,13 @@
 package com.limitium.gban.kscore;
 
-import com.limitium.gban.kscore.kstreamcore.KSProcessor;
 import com.limitium.gban.kscore.kstreamcore.KStreamInfraCustomizer;
 import com.limitium.gban.kscore.kstreamcore.Topic;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessor;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import com.limitium.gban.kscore.test.BaseKStreamApplicationTests;
 import com.limitium.gban.kscore.test.KafkaTest;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
@@ -39,13 +39,12 @@ public class KSInjectorProcessorTest extends BaseKStreamApplicationTests {
 
     @Configuration
     public static class InjectTopologyConfig {
-        public static class SumProcessor extends KSProcessor<Integer, Integer, Integer, Integer> {
+        public static class SumProcessor implements ExtendedProcessor<Integer, Integer, Integer, Integer> {
 
             private KeyValueStore<Integer, Integer> kv;
 
             @Override
-            public void init(ProcessorContext<Integer, Integer> context) {
-                super.init(context);
+            public void init(ExtendedProcessorContext<Integer, Integer, Integer, Integer> context) {
                 kv = context.getStateStore("kv");
             }
 

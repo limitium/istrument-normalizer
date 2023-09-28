@@ -1,6 +1,7 @@
 package com.limitium.gban.kscore.kstreamcore;
 
-import org.apache.kafka.streams.processor.api.ProcessorContext;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessor;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
@@ -9,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 
-public class KSInjectProcessor<KIn, VIn, KOut, VOut> extends KSProcessor<KIn, VIn, KOut, VOut> {
+public class KSInjectProcessor<KIn, VIn, KOut, VOut> implements ExtendedProcessor<KIn, VIn, KOut, VOut> {
     Logger logger = LoggerFactory.getLogger(KSInjectProcessor.class);
 
     private final String storeName;
@@ -17,11 +18,10 @@ public class KSInjectProcessor<KIn, VIn, KOut, VOut> extends KSProcessor<KIn, VI
 
     public KSInjectProcessor(@Nonnull StoreBuilder<?> storeBuilder) {
         this.storeName = storeBuilder.name();
-
     }
 
     @Override
-    public void init(ProcessorContext<KOut, VOut> context) {
+    public void init(ExtendedProcessorContext<KIn, VIn, KOut, VOut> context) {
         kvStore = context.getStateStore(storeName);
     }
 

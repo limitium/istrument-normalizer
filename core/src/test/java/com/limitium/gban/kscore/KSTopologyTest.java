@@ -1,8 +1,10 @@
 package com.limitium.gban.kscore;
 
-import com.limitium.gban.kscore.kstreamcore.KSProcessor;
+import com.limitium.gban.kscore.kstreamcore.DLQTransformer;
 import com.limitium.gban.kscore.kstreamcore.KStreamInfraCustomizer;
 import com.limitium.gban.kscore.kstreamcore.Topic;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessor;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import com.limitium.gban.kscore.test.BaseKStreamApplicationTests;
 import com.limitium.gban.kscore.test.KafkaTest;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -12,6 +14,8 @@ import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,27 +43,28 @@ class KSTopologyTest extends BaseKStreamApplicationTests {
 
     @Configuration
     public static class TopologyConfig {
-        public static class TestProcessor extends KSProcessor<Integer, Long, String, String> {
+        public static class TestProcessor implements ExtendedProcessor<Integer, Long, String, String> {
 
             private KeyValueStore<Integer, Long> inMemKv;
+            private ExtendedProcessorContext<Integer, Long, String, String> context;
 
             @Override
-            public void init(ProcessorContext<String, String> context) {
-                super.init(context);
+            public void init(ExtendedProcessorContext<Integer, Long, String, String> context) {
+                this.context = context;
                 inMemKv = context.getStateStore("in_mem_kv");
             }
 
             @Override
             public void process(Record<Integer, Long> record) {
                 if (record.value() < 0) {
-                    sendToDLQ(record, "negative");
+                    context.sendToDLQ(record, new RuntimeException("negative"));
                     return;
                 }
 
                 inMemKv.putIfAbsent(record.key(), 0L);
                 inMemKv.put(record.key(), inMemKv.get(record.key()) + record.value());
 
-                send(record.value() % 2 != 0 ? SINK1 : SINK2, record
+                context.send(record.value() % 2 != 0 ? SINK1 : SINK2, record
                         .withKey("k_" + record.key())
                         .withValue("v_" + inMemKv.get(record.key()))
                 );
@@ -77,7 +82,7 @@ class KSTopologyTest extends BaseKStreamApplicationTests {
                         .withStores(store)
                         .withSink(SINK1)
                         .withSink(SINK2)
-                        .withDLQ(DLQ, (exceptionId, failed, fromTopic, partition, offset, errorMessage, exception) -> failed.withValue(errorMessage))
+                        .withDLQ(DLQ, (failed, extendedProcessorContext, errorMessage, exception) -> failed.withValue(errorMessage))
                         .done();
             };
 

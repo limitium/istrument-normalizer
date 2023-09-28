@@ -1,8 +1,9 @@
 package com.limitium.gban.kscore.kstreamcore.stateless;
 
-import com.limitium.gban.kscore.kstreamcore.KSProcessor;
 import com.limitium.gban.kscore.kstreamcore.KSTopology;
 import com.limitium.gban.kscore.kstreamcore.KStreamInfraCustomizer;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessor;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 import org.apache.kafka.streams.processor.api.Record;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,13 +13,18 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class TopologyProvider {
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static class StatelessProcessor extends KSProcessor<Object, Object, Object, Object> {
+    public static class StatelessProcessor implements ExtendedProcessor<Object, Object, Object, Object> {
         final Base statelessProcessorDefinition;
+        private ExtendedProcessorContext<Object, Object, Object, Object> context;
 
         public StatelessProcessor(Base statelessProcessorDefinition) {
             this.statelessProcessorDefinition = statelessProcessorDefinition;
         }
 
+        @Override
+        public void init(ExtendedProcessorContext<Object, Object, Object, Object> context) {
+            this.context = context;
+        }
 
         @Override
         public void process(Record<Object, Object> record) {
@@ -30,9 +36,9 @@ public class TopologyProvider {
                         return;
                     }
                 }
-                send(statelessProcessorDefinition.outputTopic(), toSend);
+                context.send(statelessProcessorDefinition.outputTopic(), toSend);
             } catch (Converter.ConvertException e) {
-                sendToDLQ(record, e.getMessage(), e);
+                context.sendToDLQ(record, e.getMessage(), e);
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.limitium.gban.kscore.kstreamcore;
 
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -61,7 +62,8 @@ public class KStreamConfig {
                 StreamsConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG,
                 StreamsConfig.STATE_DIR_CONFIG,
                 StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG,
-                StreamsConfig.STATE_DIR_CONFIG
+                StreamsConfig.STATE_DIR_CONFIG,
+                ExtendedProcessorContext.SEQUENCER_NAMESPACE
         ).forEach(propName -> {
             String propValue = getKafkaStreamProperty(propName, env);
             if (propValue != null) {

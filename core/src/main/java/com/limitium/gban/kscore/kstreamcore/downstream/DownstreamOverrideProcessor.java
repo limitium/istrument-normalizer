@@ -1,11 +1,11 @@
 package com.limitium.gban.kscore.kstreamcore.downstream;
 
 import com.limitium.gban.kscore.kstreamcore.Downstream;
-import com.limitium.gban.kscore.kstreamcore.KSProcessor;
-import org.apache.kafka.streams.processor.api.ProcessorContext;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessor;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 
-public class DownstreamOverrideProcessor<RequestData> extends KSProcessor<Long, RequestData, Object, Object> {
+public class DownstreamOverrideProcessor<RequestData> implements ExtendedProcessor<Long, RequestData, Object, Object> {
     final String downstreamName;
     private Downstream<Object, Object, Object> downstream;
 
@@ -14,9 +14,8 @@ public class DownstreamOverrideProcessor<RequestData> extends KSProcessor<Long, 
     }
 
     @Override
-    public void init(ProcessorContext<Object, Object> context) {
-        super.init(context);
-        downstream = getDownstream(downstreamName);
+    public void init(ExtendedProcessorContext<Long, RequestData, Object, Object> context) {
+        downstream = context.getDownstream(downstreamName);
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.limitium.gban.kscore.kstreamcore.downstream.converter.CorrelationIdGe
 import com.limitium.gban.kscore.kstreamcore.downstream.converter.NewCancelConverter;
 import com.limitium.gban.kscore.kstreamcore.downstream.state.DownstreamReferenceState;
 import com.limitium.gban.kscore.kstreamcore.downstream.state.Request;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.IndexedKeyValueStore;
@@ -32,7 +33,7 @@ public class Downstream<RequestData, Kout, Vout> {
 
     //Upstream processor instance
 
-    KSProcessor<?, ?, Kout, Vout> processor;
+    ExtendedProcessorContext<?, ?, Kout, Vout> extendedProcessorContext;
 
     //Converters
     RequestDataOverrider<RequestData> requestDataOverrider;
@@ -52,7 +53,7 @@ public class Downstream<RequestData, Kout, Vout> {
     @SuppressWarnings("unchecked")
     public Downstream(
             String name,
-            KSProcessor<?, ?, Kout, Vout> processor,
+            ExtendedProcessorContext<?, ?, Kout, Vout> extendedProcessorContext,
             RequestDataOverrider<RequestData> requestDataOverrider,
             NewCancelConverter<RequestData, Kout, Vout> converter,
             CorrelationIdGenerator<RequestData> correlationIdGenerator,
@@ -63,7 +64,7 @@ public class Downstream<RequestData, Kout, Vout> {
             boolean autoCommit
     ) {
         this.name = name;
-        this.processor = processor;
+        this.extendedProcessorContext = extendedProcessorContext;
         this.requestDataOverrider = requestDataOverrider;
         this.requestConverter = converter;
         this.downstreamAmendModel = converter instanceof AmendConverter ? AMENDABLE : DownstreamAmendModel.CANCEL_NEW;
@@ -111,8 +112,6 @@ public class Downstream<RequestData, Kout, Vout> {
     public void resend(long referenceId) {
         Request request = getLastRequest(referenceId)
                 .orElseThrow(() -> new RuntimeException("Unable to resend, noting was sent before"));
-        //todo: cancel prev request?
-        //todo: add flag to skip DS model semantics
 
         RequestData requestData = requestDataOriginal.get(referenceId);
 
@@ -250,7 +249,7 @@ public class Downstream<RequestData, Kout, Vout> {
         //todo: headers are lost, restore them!
         Record<Kout, Vout> record = effectiveRequest.createRecord(correlationId, requestContext.requestData);
 
-        processor.send(topic, record);
+        extendedProcessorContext.send(topic, record);
         return request;
     }
 
@@ -267,7 +266,7 @@ public class Downstream<RequestData, Kout, Vout> {
     }
 
     private long generateNextId() {
-        return processor.getNextSequence();
+        return extendedProcessorContext.getNextSequence();
     }
 
     @NotNull

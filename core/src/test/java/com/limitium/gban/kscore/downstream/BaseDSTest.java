@@ -8,6 +8,8 @@ import com.limitium.gban.kscore.kstreamcore.downstream.converter.AmendConverter;
 import com.limitium.gban.kscore.kstreamcore.downstream.converter.CorrelationIdGenerator;
 import com.limitium.gban.kscore.kstreamcore.downstream.converter.NewCancelConverter;
 import com.limitium.gban.kscore.kstreamcore.downstream.state.Request;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessor;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import com.limitium.gban.kscore.test.BaseKStreamApplicationTests;
 import com.limitium.gban.kscore.test.KafkaTest;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -83,7 +85,7 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
     public static final Topic<String, Request> REQUESTS3 = new Topic<>("core-app.store-downstream-ds3-requests-changelog", Serdes.String(), Request.RequestSerde());
 
     public static class TopologyConfig {
-        public static class TestProcessor extends KSProcessor<Integer, Long, String, String> {
+        public static class TestProcessor implements ExtendedProcessor<Integer, Long, String, String> {
             private Downstream<String, String, String> ds1;
             private Downstream<String, String, String> ds2;
             private Downstream<String, String, String> ds3;
@@ -91,12 +93,11 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
             private KeyValueStore<Integer, String> inMemKv;
 
             @Override
-            public void init(ProcessorContext<String, String> context) {
-                super.init(context);
+            public void init(ExtendedProcessorContext<Integer, Long, String, String> context) {
                 inMemKv = context.getStateStore("in_mem_kv");
-                ds1 = getDownstream("ds1");
-                ds2 = getDownstream("ds2");
-                ds3 = getDownstream("ds3");
+                ds1 = context.getDownstream("ds1");
+                ds2 = context.getDownstream("ds2");
+                ds3 = context.getDownstream("ds3");
             }
 
             @Override

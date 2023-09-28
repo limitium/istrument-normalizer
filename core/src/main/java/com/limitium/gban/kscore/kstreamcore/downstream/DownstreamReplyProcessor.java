@@ -1,13 +1,13 @@
 package com.limitium.gban.kscore.kstreamcore.downstream;
 
 import com.limitium.gban.kscore.kstreamcore.Downstream;
-import com.limitium.gban.kscore.kstreamcore.KSProcessor;
-import org.apache.kafka.streams.processor.api.ProcessorContext;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessor;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 
 import javax.annotation.Nullable;
 
-public class DownstreamReplyProcessor<KeyType, ReplyType> extends KSProcessor<KeyType, ReplyType, Object, Object> {
+public class DownstreamReplyProcessor<KeyType, ReplyType> implements ExtendedProcessor<KeyType, ReplyType, Object, Object> {
     final String downstreamName;
     final ReplyConsumer<KeyType, ReplyType> replyConsumer;
     private Downstream<Object, Object, Object> downstream;
@@ -18,9 +18,8 @@ public class DownstreamReplyProcessor<KeyType, ReplyType> extends KSProcessor<Ke
     }
 
     @Override
-    public void init(ProcessorContext<Object, Object> context) {
-        super.init(context);
-        downstream = getDownstream(downstreamName);
+    public void init(ExtendedProcessorContext<KeyType, ReplyType, Object, Object> context) {
+        downstream = context.getDownstream(downstreamName);
     }
 
     @Override
