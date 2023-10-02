@@ -24,7 +24,7 @@ import java.util.function.Function;
 
 public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorContextComposer<KOut, VOut> {
     public static final String SEQUENCER_NAMESPACE = "sequencer.namespace";
-    public static final Function<Headers, Long> TRACE_ID_EXTRACTOR = headers -> Optional.of(headers.lastHeader("traceparent"))
+    public static final Function<Optional<Headers>, Long> TRACE_ID_EXTRACTOR = headers -> headers.map(h->h.lastHeader("traceparent"))
             .map(header -> new String(header.value(), Charset.defaultCharset()))
             .filter(Strings::isNotEmpty)
             .map(v -> v.split("-"))
@@ -70,12 +70,13 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
         return sequencer.getNext();
     }
 
-    public Headers getIncomingRecordHeaders() {
-        return incomingRecord.headers();
+    public Optional<Headers> getIncomingRecordHeaders() {
+        return Optional.ofNullable(incomingRecord)
+                .map(Record::headers);
     }
 
     public long getIncomingRecordTimestamp() {
-        return incomingRecord.timestamp();
+        return incomingRecord!=null?incomingRecord.timestamp():1L;
     }
 
     public long getTraceId() {
