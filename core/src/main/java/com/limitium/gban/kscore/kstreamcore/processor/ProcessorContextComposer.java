@@ -12,10 +12,10 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
-public class ProcessorContextCompositor<KOut, VOut> implements ProcessorContext<KOut, VOut> {
+public class ProcessorContextComposer<KOut, VOut> implements ProcessorContext<KOut, VOut> {
     protected final ProcessorContext<KOut, VOut> context;
 
-    public ProcessorContextCompositor(ProcessorContext<KOut, VOut> context) {
+    public ProcessorContextComposer(ProcessorContext<KOut, VOut> context) {
         this.context = context;
     }
 

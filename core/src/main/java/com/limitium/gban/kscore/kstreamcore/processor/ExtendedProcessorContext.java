@@ -9,6 +9,7 @@ import com.limitium.gban.kscore.kstreamcore.downstream.state.Request;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
+import org.apache.kafka.streams.processor.api.RecordMetadata;
 import org.apache.kafka.streams.state.IndexedKeyValueStore;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.internals.WrappedStateStore;
@@ -17,12 +18,11 @@ import org.apache.logging.log4j.util.Strings;
 import javax.annotation.Nullable;
 import java.nio.charset.Charset;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorContextCompositor<KOut, VOut> {
+public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorContextComposer<KOut, VOut> {
     public static final String SEQUENCER_NAMESPACE = "sequencer.namespace";
     public static final Function<Headers, Long> TRACE_ID_EXTRACTOR = headers -> Optional.of(headers.lastHeader("traceparent"))
             .map(header -> new String(header.value(), Charset.defaultCharset()))
@@ -144,6 +144,45 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
                 downstreamDefinition.sink.topic(),
                 downstreamDefinition.replyDefinition == null
         );
+    }
+
+    /**
+     * Return the topic name of the current input record; could be {@code ""} if it is not
+     * available.
+     * <p> For example, if this method is invoked within a @link Punctuator#punctuate(long)
+     * punctuation callback}, or while processing a record that was forwarded by a punctuation
+     * callback, the record won't have an associated topic.
+     *
+     * @return the topic name
+     */
+    public String getTopic(){
+        return recordMetadata().map(RecordMetadata::topic).orElse("");
+    }
+
+    /**
+     * Return the partition id of the current input record; could be {@code -1} if it is not
+     * available.
+     *
+     * <p> For example, if this method is invoked within a @link Punctuator#punctuate(long)
+     * punctuation callback}, or while processing a record that was forwarded by a punctuation
+     * callback, the record won't have an associated partition id.
+     *
+     * @return the offset
+     */
+    public long getOffset(){
+        return recordMetadata().map(RecordMetadata::offset).orElse(-1L);
+    }
+
+    /**
+     * Return the offset of the current input record; could be -1 if it is not available.
+     *
+     * <p> For example, if this method is invoked within a @link Punctuator#punctuate(long)
+     * punctuation callback}, or while processing a record that was forwarded by a punctuation
+     * callback, the record won't have an associated offset.
+     * @return the partition id
+     */
+    public int getPartition(){
+        return recordMetadata().map(RecordMetadata::partition).orElse(-1);
     }
 
     protected void updateIncomingRecord(Record<KIn, VIn> incomingRecord) {
