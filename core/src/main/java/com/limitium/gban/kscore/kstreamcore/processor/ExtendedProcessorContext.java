@@ -4,40 +4,35 @@ import com.limitium.gban.bibliotheca.sequencer.Sequencer;
 import com.limitium.gban.kscore.kstreamcore.Downstream;
 import com.limitium.gban.kscore.kstreamcore.KSTopology;
 import com.limitium.gban.kscore.kstreamcore.Topic;
+import com.limitium.gban.kscore.kstreamcore.audit.Audit;
 import com.limitium.gban.kscore.kstreamcore.downstream.DownstreamDefinition;
 import com.limitium.gban.kscore.kstreamcore.downstream.state.Request;
 import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.streams.processor.StateStore;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.processor.api.RecordMetadata;
 import org.apache.kafka.streams.state.IndexedKeyValueStore;
 import org.apache.kafka.streams.state.KeyValueStore;
+import org.apache.kafka.streams.state.WrappedIndexedKeyValueStore;
+import org.apache.kafka.streams.state.WrappedKeyValueStore;
+import org.apache.kafka.streams.state.internals.IndexedMeteredKeyValueStore;
+import org.apache.kafka.streams.state.internals.ProcessorPostInitListener;
 import org.apache.kafka.streams.state.internals.WrappedStateStore;
-import org.apache.logging.log4j.util.Strings;
+import org.apache.kafka.streams.state.internals.WrapperSupplierFactoryAware;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.nio.charset.Charset;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorContextComposer<KOut, VOut> {
+    Logger logger = LoggerFactory.getLogger(getClass());
     public static final String SEQUENCER_NAMESPACE = "sequencer.namespace";
-    public static final Function<Optional<Headers>, Long> TRACE_ID_EXTRACTOR = headers -> headers.map(h->h.lastHeader("traceparent"))
-            .map(header -> new String(header.value(), Charset.defaultCharset()))
-            .filter(Strings::isNotEmpty)
-            .map(v -> v.split("-"))
-            .filter(parts -> parts.length > 1)
-            .map(parts -> Long.parseLong(parts[1]))
-            .orElse(-1L);
-
     private final Sequencer sequencer;
     private final ProcessorMeta<KIn, VIn, KOut, VOut> processorMeta;
     private Record<KIn, VIn> incomingRecord;
-
-    @SuppressWarnings("rawtypes")
-    private final Set<IndexedKeyValueStore> indexedStores = new HashSet<>();
 
 
     public ExtendedProcessorContext(ProcessorContext<KOut, VOut> context, ProcessorMeta<KIn, VIn, KOut, VOut> processorMeta) {
@@ -46,20 +41,34 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
         sequencer = new Sequencer(context::currentSystemTimeMs, (Integer) context.appConfigs().getOrDefault(SEQUENCER_NAMESPACE, 0), context.taskId().partition());
     }
 
-    /**
-     * Unwraps IndexedKeyValueStore from context
-     *
-     * @param name registered store name
-     * @param <KS> key type
-     * @param <VS> value type
-     * @return store
-     */
-    @SuppressWarnings("unchecked")
-    public <KS, VS> IndexedKeyValueStore<KS, VS> getIndexedStore(String name) {
-        IndexedKeyValueStore<KS, VS> indexedKeyValueStore = ((WrappedStateStore<IndexedKeyValueStore<KS, VS>, KS, VS>) context.getStateStore(name)).wrapped();
-        indexedStores.add(indexedKeyValueStore);
-        return indexedKeyValueStore;
+    Map<String, StateStore> stores = new HashMap<>();
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public <S extends StateStore> S getStateStore(String name) {
+        return (S) stores.computeIfAbsent(name, s -> {
+            S stateStore = ExtendedProcessorContext.this.context.getStateStore(name);
+
+            if (stateStore instanceof WrappedStateStore wrappedStateStore) {
+                if (wrappedStateStore.wrapped() instanceof WrapperSupplierFactoryAware wrapperSupplierFactoryAware) {
+                    if (wrapperSupplierFactoryAware instanceof IndexedMeteredKeyValueStore indexedKeyValueStore) {
+                        return new WrappedIndexedKeyValueDecorator(indexedKeyValueStore, wrapperSupplierFactoryAware, this);
+                    }
+                    if (wrapperSupplierFactoryAware instanceof KeyValueStore kvStore) {
+                        return new WrappedKeyValueDecorator(kvStore, wrapperSupplierFactoryAware, this);
+                    }
+                }
+                if (wrappedStateStore.wrapped() instanceof WrappedKeyValueStore wrappedKeyValueStore) {
+                    return wrappedKeyValueStore;
+                }
+                if (wrappedStateStore.wrapped() instanceof IndexedKeyValueStore indexedKeyValueStore) {
+                    return indexedKeyValueStore;
+                }
+            }
+            return stateStore;
+        });
     }
+
 
     /**
      * Generate next sequence based on stream time and partition. Might stuck if consumes more than 2^{@link Sequencer#SEQUENCE_BITS} messages in a single millisecond.
@@ -70,18 +79,14 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
         return sequencer.getNext();
     }
 
-    public Optional<Headers> getIncomingRecordHeaders() {
-        return Optional.ofNullable(incomingRecord)
-                .map(Record::headers);
+    public Headers getIncomingRecordHeaders() {
+        return incomingRecord.headers();
     }
 
     public long getIncomingRecordTimestamp() {
-        return incomingRecord!=null?incomingRecord.timestamp():1L;
+        return incomingRecord.timestamp();
     }
 
-    public long getTraceId() {
-        return TRACE_ID_EXTRACTOR.apply(getIncomingRecordHeaders());
-    }
 
     /**
      * Sends message to sink topic
@@ -94,6 +99,10 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
     @SuppressWarnings({"unchecked", "rawtypes"})
     public <KOutl, VOutl> void send(Topic<KOutl, VOutl> topic, Record<KOutl, VOutl> record) {
         forward((Record) record, KSTopology.TopologyNameGenerator.sinkName(topic));
+    }
+
+    public boolean hasDLQ() {
+        return processorMeta.dlqTopic != null && processorMeta.dlqTransformer != null;
     }
 
     public void sendToDLQ(Record<KIn, VIn> failed, Exception exception) {
@@ -129,11 +138,11 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
             throw new RuntimeException("Unable to find downstream with name:" + name + ", in " + this);
         }
 
-        KeyValueStore<Long, RequestData> requestDataOriginals = context.getStateStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUEST_DATA_ORIGINALS_NAME));
-        KeyValueStore<Long, RequestData> requestDataOverrides = context.getStateStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUEST_DATA_OVERRIDES_NAME));
-        IndexedKeyValueStore<String, Request> requests = getIndexedStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUESTS_NAME));
+        KeyValueStore<Long, RequestData> requestDataOriginals = getStateStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUEST_DATA_ORIGINALS_NAME));
+        WrappedKeyValueStore<Long, RequestData, Audit> requestDataOverrides = getStateStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUEST_DATA_OVERRIDES_NAME));
+        WrappedIndexedKeyValueStore<String, Request, Audit> requests = getStateStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUESTS_NAME));
 
-        return new Downstream<>(
+        Downstream<RequestData, KOut, VOut> downstream = new Downstream<>(
                 name,
                 this,
                 downstreamDefinition.requestDataOverrider,
@@ -145,6 +154,8 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
                 downstreamDefinition.sink.topic(),
                 downstreamDefinition.replyDefinition == null
         );
+        logger.info("ExtendedContext {}-{} creates `{}` {}, with request store {}", this, taskId().partition(), downstreamDefinition.name, downstream, requests);
+        return downstream;
     }
 
     /**
@@ -156,7 +167,7 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
      *
      * @return the topic name
      */
-    public String getTopic(){
+    public String getTopic() {
         return recordMetadata().map(RecordMetadata::topic).orElse("");
     }
 
@@ -170,7 +181,7 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
      *
      * @return the offset
      */
-    public long getOffset(){
+    public long getOffset() {
         return recordMetadata().map(RecordMetadata::offset).orElse(-1L);
     }
 
@@ -180,9 +191,10 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
      * <p> For example, if this method is invoked within a @link Punctuator#punctuate(long)
      * punctuation callback}, or while processing a record that was forwarded by a punctuation
      * callback, the record won't have an associated offset.
+     *
      * @return the partition id
      */
-    public int getPartition(){
+    public int getPartition() {
         return recordMetadata().map(RecordMetadata::partition).orElse(-1);
     }
 
@@ -190,7 +202,14 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
         this.incomingRecord = incomingRecord;
     }
 
+    @SuppressWarnings("unchecked")
     protected void postProcessorInit() {
-        indexedStores.forEach(IndexedKeyValueStore::rebuildIndexes);
+        logger.info("PostInit extendedContext {}, post init stores", this);
+        processorMeta.storeNames.stream()
+                .map(this::getStateStore)
+                .filter(ProcessorPostInitListener.class::isInstance)
+                .map(ProcessorPostInitListener.class::cast)
+                .peek(s -> logger.info("PostInit store {}", s))
+                .forEach(listener -> listener.onPostInit(this));
     }
 }

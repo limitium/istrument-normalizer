@@ -19,11 +19,15 @@ public class BaseProcessor<KIn, VIn, KOut, VOut> implements org.apache.kafka.str
 
     @Override
     public void process(Record<KIn, VIn> record) {
+        logger.info("Incoming message {}-{} {}, updates extendedContext {}", extendedProcessorContext.getTopic(), extendedProcessorContext.getPartition(), record, extendedProcessorContext);
         extendedProcessorContext.updateIncomingRecord(record);
         try {
             extendedProcessor.process(record);
         } catch (Exception e) {
-            logger.error("unhandled exception {}, for {}", e, record);
+            logger.error("unhandled exception in {} {}, for {}", getName(), e, record);
+            if (!extendedProcessorContext.hasDLQ()) {
+                throw e;
+            }
             extendedProcessorContext.sendToDLQ(record, e);
         }
     }
@@ -31,10 +35,15 @@ public class BaseProcessor<KIn, VIn, KOut, VOut> implements org.apache.kafka.str
     @Override
     public void init(ProcessorContext<KOut, VOut> context) {
         extendedProcessorContext = new ExtendedProcessorContext<>(context, processorMeta);
+        logger.info("Init processor {}, new ExtendedContext created {}", getName(), extendedProcessorContext);
 
         extendedProcessor.init(extendedProcessorContext);
 
         extendedProcessorContext.postProcessorInit();
+    }
+
+    protected String getName() {
+        return String.format("%s-%d", processorMeta.name, extendedProcessorContext.taskId().partition());
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.limitium.gban.kscore.test;
 
 import com.limitium.gban.kscore.kstreamcore.Topic;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serde;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -77,6 +78,11 @@ public class BaseKStreamApplicationTests {
             public void send(String topic, Integer partition, byte[] key, byte[] value) {
                 LOGGER.info("sending to topic='{}' payload='{}'", topic, value);
                 kafkaTemplate.send(topic, partition, key, value);
+            }
+
+            public void send(ProducerRecord<byte[], byte[]> producerRecord) {
+                LOGGER.info("sending to topic='{}' payload='{}'", producerRecord.topic(), producerRecord.value());
+                kafkaTemplate.send(producerRecord);
             }
         }
 
@@ -205,6 +211,10 @@ public class BaseKStreamApplicationTests {
 
     protected void send(String topic, Integer partition, byte[] key, byte[] value) {
         producer.send(topic, partition, key, value);
+    }
+
+    protected void send(ProducerRecord<byte[], byte[]> producerRecord) {
+        producer.send(producerRecord);
     }
 
     /**

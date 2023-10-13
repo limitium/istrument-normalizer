@@ -11,7 +11,6 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 import org.apache.kafka.streams.processor.TopicNameExtractor;
 import org.apache.kafka.streams.processor.api.ProcessorSupplier;
-import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.internals.AbstractStoreBuilder;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
@@ -21,7 +20,6 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -91,7 +89,6 @@ public class KSTopology {
             private final AtomicReference<ExtendedProcessor<kI, vI, kO, vO>> cachedProcessor = new AtomicReference<>();
             private final ExtendedProcessorSupplier<kI, vI, kO, vO> processorSupplier;
             private final ProcessorMeta<kI, vI, kO, vO> processorMeta;
-            private String customName;
 
             public CachedProcessorSupplier(ExtendedProcessorSupplier<kI, vI, kO, vO> processorSupplier) {
                 this.processorMeta = new ProcessorMeta<>();
@@ -101,7 +98,7 @@ public class KSTopology {
                 this.cachedProcessor.set(firstCachedProcessor);
 
                 @SuppressWarnings("rawtypes")
-                Class<? extends ExtendedProcessor>  extendedProcessorClass= firstCachedProcessor.getClass();
+                Class<? extends ExtendedProcessor> extendedProcessorClass = firstCachedProcessor.getClass();
                 setCustomName(extendedProcessorClass.getName().replace(extendedProcessorClass.getPackageName() + ".", ""));
             }
 
@@ -114,20 +111,20 @@ public class KSTopology {
             }
 
             String getProcessorSimpleClassName() {
-                return customName;
+                return processorMeta.name;
             }
 
             public <DLQm> void setDLQ(Topic<kI, DLQm> dlq, DLQTransformer<kI, vI, ? super DLQm> dlqTransformer) {
-                processorMeta.dlqTopic=dlq;
-                processorMeta.dlqTransformer=dlqTransformer;
+                processorMeta.dlqTopic = dlq;
+                processorMeta.dlqTransformer = dlqTransformer;
             }
 
             public void addDownstream(DownstreamDefinition<?, kO, vO> downstreamDefinition) {
-                processorMeta.downstreamDefinitions.put(downstreamDefinition.name,downstreamDefinition);
+                processorMeta.downstreamDefinitions.put(downstreamDefinition.name, downstreamDefinition);
             }
 
             public void setCustomName(String name) {
-                this.customName = name;
+                processorMeta.name = name;
             }
         }
 
@@ -166,7 +163,9 @@ public class KSTopology {
          * @return
          */
         public ProcessorDefinition<kI, vI, kO, vO> withStores(StoreBuilder<?>... stores) {
-            this.stores.addAll(Set.of(stores));
+            Set<StoreBuilder<?>> builderSet = Set.of(stores);
+            this.stores.addAll(builderSet);
+            this.processorSupplier.processorMeta.storeNames.addAll(builderSet.stream().map(StoreBuilder::name).collect(Collectors.toSet()));
             return this;
         }
 
@@ -208,9 +207,9 @@ public class KSTopology {
         /**
          * Add downstream to processor
          *
-         * @param                downstreamDefinition
+         * @param downstreamDefinition
+         * @param <RequestData>        internal downstream data model
          * @return
-         * @param <RequestData> internal downstream data model
          */
         public <RequestData> ProcessorDefinition<kI, vI, kO, vO> withDownstream(DownstreamDefinition<RequestData, kO, vO> downstreamDefinition) {
             this.downstreams.add(downstreamDefinition);
@@ -222,8 +221,8 @@ public class KSTopology {
         /**
          * Override default processor naming strategy with a custom name
          *
-         * @param name          name to override
-         * @return              processor builder
+         * @param name name to override
+         * @return processor builder
          */
         private ProcessorDefinition<kI, vI, kO, vO> withCustomName(String name) {
             this.processorSupplier.setCustomName(name);

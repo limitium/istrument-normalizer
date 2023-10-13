@@ -1,5 +1,6 @@
 package com.limitium.gban.kscore.kstreamcore;
 
+import com.limitium.gban.kscore.kstreamcore.audit.Audit;
 import com.limitium.gban.kscore.kstreamcore.downstream.DownstreamDefinition;
 import com.limitium.gban.kscore.kstreamcore.downstream.RequestContext;
 import com.limitium.gban.kscore.kstreamcore.downstream.RequestDataOverrider;
@@ -11,9 +12,11 @@ import com.limitium.gban.kscore.kstreamcore.downstream.state.Request;
 import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.processor.api.Record;
-import org.apache.kafka.streams.state.IndexedKeyValueStore;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
+import org.apache.kafka.streams.state.WrappedIndexedKeyValueStore;
+import org.apache.kafka.streams.state.WrappedKeyValueStore;
+import org.apache.kafka.streams.state.internals.WrapperValue;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +44,9 @@ public class Downstream<RequestData, Kout, Vout> {
     CorrelationIdGenerator<RequestData> correlationIdGenerator;
 
     //State
-    KeyValueStore<Long, RequestData> requestDataOriginal;
-    KeyValueStore<Long, RequestData> requestDataOverrides; //todo: must be wrapped with audit store
-    IndexedKeyValueStore<String, Request> requests; //todo: must be wrapped with audit store
+    KeyValueStore<Long, RequestData> requestDataOriginals;
+    WrappedKeyValueStore<Long, RequestData, Audit> requestDataOverrides;
+    WrappedIndexedKeyValueStore<String, Request, Audit> requests;
 
     //Downstream
     DownstreamAmendModel downstreamAmendModel;
@@ -57,19 +60,19 @@ public class Downstream<RequestData, Kout, Vout> {
             RequestDataOverrider<RequestData> requestDataOverrider,
             NewCancelConverter<RequestData, Kout, Vout> converter,
             CorrelationIdGenerator<RequestData> correlationIdGenerator,
-            KeyValueStore<Long, RequestData> requestDataOriginal,
-            KeyValueStore<Long, RequestData> requestDataOverrides,
-            IndexedKeyValueStore<String, Request> requests,
+            KeyValueStore<Long, RequestData> requestDataOriginals,
+            WrappedKeyValueStore<Long, RequestData, Audit> requestDataOverrides,
+            WrappedIndexedKeyValueStore<String, Request, Audit> requests,
             Topic<? extends Kout, ? extends Vout> topic,
             boolean autoCommit
     ) {
-        this.name = name;
+        this.name = String.format("%s-%d", name, extendedProcessorContext.taskId().partition());
         this.extendedProcessorContext = extendedProcessorContext;
         this.requestDataOverrider = requestDataOverrider;
         this.requestConverter = converter;
         this.downstreamAmendModel = converter instanceof AmendConverter ? AMENDABLE : DownstreamAmendModel.CANCEL_NEW;
         this.correlationIdGenerator = correlationIdGenerator;
-        this.requestDataOriginal = requestDataOriginal;
+        this.requestDataOriginals = requestDataOriginals;
         this.requestDataOverrides = requestDataOverrides;
         this.requests = requests;
         this.topic = (Topic<Kout, Vout>) topic;
@@ -79,16 +82,17 @@ public class Downstream<RequestData, Kout, Vout> {
     public void send(Request.RequestType requestType, long referenceId, int referenceVersion, RequestData requestData) {
         RequestContext<RequestData> requestContext = prepareRequestContext(requestType, referenceId, referenceVersion, requestData);
 
-        requestDataOriginal.put(referenceId, requestData);
+        requestDataOriginals.put(referenceId, requestData);
         processRequest(requestContext);
     }
 
     public void replied(String correlationId, boolean isAck, @Nullable String code, @Nullable String answer, @Nullable String externalId, int externalVersion) {
-        Request request = requests.getUnique(DownstreamDefinition.STORE_REQUESTS_CORRELATION_INDEX_NAME, correlationId);
-        if (request == null) {
+        WrapperValue<Audit, Request> auditRequest = requests.getUnique(DownstreamDefinition.STORE_REQUESTS_CORRELATION_INDEX_NAME, correlationId);
+        if (auditRequest == null) {
             throw new RuntimeException("NF");
         }
 
+        Request request = auditRequest.value();
         if (request.state == Request.RequestState.CANCELED) {
             throw new RuntimeException("CANCELED");
         }
@@ -100,12 +104,12 @@ public class Downstream<RequestData, Kout, Vout> {
         request.externalId = externalId;
         request.externalVersion = externalVersion;
 
-        requests.put(request.getStoreKey(), request);
+        requests.putValue(request.getStoreKey(), request);
     }
 
     public void updateOverride(long referenceId, RequestData override) {
         //todo: bump override version, after auditable store
-        requestDataOverrides.put(referenceId, override);
+        requestDataOverrides.putValue(referenceId, override);
         resend(referenceId);
     }
 
@@ -113,7 +117,7 @@ public class Downstream<RequestData, Kout, Vout> {
         Request request = getLastRequest(referenceId)
                 .orElseThrow(() -> new RuntimeException("Unable to resend, noting was sent before"));
 
-        RequestData requestData = requestDataOriginal.get(referenceId);
+        RequestData requestData = requestDataOriginals.get(referenceId);
 
         RequestContext<RequestData> requestContext = prepareRequestContext(request.type, request.referenceId, request.referenceVersion, requestData);
         processRequest(requestContext);
@@ -130,14 +134,14 @@ public class Downstream<RequestData, Kout, Vout> {
         }
         request.state = Request.RequestState.CANCELED;
         request.respondedAt = System.currentTimeMillis();
-        requests.put(request.getStoreKey(), request);
+        requests.putValue(request.getStoreKey(), request);
     }
 
     @NotNull
     private RequestContext<RequestData> prepareRequestContext(Request.RequestType requestType, long referenceId, int referenceVersion, RequestData requestData) {
         RequestData requestDataMerged = requestData;
         int overrideVersion = -1;
-        RequestData requestDataOverride = requestDataOverrides.get(referenceId);
+        RequestData requestDataOverride = requestDataOverrides.getValue(referenceId);
         if (requestDataOverride != null) {
             overrideVersion = 1;//auditable version
             requestDataMerged = requestDataOverrider.override(requestData, requestDataOverride);
@@ -222,10 +226,10 @@ public class Downstream<RequestData, Kout, Vout> {
      */
     @NotNull
     private Stream<Request> getPreviousRequest(long referenceId) {
-        KeyValueIterator<String, Request> prevRequests = requests.prefixScan(String.valueOf(referenceId), new StringSerializer());
+        KeyValueIterator<String, WrapperValue<Audit, Request>> prevRequests = requests.prefixScan(String.valueOf(referenceId), new StringSerializer());
 
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(prevRequests, Spliterator.ORDERED), false)
-                .map((kv) -> kv.value)
+                .map((kv) -> kv.value.value())
                 .sorted(Comparator.comparingLong((Request o) -> o.id).reversed());
     }
 
@@ -244,9 +248,8 @@ public class Downstream<RequestData, Kout, Vout> {
 
         Request request = createRequest(effectiveRequest, requestId, correlationId, requestContext);
 
-        requests.put(request.getStoreKey(), request);
+        requests.putValue(request.getStoreKey(), request);
 
-        //todo: headers are lost, restore them!
         Record<Kout, Vout> record = effectiveRequest.createRecord(correlationId, requestContext.requestData);
 
         extendedProcessorContext.send(topic, record);

@@ -97,40 +97,40 @@ public class MainScenariosTest extends BaseDSTest {
         assertEquals("ds3", ds3outNew.dsId());
         assertEquals("rd3>1|1", ds3outNew.payload());
 
-        ConsumerRecord<String, Request> request1 = waitForRecordFrom(REQUESTS1);
-        ConsumerRecord<String, Request> request2 = waitForRecordFrom(REQUESTS2);//pending
-        request2 = waitForRecordFrom(REQUESTS2);//autocommit
-        ConsumerRecord<String, Request> request3 = waitForRecordFrom(REQUESTS3);
+        Request request1 = waitForRecordFrom(REQUESTS1).value().value();
+        Request request2 = waitForRecordFrom(REQUESTS2).value().value();//pending
+        request2 = waitForRecordFrom(REQUESTS2).value().value();//autocommit
+        Request request3 = waitForRecordFrom(REQUESTS3).value().value();
 
-        long request1Id = request1.value().id;
-        assertEquals(Request.RequestType.NEW, request1.value().type);
-        assertEquals(Request.RequestState.PENDING, request1.value().state);
-        assertEquals(0, request1.value().respondedAt);
+        long request1Id = request1.id;
+        assertEquals(Request.RequestType.NEW, request1.type);
+        assertEquals(Request.RequestState.PENDING, request1.state);
+        assertEquals(0, request1.respondedAt);
 
-        assertEquals(Request.RequestType.NEW, request2.value().type);
-        assertEquals(Request.RequestState.ACKED, request2.value().state);
+        assertEquals(Request.RequestType.NEW, request2.type);
+        assertEquals(Request.RequestState.ACKED, request2.state);
 
-        long request3Id = request3.value().id;
-        assertEquals(Request.RequestType.NEW, request3.value().type);
-        assertEquals(Request.RequestState.PENDING, request3.value().state);
-        assertEquals(0, request3.value().respondedAt);
+        long request3Id = request3.id;
+        assertEquals(Request.RequestType.NEW, request3.type);
+        assertEquals(Request.RequestState.PENDING, request3.state);
+        assertEquals(0, request3.respondedAt);
 
 
         send(REPLY1, 0, ds1outNew.correlationId(), "true,-,-");
         send(REPLY3, 0, ds3outNew.correlationId(), "false,123,bad");
 
-        request1 = waitForRecordFrom(REQUESTS1);
-        request3 = waitForRecordFrom(REQUESTS3);
+        request1 = waitForRecordFrom(REQUESTS1).value().value();
+        request3 = waitForRecordFrom(REQUESTS3).value().value();
 
-        assertEquals(Request.RequestState.ACKED, request1.value().state);
-        assertEquals(request1Id, request1.value().id);
-        assertNotEquals(0, request1.value().respondedAt);
+        assertEquals(Request.RequestState.ACKED, request1.state);
+        assertEquals(request1Id, request1.id);
+        assertNotEquals(0, request1.respondedAt);
 
-        assertEquals(Request.RequestState.NACKED, request3.value().state);
-        assertEquals(request3Id, request3.value().id);
-        assertEquals("123", request3.value().respondedCode);
-        assertEquals("bad", request3.value().respondedMessage);
-        assertNotEquals(0, request3.value().respondedAt);
+        assertEquals(Request.RequestState.NACKED, request3.state);
+        assertEquals(request3Id, request3.id);
+        assertEquals("123", request3.respondedCode);
+        assertEquals("bad", request3.respondedMessage);
+        assertNotEquals(0, request3.respondedAt);
     }
 
     @Test
@@ -158,45 +158,45 @@ public class MainScenariosTest extends BaseDSTest {
         assertEquals("ds3", ds3outNew.dsId());
         assertEquals("rd3>1|1", ds3outNew.payload());
 
-        ConsumerRecord<String, Request> request1 = waitForRecordFrom(REQUESTS1);
-        ConsumerRecord<String, Request> request2 = waitForRecordFrom(REQUESTS2);//pending
-        request2 = waitForRecordFrom(REQUESTS2);//autocommit
-        ConsumerRecord<String, Request> request3 = waitForRecordFrom(REQUESTS3);
+        Request request1 = waitForRecordFrom(REQUESTS1).value().value();
+        Request request2 = waitForRecordFrom(REQUESTS2).value().value();//pending
+        request2 = waitForRecordFrom(REQUESTS2).value().value();//autocommit
+        Request request3 = waitForRecordFrom(REQUESTS3).value().value();
 
-        long request1Id = request1.value().id;
-        assertEquals(Request.RequestType.NEW, request1.value().type);
-        assertEquals(Request.RequestState.PENDING, request1.value().state);
-        assertEquals(0, request1.value().respondedAt);
+        long request1Id = request1.id;
+        assertEquals(Request.RequestType.NEW, request1.type);
+        assertEquals(Request.RequestState.PENDING, request1.state);
+        assertEquals(0, request1.respondedAt);
 
-        assertEquals(Request.RequestType.NEW, request2.value().type);
-        assertEquals(Request.RequestState.ACKED, request2.value().state);
+        assertEquals(Request.RequestType.NEW, request2.type);
+        assertEquals(Request.RequestState.ACKED, request2.state);
 
-        long request3Id = request3.value().id;
-        assertEquals(Request.RequestType.NEW, request3.value().type);
-        assertEquals(Request.RequestState.PENDING, request3.value().state);
-        assertEquals(0, request3.value().respondedAt);
+        long request3Id = request3.id;
+        assertEquals(Request.RequestType.NEW, request3.type);
+        assertEquals(Request.RequestState.PENDING, request3.state);
+        assertEquals(0, request3.respondedAt);
 
 
         send(REPLY1, 0, ds1outNew.correlationId(), "true,-,-");
         send(REPLY3, 0, ds3outNew.correlationId(), "false,123,bad");
 
-        request1 = waitForRecordFrom(REQUESTS1);
-        request3 = waitForRecordFrom(REQUESTS3);
+        request1 = waitForRecordFrom(REQUESTS1).value().value();
+        request3 = waitForRecordFrom(REQUESTS3).value().value();
 
-        assertEquals(Request.RequestState.ACKED, request1.value().state);
-        assertEquals(request1Id, request1.value().id);
-        assertNotEquals(0, request1.value().respondedAt);
+        assertEquals(Request.RequestState.ACKED, request1.state);
+        assertEquals(request1Id, request1.id);
+        assertNotEquals(0, request1.respondedAt);
 
-        assertEquals(Request.RequestState.NACKED, request3.value().state);
-        assertEquals(request3Id, request3.value().id);
-        assertEquals("123", request3.value().respondedCode);
-        assertEquals("bad", request3.value().respondedMessage);
-        assertNotEquals(0, request3.value().respondedAt);
+        assertEquals(Request.RequestState.NACKED, request3.state);
+        assertEquals(request3Id, request3.id);
+        assertEquals("123", request3.respondedCode);
+        assertEquals("bad", request3.respondedMessage);
+        assertNotEquals(0, request3.respondedAt);
 
 
-        send(RESEND1, 0, request1.value().referenceId, "");
-        send(RESEND2, 0, request1.value().referenceId, "");
-        send(RESEND3, 0, request1.value().referenceId, "");
+        send(RESEND1, 0, request1.referenceId, "");
+        send(RESEND2, 0, request1.referenceId, "");
+        send(RESEND3, 0, request1.referenceId, "");
 
         Outgoing ds1outCancel = parseOutput(waitForRecordFrom(SINK1));
         assertEquals("cancel", ds1outCancel.requestType());
@@ -231,38 +231,38 @@ public class MainScenariosTest extends BaseDSTest {
     void testCancel() {
         send(SOURCE, 0, 1, 1L);
 
-        ConsumerRecord<String, Request> request1 = waitForRecordFrom(REQUESTS1);
-        ConsumerRecord<String, Request> request2 = waitForRecordFrom(REQUESTS2);//pending
-        request2 = waitForRecordFrom(REQUESTS2);//autocommit
-        ConsumerRecord<String, Request> request3 = waitForRecordFrom(REQUESTS3);
+        Request request1 = waitForRecordFrom(REQUESTS1).value().value();
+        Request request2 = waitForRecordFrom(REQUESTS2).value().value();//pending
+        request2 = waitForRecordFrom(REQUESTS2).value().value();//autocommit
+        Request request3 = waitForRecordFrom(REQUESTS3).value().value();
 
-        assertEquals(Request.RequestType.NEW, request1.value().type);
-        assertEquals(Request.RequestState.PENDING, request1.value().state);
-        assertEquals(0, request1.value().respondedAt);
+        assertEquals(Request.RequestType.NEW, request1.type);
+        assertEquals(Request.RequestState.PENDING, request1.state);
+        assertEquals(0, request1.respondedAt);
 
-        assertEquals(Request.RequestType.NEW, request2.value().type);
-        assertEquals(Request.RequestState.ACKED, request2.value().state);
+        assertEquals(Request.RequestType.NEW, request2.type);
+        assertEquals(Request.RequestState.ACKED, request2.state);
 
-        assertEquals(Request.RequestType.NEW, request3.value().type);
-        assertEquals(Request.RequestState.PENDING, request3.value().state);
-        assertEquals(0, request3.value().respondedAt);
+        assertEquals(Request.RequestType.NEW, request3.type);
+        assertEquals(Request.RequestState.PENDING, request3.state);
+        assertEquals(0, request3.respondedAt);
 
-        send(CANCEL1, request1.value().referenceId, request1.value().id);
-        send(CANCEL2, request2.value().referenceId, request2.value().id);
-        send(CANCEL3, request3.value().referenceId, request3.value().id);
+        send(CANCEL1, request1.referenceId, request1.id);
+        send(CANCEL2, request2.referenceId, request2.id);
+        send(CANCEL3, request3.referenceId, request3.id);
 
-        request1 = waitForRecordFrom(REQUESTS1);
-        request2 = waitForRecordFrom(REQUESTS2);
-        request3 = waitForRecordFrom(REQUESTS3);
+        request1 = waitForRecordFrom(REQUESTS1).value().value();
+        request2 = waitForRecordFrom(REQUESTS2).value().value();
+        request3 = waitForRecordFrom(REQUESTS3).value().value();
 
-        assertEquals(Request.RequestType.NEW, request1.value().type);
-        assertEquals(Request.RequestState.CANCELED, request1.value().state);
+        assertEquals(Request.RequestType.NEW, request1.type);
+        assertEquals(Request.RequestState.CANCELED, request1.state);
 
-        assertEquals(Request.RequestType.NEW, request2.value().type);
-        assertEquals(Request.RequestState.CANCELED, request2.value().state);
+        assertEquals(Request.RequestType.NEW, request2.type);
+        assertEquals(Request.RequestState.CANCELED, request2.state);
 
-        assertEquals(Request.RequestType.NEW, request3.value().type);
-        assertEquals(Request.RequestState.CANCELED, request3.value().state);
+        assertEquals(Request.RequestType.NEW, request3.type);
+        assertEquals(Request.RequestState.CANCELED, request3.state);
     }
 
     @Test

@@ -1,9 +1,12 @@
 package com.limitium.gban.kscore.kstreamcore.downstream;
 
 import com.limitium.gban.kscore.kstreamcore.KSTopology;
+import com.limitium.gban.kscore.kstreamcore.audit.Audit;
+import com.limitium.gban.kscore.kstreamcore.audit.AuditWrapperSupplier;
 import com.limitium.gban.kscore.kstreamcore.downstream.converter.CorrelationIdGenerator;
 import com.limitium.gban.kscore.kstreamcore.downstream.converter.NewCancelConverter;
 import com.limitium.gban.kscore.kstreamcore.downstream.state.Request;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.state.StoreBuilder;
@@ -49,13 +52,14 @@ public class DownstreamDefinition<RequestData, KOut, VOut> {
         return "downstream-" + name + "-" + storeName;
     }
 
+    @SuppressWarnings("rawtypes")
     public Set<StoreBuilder<?>> buildOrGetStores() {
         if (builtStores == null) {
             builtStores = Set.of(
                     Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore(getStoreName(STORE_REQUEST_DATA_ORIGINALS_NAME)), Serdes.Long(), requestDataSerde),
-                    Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore(getStoreName(STORE_REQUEST_DATA_OVERRIDES_NAME)), Serdes.Long(), requestDataSerde),
-                    Stores2.keyValueStoreBuilder(Stores.persistentKeyValueStore(getStoreName(STORE_REQUESTS_NAME)), Serdes.String(), Request.RequestSerde())
-                            .addUniqIndex(STORE_REQUESTS_CORRELATION_INDEX_NAME, Request::getCorrelationId)
+                    Stores2.<Long, RequestData, Audit, ExtendedProcessorContext>wrappableKeyValueStoreBuilder(Stores.persistentKeyValueStore(getStoreName(STORE_REQUEST_DATA_OVERRIDES_NAME)), Serdes.Long(), requestDataSerde, Audit.AuditSerde(),  AuditWrapperSupplier::new),
+                    Stores2.<String, Request, Audit, ExtendedProcessorContext>wrappableIndexedKeyValueStoreBuilder(Stores.persistentKeyValueStore(getStoreName(STORE_REQUESTS_NAME)), Serdes.String(), Request.RequestSerde(), Audit.AuditSerde(), AuditWrapperSupplier::new)
+                            .addUniqIndex(STORE_REQUESTS_CORRELATION_INDEX_NAME, auditRequest -> auditRequest.value().correlationId)
             );
         }
         return builtStores;

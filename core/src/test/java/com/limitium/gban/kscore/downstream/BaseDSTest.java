@@ -2,7 +2,11 @@ package com.limitium.gban.kscore.downstream;
 
 import com.limitium.gban.bibliotheca.sequencer.Sequencer;
 import com.limitium.gban.kscore.KStreamApplication;
-import com.limitium.gban.kscore.kstreamcore.*;
+import com.limitium.gban.kscore.kstreamcore.Downstream;
+import com.limitium.gban.kscore.kstreamcore.KSTopology;
+import com.limitium.gban.kscore.kstreamcore.KStreamInfraCustomizer;
+import com.limitium.gban.kscore.kstreamcore.Topic;
+import com.limitium.gban.kscore.kstreamcore.audit.Audit;
 import com.limitium.gban.kscore.kstreamcore.downstream.DownstreamDefinition;
 import com.limitium.gban.kscore.kstreamcore.downstream.converter.AmendConverter;
 import com.limitium.gban.kscore.kstreamcore.downstream.converter.CorrelationIdGenerator;
@@ -14,16 +18,14 @@ import com.limitium.gban.kscore.test.BaseKStreamApplicationTests;
 import com.limitium.gban.kscore.test.KafkaTest;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
+import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrapperValueSerde;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.annotation.DirtiesContext;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @KafkaTest(
         topics = {
@@ -69,20 +71,20 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
     public static final Topic<Long, String> RESEND1 = new Topic<>("core-app.downstream-ds1-resend", Serdes.Long(), Serdes.String());
     public static final Topic<Long, Long> CANCEL1 = new Topic<>("core-app.downstream-ds1-cancel", Serdes.Long(), Serdes.Long());
     public static final Topic<String, String> SINK1 = new Topic<>("ds.out.1", Serdes.String(), Serdes.String());
-    public static final Topic<String, Request> REQUESTS1 = new Topic<>("core-app.store-downstream-ds1-requests-changelog", Serdes.String(), Request.RequestSerde());
+    public static final Topic<String, WrapperValue<Audit, Request>> REQUESTS1 = new Topic<>("core-app.store-downstream-ds1-requests-changelog", Serdes.String(), WrapperValueSerde.create(Audit.AuditSerde(), Request.RequestSerde()));
 
     public static final Topic<Long, String> OVERRIDE2 = new Topic<>("core-app.downstream-ds2-override", Serdes.Long(), Serdes.String());
     public static final Topic<Long, String> RESEND2 = new Topic<>("core-app.downstream-ds2-resend", Serdes.Long(), Serdes.String());
     public static final Topic<Long, Long> CANCEL2 = new Topic<>("core-app.downstream-ds2-cancel", Serdes.Long(), Serdes.Long());
     public static final Topic<String, String> SINK2 = new Topic<>("ds.out.2", Serdes.String(), Serdes.String());
-    public static final Topic<String, Request> REQUESTS2 = new Topic<>("core-app.store-downstream-ds2-requests-changelog", Serdes.String(), Request.RequestSerde());
+    public static final Topic<String, WrapperValue<Audit, Request>> REQUESTS2 = new Topic<>("core-app.store-downstream-ds2-requests-changelog", Serdes.String(), WrapperValueSerde.create(Audit.AuditSerde(), Request.RequestSerde()));
     public static final Topic<String, String> REPLY3 = new Topic<>("reply.ds3", Serdes.String(), Serdes.String());
 
     public static final Topic<Long, String> OVERRIDE3 = new Topic<>("core-app.downstream-ds3-override", Serdes.Long(), Serdes.String());
     public static final Topic<Long, String> RESEND3 = new Topic<>("core-app.downstream-ds3-resend", Serdes.Long(), Serdes.String());
     public static final Topic<Long, Long> CANCEL3 = new Topic<>("core-app.downstream-ds3-cancel", Serdes.Long(), Serdes.Long());
     public static final Topic<String, String> SINK3 = new Topic<>("ds.out.3", Serdes.String(), Serdes.String());
-    public static final Topic<String, Request> REQUESTS3 = new Topic<>("core-app.store-downstream-ds3-requests-changelog", Serdes.String(), Request.RequestSerde());
+    public static final Topic<String, WrapperValue<Audit, Request>> REQUESTS3 = new Topic<>("core-app.store-downstream-ds3-requests-changelog", Serdes.String(), WrapperValueSerde.create(Audit.AuditSerde(), Request.RequestSerde()));
 
     public static class TopologyConfig {
         public static class TestProcessor implements ExtendedProcessor<Integer, Long, String, String> {
@@ -139,7 +141,7 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
                 public String generate(long requestId, String rd) {
                     return String.valueOf(requestId);
                 }
-            }, (toOverride, override) -> toOverride +"+"+ override, new NewCancelConverter<>() {
+            }, (toOverride, override) -> toOverride + "+" + override, new NewCancelConverter<>() {
                 @Override
                 public Record<String, String> newRequest(String correlationId, long effectiveReferenceId, int effectiveReferenceVersion, String rd) {
                     return new Record<>(correlationId, String.join(",", "new", "ds1", String.valueOf(effectiveReferenceId), String.valueOf(effectiveReferenceVersion), rd), System.currentTimeMillis());
@@ -161,7 +163,7 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
                 public String generate(long requestId, String rd) {
                     return String.valueOf(requestId);
                 }
-            }, (toOverride, override) -> toOverride +"+"+ override, new AmendConverter<>() {
+            }, (toOverride, override) -> toOverride + "+" + override, new AmendConverter<>() {
                 @Override
                 public Record<String, String> amendRequest(String correlationId, long effectiveReferenceId, int effectiveReferenceVersion, String rd) {
                     return new Record<>(correlationId, String.join(",", "amend", "ds2", String.valueOf(effectiveReferenceId), String.valueOf(effectiveReferenceVersion), rd), System.currentTimeMillis());
@@ -186,7 +188,7 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
                 public String generate(long requestId, String rd) {
                     return String.valueOf(requestId);
                 }
-            }, (toOverride, override) -> toOverride +"+"+ override, new AmendConverter<>() {
+            }, (toOverride, override) -> toOverride + "+" + override, new AmendConverter<>() {
                 @Override
                 public Record<String, String> amendRequest(String correlationId, long effectiveReferenceId, int effectiveReferenceVersion, String rd) {
                     return new Record<>(correlationId, String.join(",", "amend", "ds3", String.valueOf(effectiveReferenceId), String.valueOf(effectiveReferenceVersion), rd), System.currentTimeMillis());
@@ -239,7 +241,7 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
     }
 
     public record Outgoing(String correlationId, String requestType, String dsId, String refId, String refVer,
-                    String payload) {
+                           String payload) {
     }
 
     ;

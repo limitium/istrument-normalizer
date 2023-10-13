@@ -70,9 +70,11 @@ public class Request {
     public enum RequestType {
         NEW, AMEND, CANCEL, SKIP
     }
-    public static RequestSerde RequestSerde(){
+
+    public static RequestSerde RequestSerde() {
         return new RequestSerde();
     }
+
     public static class RequestSerde implements Serde<Request> {
 
         @Override
@@ -163,6 +165,9 @@ public class Request {
 
                 private String getString(ByteBuffer bb) {
                     int strLen = bb.getInt();
+                    if (strLen == 0) {
+                        return null;
+                    }
                     byte[] strBytes = new byte[strLen];
                     bb.get(strBytes, 0, strLen);
                     return new String(strBytes, StandardCharsets.UTF_8);
