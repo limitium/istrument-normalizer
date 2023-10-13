@@ -159,5 +159,3 @@ public class MemoryConsumptionTest {
         assertTrue(memUsage < 1500);
     }
 }
-
-}|

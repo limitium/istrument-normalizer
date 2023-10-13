@@ -9,6 +9,7 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.StateStore;
 import org.apache.kafka.streams.processor.StateStoreContext;
 import org.apache.kafka.streams.processor.TaskId;
+import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.internals.metrics.StreamsMetricsImpl;
 import org.apache.kafka.streams.state.IndexedKeyValueStore;
 import org.apache.kafka.streams.state.KeyValueIterator;
@@ -26,8 +27,8 @@ import java.util.stream.Stream;
 
 import static org.apache.kafka.streams.processor.internals.metrics.StreamsMetricsImpl.maybeMeasureLatency;
 
-
-public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V> implements IndexedKeyValueStore<K, V> {
+@SuppressWarnings("rawtypes")
+public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V> implements IndexedKeyValueStore<K, V>, ProcessorPostInitListener {
     private static final Logger logger = LoggerFactory.getLogger(IndexedMeteredKeyValueStore.class);
     private final String metricsScope;
     private Sensor rebuildUniqIndexSensor;
@@ -84,38 +85,13 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
     }
 
     @Override
-    public void rebuildIndexes() {
-        lock.writeLock().lock();
-
-        try {
-            uniqIndexesData.values().forEach(Map::clear);
-            nonUniqIndexesData.values().forEach(Map::clear);
-
-            try (KeyValueIterator<Bytes, byte[]> kvIterator = wrapped().all()) {
-                while (kvIterator.hasNext()) {
-                    KeyValue<Bytes, byte[]> kv = kvIterator.next();
-
-                    K key = deserKey(kv.key);
-                    V value = deserValue(kv.value);
-
-                    maybeMeasureLatency(() -> updateUniqIndexes(key, value), time, rebuildUniqIndexSensor);
-                    maybeMeasureLatency(() -> updateNonUniqIndexes(key, value), time, rebuildNonUniqIndexSensor);
-                }
-            }
-            indexesBuilt = true;
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    @Override
     public V getUnique(String indexName, String indexKey) {
         Objects.requireNonNull(indexName, "indexName cannot be null");
         Objects.requireNonNull(indexKey, "indexKey cannot be null");
 
         lock.readLock().lock();
         if (!indexesBuilt) {
-            throw new RuntimeException("Indexes were not built, call IndexedKeyValueStore.rebuildIndexes() from Processor#init() method");
+            throw new RuntimeException("Indexes were not built, call IndexedKeyValueStore.onPostInit(context) from Processor#init() method");
         }
         try {
             K key = maybeMeasureLatency(() -> lookupUniqKey(indexName, indexKey), time, lookupUniqIndexSensor);
@@ -136,7 +112,7 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
 
         lock.readLock().lock();
         if (!indexesBuilt) {
-            throw new RuntimeException("Indexes were not built, call IndexedKeyValueStore.rebuildIndexes() from Processor#init() method");
+            throw new RuntimeException("Indexes were not built, call IndexedKeyValueStore.onPostInit() from Processor#init() method");
         }
         try {
             Stream<K> keys = maybeMeasureLatency(() -> lookupNonUniqKeys(indexName, indexKey), time, lookupNonUniqIndexSensor);
@@ -184,6 +160,34 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
         }
     }
 
+    @Override
+    public void onPostInit(ProcessorContext processorContext) {
+        rebuildIndexes();
+    }
+
+    private void rebuildIndexes() {
+        lock.writeLock().lock();
+
+        try {
+            uniqIndexesData.values().forEach(Map::clear);
+            nonUniqIndexesData.values().forEach(Map::clear);
+
+            try (KeyValueIterator<Bytes, byte[]> kvIterator = wrapped().all()) {
+                while (kvIterator.hasNext()) {
+                    KeyValue<Bytes, byte[]> kv = kvIterator.next();
+
+                    K key = deserKey(kv.key);
+                    V value = deserValue(kv.value);
+
+                    maybeMeasureLatency(() -> updateUniqIndexes(key, value), time, rebuildUniqIndexSensor);
+                    maybeMeasureLatency(() -> updateNonUniqIndexes(key, value), time, rebuildNonUniqIndexSensor);
+                }
+            }
+            indexesBuilt = true;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
 
     private K lookupUniqKey(String indexName, String indexKey) {
         Map<String, K> index = uniqIndexesData.get(indexName);

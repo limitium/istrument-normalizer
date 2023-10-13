@@ -14,9 +14,9 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public class IndexedKeyValueStoreBuilder<K, V> extends KeyValueStoreBuilder<K, V> {
-    private final KeyValueBytesStoreSupplier storeSupplier;
-    private final HashMap<String, Function<V, String>> uniqIndexes;
-    private final HashMap<String, Function<V, String>> nonUniqIndexes;
+    protected final KeyValueBytesStoreSupplier storeSupplier;
+    protected final HashMap<String, Function<V, String>> uniqIndexes;
+    protected final HashMap<String, Function<V, String>> nonUniqIndexes;
 
     public IndexedKeyValueStoreBuilder(KeyValueBytesStoreSupplier storeSupplier, Serde keySerde, Serde valueSerde, Time time) {
         super(storeSupplier, keySerde, valueSerde, time);
@@ -63,7 +63,7 @@ public class IndexedKeyValueStoreBuilder<K, V> extends KeyValueStoreBuilder<K, V
     }
 
     @Override
-    public IndexedKeyValueStore<K, V> build() {
+    public IndexedMeteredKeyValueStore<K, V> build() {
         return new IndexedMeteredKeyValueStore<>(
                 uniqIndexes,
                 nonUniqIndexes,

@@ -7,6 +7,7 @@ import org.apache.kafka.streams.state.KeyValueStoreTestDriver;
 import org.apache.kafka.streams.state.Stores;
 import org.apache.kafka.streams.state.Stores2;
 import org.apache.kafka.streams.state.internals.IndexedKeyValueStoreBuilder;
+import org.apache.kafka.streams.state.internals.IndexedMeteredKeyValueStore;
 import org.apache.kafka.test.InternalMockProcessorContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class IndexedNonUniqStoreTest {
 
     protected InternalMockProcessorContext<Integer, String> context;
-    protected IndexedKeyValueStore<Integer, String> store;
+    protected IndexedMeteredKeyValueStore<Integer, String> store;
     protected KeyValueStoreTestDriver<Integer, String> driver;
 
     @BeforeEach
@@ -33,7 +34,7 @@ public class IndexedNonUniqStoreTest {
         store = createStore(context);
     }
 
-    private IndexedKeyValueStore<Integer, String> createStore(InternalMockProcessorContext<Integer, String> context) {
+    private IndexedMeteredKeyValueStore<Integer, String> createStore(InternalMockProcessorContext<Integer, String> context) {
         IndexedKeyValueStoreBuilder<Integer, String> builder = Stores2.keyValueStoreBuilder(
                         Stores.lruMap("my-store", 10),
                         Serdes.Integer(),
@@ -41,10 +42,10 @@ public class IndexedNonUniqStoreTest {
                 //Build non uniq index based on first char
                 .addNonUniqIndex("idx", (v) -> String.valueOf(v.charAt(0)));
 
-        IndexedKeyValueStore<Integer, String> store = builder.build();
+        IndexedMeteredKeyValueStore<Integer, String> store = builder.build();
 
         store.init((StateStoreContext) context, store);
-        store.rebuildIndexes();
+        store.onPostInit(null);
         return store;
     }
 
@@ -92,7 +93,7 @@ public class IndexedNonUniqStoreTest {
         // receive the restore entries ...
         store = createStore((InternalMockProcessorContext<Integer, String>) driver.context());
         context.restore(store.name(), driver.restoredEntries());
-        store.rebuildIndexes();
+        store.onPostInit(null);
 
         // Verify that the store's changelog does not get more appends ...
         assertEquals(0, driver.numFlushedEntryStored());

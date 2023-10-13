@@ -29,7 +29,7 @@ import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static org.apache.kafka.common.annotation.InterfaceStability.*;
+import static org.apache.kafka.common.annotation.InterfaceStability.Evolving;
 
 /**
  * A key-value store that supports put/get/delete, range queries and uniq index lookup.
@@ -55,12 +55,4 @@ public interface IndexedKeyValueStore<K, V> extends KeyValueStore<K, V> {
      * @return value from original {@link KeyValueStore}
      */
     Stream<V> getNonUnique(String indexName, String indexKey);
-
-    /**
-     * Since there isn't a way to trigger rebuild indexes on restore from snapshot and from changelog, rebuild must be called manually in {@link org.apache.kafka.streams.processor.api.Processor#init(ProcessorContext)}
-     * Single point {@link StateRestoreListener#onRestoreEnd(TopicPartition, String, long)} is used globally as a part of {@link org.apache.kafka.streams.KafkaStreams} settings for all stores
-     * {@link RecordBatchingStateRestoreCallback#restoreBatch(Collection)} is occupied by {@link org.apache.kafka.streams.state.internals.RocksDBStore#init(StateStoreContext, StateStore)} with {@link IndexedMeteredKeyValueStore#name()} and can't have multiple instances
-     */
-    @Evolving
-    void rebuildIndexes();
 }
