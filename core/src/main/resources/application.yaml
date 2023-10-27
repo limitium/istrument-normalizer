@@ -13,3 +13,5 @@ management:
   endpoints.web.exposure.include: "*"
 
 logging.pattern.level: trace_id=%mdc{trace_id} span_id=%mdc{span_id} %5p
+logging.level.root=debug
+logging.level.com.limitium.gban.kscore=debug

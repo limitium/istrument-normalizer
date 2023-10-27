@@ -226,11 +226,12 @@ public class Downstream<RequestData, Kout, Vout> {
      */
     @NotNull
     private Stream<Request> getPreviousRequest(long referenceId) {
-        KeyValueIterator<String, WrapperValue<Audit, Request>> prevRequests = requests.prefixScan(String.valueOf(referenceId), new StringSerializer());
+        try(KeyValueIterator<String, WrapperValue<Audit, Request>> prevRequests = requests.prefixScan(String.valueOf(referenceId), new StringSerializer())) {
 
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(prevRequests, Spliterator.ORDERED), false)
-                .map((kv) -> kv.value.value())
-                .sorted(Comparator.comparingLong((Request o) -> o.id).reversed());
+            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(prevRequests, Spliterator.ORDERED), false)
+                    .map((kv) -> kv.value.value())
+                    .sorted(Comparator.comparingLong((Request o) -> o.id).reversed());
+        }
     }
 
     private Optional<Request> getLastNotNackedRequest(long referenceId) {
