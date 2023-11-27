@@ -4,6 +4,7 @@ import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.streams.state.WrappedKeyValueStore;
 import org.apache.kafka.streams.state.internals.WrapperSupplier;
 import org.apache.logging.log4j.util.Strings;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.Charset;
 import java.util.Optional;
@@ -41,13 +42,7 @@ public class AuditWrapperSupplier<K, V> extends WrapperSupplier<K, V, Audit, Ext
                 .map(header -> new String(header.value(), Charset.defaultCharset()))
                 .orElse(null);
 
-        long traceId = Optional.ofNullable(context.getIncomingRecordHeaders().lastHeader(TRACE))
-                .map(header -> new String(header.value(), Charset.defaultCharset()))
-                .filter(Strings::isNotEmpty)
-                .map(v -> v.split("-"))
-                .filter(parts -> parts.length > 1)
-                .map(parts -> Long.parseLong(parts[1]))
-                .orElse(-1L);
+        long traceId = extractTraceId(context);
 
         return new Audit(
                 traceId,
@@ -59,5 +54,16 @@ public class AuditWrapperSupplier<K, V> extends WrapperSupplier<K, V, Audit, Ext
                 reason,
                 value == null
         );
+    }
+
+    @NotNull
+    public static Long extractTraceId(ExtendedProcessorContext context) {
+        return Optional.ofNullable(context.getIncomingRecordHeaders().lastHeader(TRACE))
+                .map(header -> new String(header.value(), Charset.defaultCharset()))
+                .filter(Strings::isNotEmpty)
+                .map(v -> v.split("-"))
+                .filter(parts -> parts.length > 1)
+                .map(parts -> Long.parseLong(parts[1]))
+                .orElse(-1L);
     }
 }

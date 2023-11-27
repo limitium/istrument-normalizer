@@ -1,6 +1,7 @@
 package com.limitium.gban.kscore.kstreamcore;
 
 import com.limitium.gban.kscore.kstreamcore.audit.Audit;
+import com.limitium.gban.kscore.kstreamcore.audit.AuditWrapperSupplier;
 import com.limitium.gban.kscore.kstreamcore.downstream.DownstreamDefinition;
 import com.limitium.gban.kscore.kstreamcore.downstream.RequestContext;
 import com.limitium.gban.kscore.kstreamcore.downstream.RequestDataOverrider;
@@ -284,7 +285,7 @@ public class Downstream<RequestData, Kout, Vout> {
 
 
     private Request generateAndSendRequest(long requestId, RequestContext<RequestData> requestContext, EffectiveRequest<RequestData, Kout, Vout> effectiveRequest) {
-        String correlationId = correlationIdGenerator.generate(requestId, effectiveRequest.requestType, requestContext.requestData);
+        String correlationId = correlationIdGenerator.generate(requestId, effectiveRequest.requestType, requestContext.requestData, AuditWrapperSupplier.extractTraceId(extendedProcessorContext), extendedProcessorContext.getPartition());
 
         Request request = createRequest(effectiveRequest, requestId, correlationId, requestContext);
 
