@@ -150,7 +150,7 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
         public static KStreamInfraCustomizer.KStreamKSTopologyBuilder provideTopology() {
             DownstreamDefinition<String, String, String> ds1 = new DownstreamDefinition<>("ds1", Serdes.String(), new CorrelationIdGenerator<>() {
                 @Override
-                public String generate(long requestId, String rd) {
+                public String generate(long requestId, Request.RequestType requestType, String rd) {
                     return String.valueOf(requestId);
                 }
             }, (toOverride, override) -> toOverride + "+" + override, new NewCancelConverter<>() {
@@ -172,7 +172,7 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
 
             DownstreamDefinition<String, String, String> ds2 = new DownstreamDefinition<>("ds2", Serdes.String(), new CorrelationIdGenerator<>() {
                 @Override
-                public String generate(long requestId, String rd) {
+                public String generate(long requestId, Request.RequestType requestType, String rd) {
                     return String.valueOf(requestId);
                 }
             }, (toOverride, override) -> toOverride + "+" + override, new AmendConverter<>() {
@@ -197,7 +197,7 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
 
             DownstreamDefinition<String, String, String> ds3 = new DownstreamDefinition<>("ds3", Serdes.String(), new CorrelationIdGenerator<>() {
                 @Override
-                public String generate(long requestId, String rd) {
+                public String generate(long requestId, Request.RequestType requestType, String rd) {
                     return String.valueOf(requestId);
                 }
             }, (toOverride, override) -> toOverride + "+" + override, new AmendConverter<>() {

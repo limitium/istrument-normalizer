@@ -284,7 +284,7 @@ public class Downstream<RequestData, Kout, Vout> {
 
 
     private Request generateAndSendRequest(long requestId, RequestContext<RequestData> requestContext, EffectiveRequest<RequestData, Kout, Vout> effectiveRequest) {
-        String correlationId = correlationIdGenerator.generate(requestId, requestContext.requestData);
+        String correlationId = correlationIdGenerator.generate(requestId, effectiveRequest.requestType, requestContext.requestData);
 
         Request request = createRequest(effectiveRequest, requestId, correlationId, requestContext);
 
