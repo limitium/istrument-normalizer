@@ -138,7 +138,7 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
             throw new RuntimeException("Unable to find downstream with name:" + name + ", in " + this);
         }
 
-        KeyValueStore<Long, RequestData> requestDataOriginals = getStateStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUEST_DATA_ORIGINALS_NAME));
+        WrappedKeyValueStore<Long, RequestData, Audit> requestDataOriginals = getStateStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUEST_DATA_ORIGINALS_NAME));
         WrappedKeyValueStore<Long, RequestData, Audit> requestDataOverrides = getStateStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUEST_DATA_OVERRIDES_NAME));
         WrappedIndexedKeyValueStore<String, Request, Audit> requests = getStateStore(downstreamDefinition.getStoreName(DownstreamDefinition.STORE_REQUESTS_NAME));
 

@@ -370,9 +370,13 @@ public class KSTopology {
                     .withCustomName("DownstreamResendProcessor-" + downstreamDefinition.name)
                     .withSource(new Topic(appName + ".downstream-" + downstreamDefinition.name + "-resend", Serdes.Long(), Serdes.String()))
                     .withDownstream(downstreamDefinition));
-            createProcessor(new ProcessorDefinition(this, () -> new DownstreamCancelProcessor(downstreamDefinition.name))
-                    .withCustomName("DownstreamCancelProcessor-" + downstreamDefinition.name)
-                    .withSource(new Topic(appName + ".downstream-" + downstreamDefinition.name + "-cancel", Serdes.Long(), Serdes.Long()))
+            createProcessor(new ProcessorDefinition(this, () -> new DownstreamTerminateProcessor(downstreamDefinition.name))
+                    .withCustomName("DownstreamTerminateProcessor-" + downstreamDefinition.name)
+                    .withSource(new Topic(appName + ".downstream-" + downstreamDefinition.name + "-terminate", Serdes.Long(), Serdes.Long()))
+                    .withDownstream(downstreamDefinition));
+            createProcessor(new ProcessorDefinition(this, () -> new DownstreamForceAckProcessor(downstreamDefinition.name))
+                    .withCustomName("DownstreamForceAckProcessor-" + downstreamDefinition.name)
+                    .withSource(new Topic(appName + ".downstream-" + downstreamDefinition.name + "-forceack", Serdes.String(), Serdes.String()))
                     .withDownstream(downstreamDefinition));
         });
 

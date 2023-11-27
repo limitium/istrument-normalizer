@@ -56,7 +56,7 @@ public class DownstreamDefinition<RequestData, KOut, VOut> {
     public Set<StoreBuilder<?>> buildOrGetStores() {
         if (builtStores == null) {
             builtStores = Set.of(
-                    Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore(getStoreName(STORE_REQUEST_DATA_ORIGINALS_NAME)), Serdes.Long(), requestDataSerde),
+                    Stores2.<Long, RequestData, Audit, ExtendedProcessorContext>wrappableKeyValueStoreBuilder(Stores.persistentKeyValueStore(getStoreName(STORE_REQUEST_DATA_ORIGINALS_NAME)), Serdes.Long(), requestDataSerde, Audit.AuditSerde(),  AuditWrapperSupplier::new),
                     Stores2.<Long, RequestData, Audit, ExtendedProcessorContext>wrappableKeyValueStoreBuilder(Stores.persistentKeyValueStore(getStoreName(STORE_REQUEST_DATA_OVERRIDES_NAME)), Serdes.Long(), requestDataSerde, Audit.AuditSerde(),  AuditWrapperSupplier::new),
                     Stores2.<String, Request, Audit, ExtendedProcessorContext>wrappableIndexedKeyValueStoreBuilder(Stores.persistentKeyValueStore(getStoreName(STORE_REQUESTS_NAME)), Serdes.String(), Request.RequestSerde(), Audit.AuditSerde(), AuditWrapperSupplier::new)
                             .addUniqIndex(STORE_REQUESTS_CORRELATION_INDEX_NAME, auditRequest -> auditRequest.value().correlationId)

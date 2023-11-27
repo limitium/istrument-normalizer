@@ -64,7 +64,7 @@ public class Request {
     }
 
     public enum RequestState {
-        PENDING, ACKED, NACKED, CANCELED
+        PENDING, ACKED, NACKED, TERMINATED
     }
 
     public enum RequestType {

@@ -24,7 +24,7 @@ public class DownstreamReplyProcessor<KeyType, ReplyType> implements ExtendedPro
 
     @Override
     public void process(Record<KeyType, ReplyType> record) {
-        replyConsumer.onReply(record, downstream::replied);
+        replyConsumer.onReply(record, downstream::requestReplied);
     }
 
     public interface ReplyConsumer<KeyType, ReplyType> {

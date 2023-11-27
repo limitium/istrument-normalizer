@@ -13,7 +13,6 @@ import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueIterator;
-import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.WrappedIndexedKeyValueStore;
 import org.apache.kafka.streams.state.WrappedKeyValueStore;
 import org.apache.kafka.streams.state.internals.WrapperValue;
@@ -29,7 +28,9 @@ import java.util.stream.StreamSupport;
 import static com.limitium.gban.kscore.kstreamcore.Downstream.DownstreamAmendModel.AMENDABLE;
 import static com.limitium.gban.kscore.kstreamcore.downstream.state.Request.RequestType.*;
 
-
+//@todo: tech resend ++ version
+//@todo: reply support tech resends, update only once. waiting for ack
+//@todo: custom state
 public class Downstream<RequestData, Kout, Vout> {
     Logger logger = LoggerFactory.getLogger(Downstream.class);
     String name;
@@ -44,7 +45,7 @@ public class Downstream<RequestData, Kout, Vout> {
     CorrelationIdGenerator<RequestData> correlationIdGenerator;
 
     //State
-    KeyValueStore<Long, RequestData> requestDataOriginals;
+    WrappedKeyValueStore<Long, RequestData, Audit> requestDataOriginals;
     WrappedKeyValueStore<Long, RequestData, Audit> requestDataOverrides;
     WrappedIndexedKeyValueStore<String, Request, Audit> requests;
 
@@ -60,7 +61,7 @@ public class Downstream<RequestData, Kout, Vout> {
             RequestDataOverrider<RequestData> requestDataOverrider,
             NewCancelConverter<RequestData, Kout, Vout> converter,
             CorrelationIdGenerator<RequestData> correlationIdGenerator,
-            KeyValueStore<Long, RequestData> requestDataOriginals,
+            WrappedKeyValueStore<Long, RequestData, Audit> requestDataOriginals,
             WrappedKeyValueStore<Long, RequestData, Audit> requestDataOverrides,
             WrappedIndexedKeyValueStore<String, Request, Audit> requests,
             Topic<? extends Kout, ? extends Vout> topic,
@@ -82,68 +83,100 @@ public class Downstream<RequestData, Kout, Vout> {
     public void send(Request.RequestType requestType, long referenceId, int referenceVersion, RequestData requestData) {
         RequestContext<RequestData> requestContext = prepareRequestContext(requestType, referenceId, referenceVersion, requestData);
 
-        requestDataOriginals.put(referenceId, requestData);
+        requestDataOriginals.putValue(referenceId, requestData);
         processRequest(requestContext);
     }
 
-    public void replied(String correlationId, boolean isAck, @Nullable String code, @Nullable String answer, @Nullable String externalId, int externalVersion) {
+    public void requestReplied(String correlationId, boolean isAck, @Nullable String code, @Nullable String answer, @Nullable String externalId, int externalVersion) {
         WrapperValue<Audit, Request> auditRequest = requests.getUnique(DownstreamDefinition.STORE_REQUESTS_CORRELATION_INDEX_NAME, correlationId);
         if (auditRequest == null) {
-            throw new RuntimeException("NF");
+            logger.error("NOT_FOUND:REQUEST:{}", correlationId);
+            return;
         }
 
         Request request = auditRequest.value();
-        if (request.state == Request.RequestState.CANCELED) {
-            throw new RuntimeException("CANCELED");
+        if (isAck || request.state != Request.RequestState.ACKED) {
+            request.state = isAck ? Request.RequestState.ACKED : Request.RequestState.NACKED;
+            request.respondedCode = code;
+            request.respondedMessage = answer;
+            request.respondedAt = System.currentTimeMillis();
+            request.externalId = externalId;
+            request.externalVersion = externalVersion;
         }
 
-        request.state = isAck ? Request.RequestState.ACKED : Request.RequestState.NACKED;
-        request.respondedCode = code;
-        request.respondedMessage = answer;
+        requests.putValue(request.getStoreKey(), request);
+    }
+
+    public void forceAckRequest(String correlationId) {
+        WrapperValue<Audit, Request> auditRequest = requests.getUnique(DownstreamDefinition.STORE_REQUESTS_CORRELATION_INDEX_NAME, correlationId);
+        if (auditRequest == null) {
+            logger.error("NOT_FOUND:REQUEST:{}", correlationId);
+            return;
+        }
+
+        Request request = auditRequest.value();
+        request.state = Request.RequestState.ACKED;
+        request.respondedMessage = "force acked";
         request.respondedAt = System.currentTimeMillis();
-        request.externalId = externalId;
-        request.externalVersion = externalVersion;
 
         requests.putValue(request.getStoreKey(), request);
     }
 
     public void updateOverride(long referenceId, RequestData override) {
-        //todo: bump override version, after auditable store
         requestDataOverrides.putValue(referenceId, override);
-        resend(referenceId);
+        resendRequest(referenceId);
     }
 
-    public void resend(long referenceId) {
+    public void resendRequest(long referenceId) {
+        processRequest(
+                restoreLastRequestContext(getLastRequest(referenceId)
+                        .orElseThrow(() -> new RuntimeException("Unable to resend, noting was sent before")))
+        );
+    }
+
+    public void retryRequest(long referenceId) {
         Request request = getLastRequest(referenceId)
                 .orElseThrow(() -> new RuntimeException("Unable to resend, noting was sent before"));
 
-        RequestData requestData = requestDataOriginals.get(referenceId);
+        generateAndSendRequest(request.id,
+                restoreLastRequestContext(request),
+                createEffectiveRequest(request.type, request.effectiveReferenceId, request.effectiveVersion)
+        );
 
-        RequestContext<RequestData> requestContext = prepareRequestContext(request.type, request.referenceId, request.referenceVersion, requestData);
-        processRequest(requestContext);
+        if (autoCommit) {
+            requestReplied(request.correlationId, true, null, null, null, 0);
+        }
     }
 
-    public void cancel(long referenceId, long id) {
+    public void terminateRequest(long referenceId, long requestId) {
         Request request = getPreviousRequest(referenceId)
-                .filter(r -> r.id == id)
+                .filter(r -> r.id == requestId)
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
         if (request.state != Request.RequestState.PENDING) {
-            logger.info("{},{},{} non pending canceled", referenceId, id, request.state);
+            logger.info("{},{},{} non pending terminated", referenceId, requestId, request.state);
         }
-        request.state = Request.RequestState.CANCELED;
+        request.state = Request.RequestState.TERMINATED;
         request.respondedAt = System.currentTimeMillis();
         requests.putValue(request.getStoreKey(), request);
+    }
+
+
+    @NotNull
+    private RequestContext<RequestData> restoreLastRequestContext(Request request) {
+        RequestData requestData = requestDataOriginals.getValue(request.referenceId);
+        return prepareRequestContext(request.type, request.referenceId, request.referenceVersion, requestData);
     }
 
     @NotNull
     private RequestContext<RequestData> prepareRequestContext(Request.RequestType requestType, long referenceId, int referenceVersion, RequestData requestData) {
         RequestData requestDataMerged = requestData;
         int overrideVersion = -1;
-        RequestData requestDataOverride = requestDataOverrides.getValue(referenceId);
-        if (requestDataOverride != null) {
-            overrideVersion = 1;//auditable version
+        WrapperValue<Audit, RequestData> auditRequestData = requestDataOverrides.get(referenceId);
+        if (auditRequestData != null) {
+            RequestData requestDataOverride = auditRequestData.value();
+            overrideVersion = auditRequestData.wrapper().version();
             requestDataMerged = requestDataOverrider.override(requestData, requestDataOverride);
         }
 
@@ -152,9 +185,9 @@ public class Downstream<RequestData, Kout, Vout> {
 
     private void processRequest(RequestContext<RequestData> requestContext) {
         calculateEffectiveRequests(requestContext).forEach(effectiveRequest -> {
-            Request request = generateAndSendRequest(requestContext, effectiveRequest);
+            Request request = generateAndSendRequest(generateNextId(), requestContext, effectiveRequest);
             if (autoCommit) {
-                replied(request.correlationId, true, null, null, null, 0);
+                requestReplied(request.correlationId, true, null, null, null, 0);
             }
         });
     }
@@ -167,15 +200,18 @@ public class Downstream<RequestData, Kout, Vout> {
         switch (requestContext.requestType) {
             case NEW -> {
                 switch (downstreamReferenceState.state) {
-                    case UNAWARE ->
-                            effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, requestContext.referenceId, 1));
+                    case UNAWARE -> effectiveRequest.add(createEffectiveRequest(NEW, requestContext.referenceId, 1));
+//                            effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, requestContext.referenceId, 1));
                     case EXISTS -> {
                         switch (downstreamAmendModel) {
                             case AMENDABLE ->
-                                    effectiveRequest.add(new EffectiveRequest<>(AMEND, ((AmendConverter<RequestData, Kout, Vout>) requestConverter)::amendRequest, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion + 1));
+//                                    effectiveRequest.add(new EffectiveRequest<>(AMEND, ((AmendConverter<RequestData, Kout, Vout>) requestConverter)::amendRequest, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion + 1));
+                                    effectiveRequest.add(createEffectiveRequest(AMEND, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion + 1));
                             case CANCEL_NEW -> {
-                                effectiveRequest.add(new EffectiveRequest<>(CANCEL, requestConverter::cancelRequest, downstreamReferenceState.effectiveReferenceId, 1));
-                                effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, generateNextId(), 1));
+                                effectiveRequest.add(createEffectiveRequest(CANCEL, downstreamReferenceState.effectiveReferenceId, 1));
+                                effectiveRequest.add(createEffectiveRequest(NEW, generateNextId(), 1));
+//                                effectiveRequest.add(new EffectiveRequest<>(CANCEL, requestConverter::cancelRequest, downstreamReferenceState.effectiveReferenceId, 1));
+//                                effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, generateNextId(), 1));
                             }
                         }
                     }
@@ -185,15 +221,18 @@ public class Downstream<RequestData, Kout, Vout> {
             }
             case AMEND -> {
                 switch (downstreamReferenceState.state) {
-                    case UNAWARE ->
-                            effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, requestContext.referenceId, 1));
+                    case UNAWARE -> effectiveRequest.add(createEffectiveRequest(NEW, requestContext.referenceId, 1));
+//                            effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, requestContext.referenceId, 1));
                     case EXISTS -> {
                         switch (downstreamAmendModel) {
                             case AMENDABLE ->
-                                    effectiveRequest.add(new EffectiveRequest<>(AMEND, ((AmendConverter<RequestData, Kout, Vout>) requestConverter)::amendRequest, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion + 1));
+                                    effectiveRequest.add(createEffectiveRequest(AMEND, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion + 1));
+//                                    effectiveRequest.add(new EffectiveRequest<>(AMEND, ((AmendConverter<RequestData, Kout, Vout>) requestConverter)::amendRequest, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion + 1));
                             case CANCEL_NEW -> {
-                                effectiveRequest.add(new EffectiveRequest<>(CANCEL, requestConverter::cancelRequest, downstreamReferenceState.effectiveReferenceId, 1));
-                                effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, generateNextId(), 1));
+                                effectiveRequest.add(createEffectiveRequest(CANCEL, downstreamReferenceState.effectiveReferenceId, 1));
+                                effectiveRequest.add(createEffectiveRequest(NEW, generateNextId(), 1));
+//                                effectiveRequest.add(new EffectiveRequest<>(CANCEL, requestConverter::cancelRequest, downstreamReferenceState.effectiveReferenceId, 1));
+//                                effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, generateNextId(), 1));
                             }
                         }
                     }
@@ -226,12 +265,13 @@ public class Downstream<RequestData, Kout, Vout> {
      */
     @NotNull
     private Stream<Request> getPreviousRequest(long referenceId) {
-        try(KeyValueIterator<String, WrapperValue<Audit, Request>> prevRequests = requests.prefixScan(String.valueOf(referenceId), new StringSerializer())) {
+        KeyValueIterator<String, WrapperValue<Audit, Request>> prevRequests = requests.prefixScan(String.valueOf(referenceId), new StringSerializer());
 
-            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(prevRequests, Spliterator.ORDERED), false)
-                    .map((kv) -> kv.value.value())
-                    .sorted(Comparator.comparingLong((Request o) -> o.id).reversed());
-        }
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(prevRequests, Spliterator.ORDERED), false)
+                .onClose(prevRequests::close)
+                .map((kv) -> kv.value.value())
+                .sorted(Comparator.comparingLong((Request o) -> o.id).reversed());
+
     }
 
     private Optional<Request> getLastNotNackedRequest(long referenceId) {
@@ -243,8 +283,7 @@ public class Downstream<RequestData, Kout, Vout> {
     }
 
 
-    private Request generateAndSendRequest(RequestContext<RequestData> requestContext, EffectiveRequest<RequestData, Kout, Vout> effectiveRequest) {
-        long requestId = generateNextId();
+    private Request generateAndSendRequest(long requestId, RequestContext<RequestData> requestContext, EffectiveRequest<RequestData, Kout, Vout> effectiveRequest) {
         String correlationId = correlationIdGenerator.generate(requestId, requestContext.requestData);
 
         Request request = createRequest(effectiveRequest, requestId, correlationId, requestContext);
@@ -255,6 +294,15 @@ public class Downstream<RequestData, Kout, Vout> {
 
         extendedProcessorContext.send(topic, record);
         return request;
+    }
+
+    private EffectiveRequest<RequestData, Kout, Vout> createEffectiveRequest(Request.RequestType requestType, long effectiveReferenceId, int effectiveVersion) {
+        return new EffectiveRequest<>(requestType, switch (requestType) {
+            case NEW -> requestConverter::newRequest;
+            case AMEND -> ((AmendConverter<RequestData, Kout, Vout>) requestConverter)::amendRequest;
+            case CANCEL -> requestConverter::cancelRequest;
+            case SKIP -> throw new RuntimeException("Never called");
+        }, effectiveReferenceId, effectiveVersion);
     }
 
     private Request createRequest(EffectiveRequest<RequestData, Kout, Vout> effectiveRequest, long requestId, String correlationId, RequestContext<RequestData> requestContext) {
