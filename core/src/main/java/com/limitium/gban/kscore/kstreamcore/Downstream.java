@@ -29,9 +29,7 @@ import java.util.stream.StreamSupport;
 import static com.limitium.gban.kscore.kstreamcore.Downstream.DownstreamAmendModel.AMENDABLE;
 import static com.limitium.gban.kscore.kstreamcore.downstream.state.Request.RequestType.*;
 
-//@todo: tech resend ++ version
-//@todo: reply support tech resends, update only once. waiting for ack
-//@todo: custom state
+
 public class Downstream<RequestData, Kout, Vout> {
     Logger logger = LoggerFactory.getLogger(Downstream.class);
     String name;
@@ -82,6 +80,7 @@ public class Downstream<RequestData, Kout, Vout> {
     }
 
     public void send(Request.RequestType requestType, long referenceId, int referenceVersion, RequestData requestData) {
+        logger.debug("{} sends {} for {}:{} with {}", name, requestType, referenceId, referenceVersion, requestData);
         RequestContext<RequestData> requestContext = prepareRequestContext(requestType, referenceId, referenceVersion, requestData);
 
         requestDataOriginals.putValue(referenceId, requestData);
@@ -89,6 +88,7 @@ public class Downstream<RequestData, Kout, Vout> {
     }
 
     public void requestReplied(String correlationId, boolean isAck, @Nullable String code, @Nullable String answer, @Nullable String externalId, int externalVersion) {
+        logger.debug("{} receive reply {} acked:{}", name, correlationId, isAck);
         WrapperValue<Audit, Request> auditRequest = requests.getUnique(DownstreamDefinition.STORE_REQUESTS_CORRELATION_INDEX_NAME, correlationId);
         if (auditRequest == null) {
             logger.error("NOT_FOUND:REQUEST:{}", correlationId);
@@ -109,6 +109,7 @@ public class Downstream<RequestData, Kout, Vout> {
     }
 
     public void forceAckRequest(String correlationId) {
+        logger.info("{} force ack for {}", name, correlationId);
         WrapperValue<Audit, Request> auditRequest = requests.getUnique(DownstreamDefinition.STORE_REQUESTS_CORRELATION_INDEX_NAME, correlationId);
         if (auditRequest == null) {
             logger.error("NOT_FOUND:REQUEST:{}", correlationId);
@@ -124,11 +125,13 @@ public class Downstream<RequestData, Kout, Vout> {
     }
 
     public void updateOverride(long referenceId, RequestData override) {
+        logger.info("{} update override {} with {}", name,referenceId, override);
         requestDataOverrides.putValue(referenceId, override);
         resendRequest(referenceId);
     }
 
     public void resendRequest(long referenceId) {
+        logger.info("{} resend last request for {}", name,referenceId);
         processRequest(
                 restoreLastRequestContext(getLastRequest(referenceId)
                         .orElseThrow(() -> new RuntimeException("Unable to resend, noting was sent before")))
@@ -136,6 +139,7 @@ public class Downstream<RequestData, Kout, Vout> {
     }
 
     public void retryRequest(long referenceId) {
+        logger.info("{} retry last request for {}", name,referenceId);
         Request request = getLastRequest(referenceId)
                 .orElseThrow(() -> new RuntimeException("Unable to resend, noting was sent before"));
 
@@ -150,6 +154,7 @@ public class Downstream<RequestData, Kout, Vout> {
     }
 
     public void terminateRequest(long referenceId, long requestId) {
+        logger.info("{} terminate request for {}, id:{}", name,referenceId, requestId);
         Request request = getPreviousRequest(referenceId)
                 .filter(r -> r.id == requestId)
                 .findFirst()
@@ -181,14 +186,18 @@ public class Downstream<RequestData, Kout, Vout> {
             requestDataMerged = requestDataOverrider.override(requestData, requestDataOverride);
         }
 
+        logger.debug("{} merged override v:{}, result {}", name, overrideVersion, requestDataMerged);
         return new RequestContext<>(requestType, referenceId, referenceVersion, overrideVersion, requestDataMerged);
     }
 
     private void processRequest(RequestContext<RequestData> requestContext) {
         calculateEffectiveRequests(requestContext).forEach(effectiveRequest -> {
             Request request = generateAndSendRequest(generateNextId(), requestContext, effectiveRequest);
+
+            logger.debug("{} sent request {}:{} {}:{},",name, request.type,request.correlationId,request.effectiveReferenceId,request.effectiveReferenceId);
             if (autoCommit) {
                 requestReplied(request.correlationId, true, null, null, null, 0);
+                logger.debug("{} autocommited request {}", name, request.correlationId);
             }
         });
     }
@@ -198,21 +207,19 @@ public class Downstream<RequestData, Kout, Vout> {
 
         DownstreamReferenceState downstreamReferenceState = calculateDownstreamReferenceState(getLastNotNackedRequest(requestContext.referenceId));
 
+        logger.debug("{} downstream state {} {}:{}",name, downstreamReferenceState.state, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion);
+
         switch (requestContext.requestType) {
             case NEW -> {
                 switch (downstreamReferenceState.state) {
                     case UNAWARE -> effectiveRequest.add(createEffectiveRequest(NEW, requestContext.referenceId, 1));
-//                            effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, requestContext.referenceId, 1));
                     case EXISTS -> {
                         switch (downstreamAmendModel) {
                             case AMENDABLE ->
-//                                    effectiveRequest.add(new EffectiveRequest<>(AMEND, ((AmendConverter<RequestData, Kout, Vout>) requestConverter)::amendRequest, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion + 1));
                                     effectiveRequest.add(createEffectiveRequest(AMEND, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion + 1));
                             case CANCEL_NEW -> {
                                 effectiveRequest.add(createEffectiveRequest(CANCEL, downstreamReferenceState.effectiveReferenceId, 1));
                                 effectiveRequest.add(createEffectiveRequest(NEW, generateNextId(), 1));
-//                                effectiveRequest.add(new EffectiveRequest<>(CANCEL, requestConverter::cancelRequest, downstreamReferenceState.effectiveReferenceId, 1));
-//                                effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, generateNextId(), 1));
                             }
                         }
                     }
@@ -223,17 +230,13 @@ public class Downstream<RequestData, Kout, Vout> {
             case AMEND -> {
                 switch (downstreamReferenceState.state) {
                     case UNAWARE -> effectiveRequest.add(createEffectiveRequest(NEW, requestContext.referenceId, 1));
-//                            effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, requestContext.referenceId, 1));
                     case EXISTS -> {
                         switch (downstreamAmendModel) {
                             case AMENDABLE ->
                                     effectiveRequest.add(createEffectiveRequest(AMEND, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion + 1));
-//                                    effectiveRequest.add(new EffectiveRequest<>(AMEND, ((AmendConverter<RequestData, Kout, Vout>) requestConverter)::amendRequest, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion + 1));
                             case CANCEL_NEW -> {
                                 effectiveRequest.add(createEffectiveRequest(CANCEL, downstreamReferenceState.effectiveReferenceId, 1));
                                 effectiveRequest.add(createEffectiveRequest(NEW, generateNextId(), 1));
-//                                effectiveRequest.add(new EffectiveRequest<>(CANCEL, requestConverter::cancelRequest, downstreamReferenceState.effectiveReferenceId, 1));
-//                                effectiveRequest.add(new EffectiveRequest<>(NEW, requestConverter::newRequest, generateNextId(), 1));
                             }
                         }
                     }

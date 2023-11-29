@@ -11,6 +11,15 @@ public class DownstreamReferenceState {
         this.effectiveReferenceVersion = effectiveReferenceVersion;
     }
 
+    @Override
+    public String toString() {
+        return "DownstreamReferenceState{" +
+                "state=" + state +
+                ", effectiveReferenceId=" + effectiveReferenceId +
+                ", effectiveReferenceVersion=" + effectiveReferenceVersion +
+                '}';
+    }
+
     public enum ReferenceState {
         UNAWARE, EXISTS, CANCELED
     }

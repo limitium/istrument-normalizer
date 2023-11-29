@@ -3,6 +3,7 @@ package com.limitium.gban.kscore.downstream;
 import com.limitium.gban.kscore.kstreamcore.downstream.state.Request;
 import org.junit.jupiter.api.Test;
 
+import static com.limitium.gban.kscore.kstreamcore.downstream.DownstreamResendProcessor.RESEND_MODEL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -193,9 +194,9 @@ public class MainScenariosTest extends BaseDSTest {
         assertNotEquals(0, request3.respondedAt);
 
 
-        send(RESEND1, 0, request1.referenceId, "RESEND");
-        send(RESEND2, 0, request1.referenceId, "RESEND");
-        send(RESEND3, 0, request1.referenceId, "RESEND");
+        send(RESEND1, 0, request1.referenceId, RESEND_MODEL);
+        send(RESEND2, 0, request1.referenceId, RESEND_MODEL);
+        send(RESEND3, 0, request1.referenceId, RESEND_MODEL);
 
         Outgoing ds1outCancel = parseOutput(waitForRecordFrom(SINK1));
         assertEquals("cancel", ds1outCancel.requestType());

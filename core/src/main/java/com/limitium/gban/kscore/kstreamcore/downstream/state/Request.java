@@ -63,6 +63,27 @@ public class Request {
         return correlationId;
     }
 
+    @Override
+    public String toString() {
+        return "Request{" +
+                "id=" + id +
+                ", correlationId='" + correlationId + '\'' +
+                ", type=" + type +
+                ", state=" + state +
+                ", effectiveReferenceId=" + effectiveReferenceId +
+                ", effectiveVersion=" + effectiveVersion +
+                ", referenceId=" + referenceId +
+                ", referenceVersion=" + referenceVersion +
+                ", overrideVersion=" + overrideVersion +
+                ", createdAt=" + createdAt +
+                ", respondedAt=" + respondedAt +
+                ", respondedCode='" + respondedCode + '\'' +
+                ", respondedMessage='" + respondedMessage + '\'' +
+                ", externalId='" + externalId + '\'' +
+                ", externalVersion=" + externalVersion +
+                '}';
+    }
+
     public enum RequestState {
         PENDING, ACKED, NACKED, TERMINATED
     }

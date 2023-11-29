@@ -1,15 +1,19 @@
 package com.limitium.gban.kscore.kstreamcore.audit;
 
 import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
+import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.streams.state.WrappedKeyValueStore;
 import org.apache.kafka.streams.state.internals.WrapperSupplier;
 import org.apache.logging.log4j.util.Strings;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.Charset;
+import java.util.Objects;
 import java.util.Optional;
 
-import static com.limitium.gban.kscore.kstreamcore.audit.AuditWrapperSupplier.AuditHeaders.*;
+import static com.limitium.gban.kscore.kstreamcore.audit.AuditWrapperSupplier.AuditHeaders.REASON;
+import static com.limitium.gban.kscore.kstreamcore.audit.AuditWrapperSupplier.AuditHeaders.USER;
 
 @SuppressWarnings("rawtypes")
 public class AuditWrapperSupplier<K, V> extends WrapperSupplier<K, V, Audit, ExtendedProcessorContext> {
@@ -34,12 +38,10 @@ public class AuditWrapperSupplier<K, V> extends WrapperSupplier<K, V, Audit, Ext
             version = audit.version();
             createdAt = audit.createdAt();
         }
-        String modifiedBy = Optional.ofNullable(context.getIncomingRecordHeaders().lastHeader(USER  ))
-                .map(header -> new String(header.value(), Charset.defaultCharset()))
+        String modifiedBy = getStrFromHeader(context.getIncomingRecordHeaders(), USER)
                 .orElse(null);
 
-        String reason = Optional.ofNullable(context.getIncomingRecordHeaders().lastHeader(REASON))
-                .map(header -> new String(header.value(), Charset.defaultCharset()))
+        String reason = getStrFromHeader(context.getIncomingRecordHeaders(), REASON)
                 .orElse(null);
 
         long traceId = extractTraceId(context);
@@ -58,12 +60,19 @@ public class AuditWrapperSupplier<K, V> extends WrapperSupplier<K, V, Audit, Ext
 
     @NotNull
     public static Long extractTraceId(ExtendedProcessorContext context) {
-        return Optional.ofNullable(context.getIncomingRecordHeaders().lastHeader(TRACE))
-                .map(header -> new String(header.value(), Charset.defaultCharset()))
-                .filter(Strings::isNotEmpty)
+        return getStrFromHeader(context.getIncomingRecordHeaders(), AuditHeaders.TRACE)
                 .map(v -> v.split("-"))
                 .filter(parts -> parts.length > 1)
                 .map(parts -> Long.parseLong(parts[1]))
                 .orElse(-1L);
+    }
+
+    @NotNull
+    private static Optional<String> getStrFromHeader(Headers incomingRecordHeaders, String header) {
+        return Optional.ofNullable(incomingRecordHeaders.lastHeader(header))
+                .map(Header::value)
+                .filter(Objects::nonNull)
+                .map(value -> new String(value, Charset.defaultCharset()))
+                .filter(Strings::isNotEmpty);
     }
 }

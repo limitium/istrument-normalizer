@@ -257,8 +257,14 @@ public class BaseKStreamApplicationTests {
                 record.topic(),
                 record.partition(),
                 record.offset(),
+                record.timestamp(),
+                record.timestampType(),
+                record.key() != null ? record.key().length : 0,
+                record.value() != null ? record.value().length : 0,
                 keySerde.deserializer().deserialize(record.topic(), record.key()),
-                valueSerde.deserializer().deserialize(record.topic(), record.value()));
+                valueSerde.deserializer().deserialize(record.topic(), record.value()),
+                record.headers(),
+                Optional.empty());
     }
 
     protected <K, V> void ensureEmptyTopic(Topic<K, V> topic) {
