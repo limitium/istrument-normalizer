@@ -4,16 +4,16 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.processor.StateStoreContext;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.state.*;
-import org.apache.kafka.streams.state.internals.ProcessorPostInitListener;
-import org.apache.kafka.streams.state.internals.WrappedIndexedKeyValueStoreBuilder;
-import org.apache.kafka.streams.state.internals.WrappedIndexedMeteredKeyValueStore;
-import org.apache.kafka.streams.state.internals.WrapperSupplier;
+import org.apache.kafka.streams.state.internals.*;
 import org.apache.kafka.test.InternalMockProcessorContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class WrappedIndexedStoreTest {
 
@@ -49,9 +49,23 @@ public class WrappedIndexedStoreTest {
 
         store.init((StateStoreContext) context, store);
         if (store instanceof ProcessorPostInitListener wrappedStore) {
-            wrappedStore.onPostInit(null);
+            wrappedStore.onPostInit(getProcessorContext(store));
         }
         return store;
+    }
+    ProcessorContext getProcessorContext(WrappedIndexedKeyValueStore<Integer, String, String> store) {
+        ProcessorContext processorContext = mock(ProcessorContext.class);
+
+        KeyValueStore<String, Integer> idxStore = Stores.keyValueStoreBuilder(
+                        Stores.inMemoryKeyValueStore("my-store_idx"),
+                        Serdes.String(),
+                        Serdes.Integer())
+                .build();
+
+        idxStore.init(KeyValueStoreTestDriver.create(String.class, Integer.class).context(), store);
+        when(processorContext.getStateStore(anyString()))
+                .thenReturn(idxStore);
+        return processorContext;
     }
 
     @AfterEach

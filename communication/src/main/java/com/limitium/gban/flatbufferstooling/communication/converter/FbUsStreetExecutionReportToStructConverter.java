@@ -1,10 +1,6 @@
 package com.limitium.gban.flatbufferstooling.communication.converter;
 
 import com.limitium.gban.communication.messages.domain.executionreports.flatbuffers.*;
-import com.limitium.gban.communication.state.usstreetprocessor.flatbuffers.FbExecType;
-import com.limitium.gban.communication.state.usstreetprocessor.flatbuffers.FbOrderType;
-import com.limitium.gban.communication.state.usstreetprocessor.flatbuffers.FbPartyRole;
-import com.limitium.gban.communication.state.usstreetprocessor.flatbuffers.FbSide;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;

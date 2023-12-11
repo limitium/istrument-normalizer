@@ -24,7 +24,7 @@ public class IndexesNonUniqStoreExceptionsTest {
         context = (InternalMockProcessorContext<Integer, String>) driver.context();
         context.setTime(10);
         IndexedKeyValueStoreBuilder<Integer, String> builder = Stores2.keyValueStoreBuilder(
-                        Stores.lruMap("my-store", 10),
+                        Stores.inMemoryKeyValueStore("my-store"),
                         Serdes.Integer(),
                         Serdes.String())
                 //Return null key index

@@ -2,15 +2,20 @@ package org.apache.kafka.streams.state.indexed;
 
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.processor.StateStoreContext;
+import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.state.*;
 import org.apache.kafka.streams.state.internals.IndexedKeyValueStoreBuilder;
 import org.apache.kafka.streams.state.internals.IndexedMeteredKeyValueStore;
 import org.apache.kafka.test.InternalMockProcessorContext;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class IndexedUniqStoreTest {
 
@@ -29,7 +34,7 @@ public class IndexedUniqStoreTest {
 
     private IndexedMeteredKeyValueStore<Integer, String> createStore(InternalMockProcessorContext<Integer, String> context) {
         IndexedKeyValueStoreBuilder<Integer, String> builder = Stores2.keyValueStoreBuilder(
-                        Stores.lruMap("my-store", 10),
+                        Stores.inMemoryKeyValueStore("my-store"),
                         Serdes.Integer(),
                         Serdes.String())
                 //Build uniq index based on first char
@@ -38,8 +43,25 @@ public class IndexedUniqStoreTest {
         IndexedMeteredKeyValueStore<Integer, String> store = builder.build();
 
         store.init((StateStoreContext) context, store);
-        store.onPostInit(null);
+
+        store.onPostInit(getProcessorContext(store));
         return store;
+    }
+
+
+    ProcessorContext getProcessorContext(IndexedMeteredKeyValueStore<Integer, String> store) {
+        ProcessorContext processorContext = mock(ProcessorContext.class);
+
+        KeyValueStore<String, Integer> idxStore = Stores.keyValueStoreBuilder(
+                Stores.inMemoryKeyValueStore("my-store_idx"),
+                Serdes.String(),
+                Serdes.Integer())
+                .build();
+
+        idxStore.init(KeyValueStoreTestDriver.create(String.class, Integer.class).context(), store);
+        when(processorContext.getStateStore(anyString()))
+                .thenReturn(idxStore);
+        return processorContext;
     }
 
     @AfterEach
@@ -96,7 +118,7 @@ public class IndexedUniqStoreTest {
         // receive the restore entries ...
         store = createStore((InternalMockProcessorContext<Integer, String>) driver.context());
         context.restore(store.name(), driver.restoredEntries());
-        store.onPostInit(null);
+        store.onPostInit(getProcessorContext(store));
 
         // Verify that the store's changelog does not get more appends ...
         assertEquals(0, driver.numFlushedEntryStored());

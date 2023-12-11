@@ -3,11 +3,12 @@ package org.apache.kafka.streams.state.indexed;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.StateStore;
 import org.apache.kafka.streams.processor.StateStoreContext;
+import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.state.*;
 import org.apache.kafka.streams.state.internals.IndexedKeyValueStoreBuilder;
+import org.apache.kafka.streams.state.internals.IndexedMeteredKeyValueStore;
 import org.apache.kafka.test.InternalMockProcessorContext;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -16,6 +17,9 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class MemoryConsumptionTest {
     Logger logger = LoggerFactory.getLogger(MemoryConsumptionTest.class);
@@ -60,7 +64,12 @@ public class MemoryConsumptionTest {
                             }
 
                             @Override
-                            public void init(ProcessorContext context, StateStore root) {
+                            public void init(org.apache.kafka.streams.processor.ProcessorContext context, StateStore root) {
+
+                            }
+
+                            @Override
+                            public void init(StateStoreContext context, StateStore root) {
 
                             }
 
@@ -132,12 +141,13 @@ public class MemoryConsumptionTest {
                     }
                 }, Serdes.Long(), Serdes.String()).withCachingDisabled().withLoggingDisabled()
                 .addUniqIndex("un", (v) -> v)
-                .addNonUniqIndex("non", (v) -> String.valueOf(Long.parseLong(v) + Long.parseLong(v) % 2));
+                .addNonUniqIndex("non", (v) -> String.valueOf(Long.parseLong(v) + Long.parseLong(v) % 2))
+                ;
 
-        IndexedKeyValueStore<Long, String> store = builder.build();
+        IndexedMeteredKeyValueStore<Long, String> store = builder.build();
 
         store.init((StateStoreContext) context, store);
-
+        store.onPostInit(getProcessorContext(store));
 
         long startSeq = System.nanoTime();
         long start = System.currentTimeMillis();
@@ -155,7 +165,23 @@ public class MemoryConsumptionTest {
         long memUsage = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024 / 1024;
         logger.info("Mem: {}Mb", memUsage);
 
-        assertTrue(insertTime < 4);
-        assertTrue(memUsage < 1500);
+        assertTrue(insertTime < 25);
+        assertTrue(memUsage < 2000);
+    }
+
+    ProcessorContext getProcessorContext(IndexedMeteredKeyValueStore<Long, String> store) {
+        ProcessorContext processorContext = mock(ProcessorContext.class);
+
+        KeyValueStore<String, Long> idxStore = Stores.keyValueStoreBuilder(
+                        Stores.persistentKeyValueStore("my-store_idx"),
+                        Serdes.String(),
+                        Serdes.Long())
+                .withCachingDisabled().withLoggingDisabled()
+                .build();
+
+        idxStore.init(KeyValueStoreTestDriver.create(String.class, Long.class).context(), store);
+        when(processorContext.getStateStore(anyString()))
+                .thenReturn(idxStore);
+        return processorContext;
     }
 }

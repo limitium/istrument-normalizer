@@ -33,7 +33,7 @@ public class WrappedStoreTest {
     }
 
     private WrappedKeyValueStore<Integer, String, String> createStore(InternalMockProcessorContext<Integer, String> context) {
-        WrappedKeyValueStoreBuilder<Integer, String, String, ProcessorContext> builder = Stores2.wrapKeyValueStoreBuilder(Stores.lruMap("my-store", 10), Serdes.Integer(), Serdes.String(), Serdes.String(), new WrapperSupplier.WrapperSupplierFactory<Integer, String, String, ProcessorContext>() {
+        WrappedKeyValueStoreBuilder<Integer, String, String, ProcessorContext> builder = Stores2.wrapKeyValueStoreBuilder(Stores.inMemoryKeyValueStore("my-store"), Serdes.Integer(), Serdes.String(), Serdes.String(), new WrapperSupplier.WrapperSupplierFactory<Integer, String, String, ProcessorContext>() {
             @Override
             public WrapperSupplier<Integer, String, String, ProcessorContext> create(WrappedKeyValueStore<Integer, String, String> store, ProcessorContext context) {
                 return new WrapperSupplier<>(store, context) {

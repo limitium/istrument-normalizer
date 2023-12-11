@@ -13,6 +13,7 @@ import org.apache.kafka.streams.processor.TopicNameExtractor;
 import org.apache.kafka.streams.processor.api.ProcessorSupplier;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.internals.AbstractStoreBuilder;
+import org.apache.kafka.streams.state.internals.IndexedKeyValueStoreBuilder;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
 
 import javax.annotation.Nonnull;
@@ -163,7 +164,13 @@ public class KSTopology {
          * @return
          */
         public ProcessorDefinition<kI, vI, kO, vO> withStores(StoreBuilder<?>... stores) {
-            Set<StoreBuilder<?>> builderSet = Set.of(stores);
+            Set<StoreBuilder<?>> builderSet = new HashSet<>();
+            for (StoreBuilder<?> storeBuilder : stores) {
+                if (storeBuilder instanceof IndexedKeyValueStoreBuilder<?, ?> idxBuilder) {
+                    builderSet.addAll(idxBuilder.getIndexBuilders());
+                }
+                builderSet.add(storeBuilder);
+            }
             this.stores.addAll(builderSet);
             this.processorSupplier.processorMeta.storeNames.addAll(builderSet.stream().map(StoreBuilder::name).collect(Collectors.toSet()));
             return this;

@@ -31,7 +31,7 @@ public class WrappableIndexedKeyValueStoreBuilder<K, V, W, PC extends ProcessorC
     @Override
     public WrappableIndexedMeteredKeyValueStore<K, V, W, PC> build() {
         return new WrappableIndexedMeteredKeyValueStore<>(
-                uniqIndexes,
+                getIndexGenerators(),
                 nonUniqIndexes,
                 maybeWrapCaching(maybeWrapLogging(storeSupplier.get())),
                 storeSupplier.metricsScope(),

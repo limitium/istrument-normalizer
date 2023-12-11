@@ -2,10 +2,8 @@ package org.apache.kafka.streams.state.indexed;
 
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.processor.StateStoreContext;
-import org.apache.kafka.streams.state.IndexedKeyValueStore;
-import org.apache.kafka.streams.state.KeyValueStoreTestDriver;
-import org.apache.kafka.streams.state.Stores;
-import org.apache.kafka.streams.state.Stores2;
+import org.apache.kafka.streams.processor.api.ProcessorContext;
+import org.apache.kafka.streams.state.*;
 import org.apache.kafka.streams.state.internals.IndexedKeyValueStoreBuilder;
 import org.apache.kafka.streams.state.internals.IndexedMeteredKeyValueStore;
 import org.apache.kafka.test.InternalMockProcessorContext;
@@ -18,6 +16,9 @@ import java.util.stream.Collectors;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class IndexedNonUniqStoreTest {
 
@@ -36,7 +37,7 @@ public class IndexedNonUniqStoreTest {
 
     private IndexedMeteredKeyValueStore<Integer, String> createStore(InternalMockProcessorContext<Integer, String> context) {
         IndexedKeyValueStoreBuilder<Integer, String> builder = Stores2.keyValueStoreBuilder(
-                        Stores.lruMap("my-store", 10),
+                        Stores.inMemoryKeyValueStore("my-store"),
                         Serdes.Integer(),
                         Serdes.String())
                 //Build non uniq index based on first char
@@ -45,10 +46,15 @@ public class IndexedNonUniqStoreTest {
         IndexedMeteredKeyValueStore<Integer, String> store = builder.build();
 
         store.init((StateStoreContext) context, store);
-        store.onPostInit(null);
+        store.onPostInit(getProcessorContext(store));
         return store;
     }
 
+    ProcessorContext getProcessorContext(IndexedMeteredKeyValueStore<Integer, String> store) {
+        ProcessorContext processorContext = mock(ProcessorContext.class);
+
+        return processorContext;
+    }
     @AfterEach
     public void clean() {
         store.close();
@@ -93,7 +99,7 @@ public class IndexedNonUniqStoreTest {
         // receive the restore entries ...
         store = createStore((InternalMockProcessorContext<Integer, String>) driver.context());
         context.restore(store.name(), driver.restoredEntries());
-        store.onPostInit(null);
+        store.onPostInit(getProcessorContext(store));
 
         // Verify that the store's changelog does not get more appends ...
         assertEquals(0, driver.numFlushedEntryStored());

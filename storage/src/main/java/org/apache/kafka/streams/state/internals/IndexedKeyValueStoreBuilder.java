@@ -1,23 +1,25 @@
 package org.apache.kafka.streams.state.internals;
 
 import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.common.utils.Time;
-import org.apache.kafka.streams.state.IndexedKeyValueStore;
-import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier;
-import org.apache.kafka.streams.state.KeyValueStore;
-import org.apache.kafka.streams.state.StoreBuilder;
+import org.apache.kafka.streams.state.*;
+import org.jetbrains.annotations.NotNull;
+import reactor.util.function.Tuples;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class IndexedKeyValueStoreBuilder<K, V> extends KeyValueStoreBuilder<K, V> {
     protected final KeyValueBytesStoreSupplier storeSupplier;
-    protected final HashMap<String, Function<V, String>> uniqIndexes;
+    protected final HashMap<String, IndexData<K,V>> uniqIndexes;
     protected final HashMap<String, Function<V, String>> nonUniqIndexes;
-
     public IndexedKeyValueStoreBuilder(KeyValueBytesStoreSupplier storeSupplier, Serde keySerde, Serde valueSerde, Time time) {
         super(storeSupplier, keySerde, valueSerde, time);
         this.storeSupplier = storeSupplier;
@@ -39,7 +41,7 @@ public class IndexedKeyValueStoreBuilder<K, V> extends KeyValueStoreBuilder<K, V
             throw new RuntimeException("Index with the name `" + indexName + "` already exits");
         }
 
-        uniqIndexes.put(indexName, keyGenerator);
+        uniqIndexes.put(indexName, new IndexData<>(keyGenerator,Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore(name + "_" + indexName), Serdes.String(), keySerde)));
         return this;
     }
 
@@ -65,13 +67,21 @@ public class IndexedKeyValueStoreBuilder<K, V> extends KeyValueStoreBuilder<K, V
     @Override
     public IndexedMeteredKeyValueStore<K, V> build() {
         return new IndexedMeteredKeyValueStore<>(
-                uniqIndexes,
+                getIndexGenerators(),
                 nonUniqIndexes,
                 maybeWrapCaching(maybeWrapLogging(storeSupplier.get())),
                 storeSupplier.metricsScope(),
                 time,
                 keySerde,
                 valueSerde);
+    }
+
+    protected HashMap<String, Function<V, String>> getIndexGenerators() {
+        return uniqIndexes.entrySet().stream().collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue().keyGenerator()), HashMap::putAll);
+    }
+
+    public Set<StoreBuilder<KeyValueStore<String, K>>> getIndexBuilders(){
+        return uniqIndexes.values().stream().map(IndexData::idxStoreBuilder).collect(Collectors.toSet());
     }
 
     @Override
@@ -110,5 +120,7 @@ public class IndexedKeyValueStoreBuilder<K, V> extends KeyValueStoreBuilder<K, V
             return inner;
         }
         return new ChangeLoggingKeyValueBytesStore(inner);
+    }
+    record IndexData<K,V>(Function<V, String> keyGenerator, StoreBuilder<KeyValueStore<String, K>>idxStoreBuilder) {
     }
 }
