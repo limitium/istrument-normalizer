@@ -4,6 +4,16 @@ spring:
 
   kafka:
     bootstrap-servers: localhost:9092
-    consumer:
-      max-poll-records: 512 #must be max-poll-records * (number of sequences) < 2048, must take less than max.poll.interval.ms
-      fetch-max-wait: 123
+
+kafka:
+  streams:
+    num.standby.replicas: 123
+    rocksdb:
+      config.setter: com.limitium.gban.kscore.kstreamcore.KStreamConfig$BoundedMemoryRocksDBConfig
+      total.off.heap.memory.mb: 2024
+      index.filter.block.ratio: 0.0
+      block.size: 4096
+      memtable:
+        total.memory.mb: 200
+        number: 3
+        size.mb: 16
