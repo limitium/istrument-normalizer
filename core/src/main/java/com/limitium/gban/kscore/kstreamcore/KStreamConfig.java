@@ -9,6 +9,8 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
 import org.apache.kafka.streams.state.RocksDBConfigSetter;
 import org.rocksdb.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.ApplicationContext;
@@ -115,6 +117,7 @@ public class KStreamConfig {
     }
 
     public static class BoundedMemoryRocksDBConfig implements RocksDBConfigSetter {
+        Logger logger = LoggerFactory.getLogger(KStreamConfig.class);
 
         private static long TOTAL_OFF_HEAP_MEMORY = 300;
         private static final String TOTAL_OFF_HEAP_MEMORY_CONFIG = "total.off.heap.memory.mb";
@@ -142,6 +145,8 @@ public class KStreamConfig {
 
             cache = new LRUCache(TOTAL_OFF_HEAP_MEMORY * 1024 * 1024, -1, false, INDEX_FILTER_BLOCK_RATIO);
             writeBufferManager = new WriteBufferManager(TOTAL_MEMTABLE_MEMORY * 1024 * 1024, cache);
+
+            logger.info("LRUCache size: {}mb with buffer {}mb,", TOTAL_OFF_HEAP_MEMORY, TOTAL_MEMTABLE_MEMORY);
         }
 
         @Override
@@ -163,6 +168,9 @@ public class KStreamConfig {
             options.setWriteBufferSize(MEMTABLE_SIZE * 1024 * 1024);
 
             options.setTableFormatConfig(tableConfig);
+
+            options.setUseDirectReads(true);
+            options.setUseDirectIoForFlushAndCompaction(true);
         }
 
         @Override
@@ -171,6 +179,19 @@ public class KStreamConfig {
         }
 
         public record BoundedMemoryRocksDBConfigSetter(String key, Consumer<String> setter) {
+        }
+    }
+
+    public static class MockRocksDBConfig implements RocksDBConfigSetter {
+
+        @Override
+        public void setConfig(String storeName, Options options, Map<String, Object> configs) {
+
+        }
+
+        @Override
+        public void close(String storeName, Options options) {
+
         }
     }
 }
