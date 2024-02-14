@@ -54,7 +54,7 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
                                 final Serde<K> keySerde,
                                 final Serde<V> valueSerde) {
         super(inner, metricsScope, time, keySerde, valueSerde);
-        logger.debug("Store `{}` created with {} uniq, {} non uniq indexes", name(), uniqIndexes.size(), nonUniqIndexesData.size());
+        logger.debug("Store `{}` created with {} uniq, {} non uniq indexes", name(), uniqIndexes.size(), nonUniqIndexes.size());
 
         this.metricsScope = metricsScope;
 

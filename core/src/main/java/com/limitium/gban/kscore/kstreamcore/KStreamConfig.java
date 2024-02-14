@@ -34,6 +34,8 @@ import static org.apache.kafka.streams.StreamsConfig.EXACTLY_ONCE_V2;
 @EnableKafka
 @EnableKafkaStreams
 public class KStreamConfig {
+    public static String INTERNAL_TOPIC_PREFIX = "internal.topic.prefix";
+    public static String MANAGED_TOPIC_PREFIX = "managed.topic.prefix";
 
     /**
      * Sets kafka client configuration
@@ -58,6 +60,9 @@ public class KStreamConfig {
 
         String appName = env.getRequiredProperty("spring.application.name");
         streamsProperties.put(StreamsConfig.APPLICATION_ID_CONFIG, appName);
+        streamsProperties.put(KStreamConfig.MANAGED_TOPIC_PREFIX, appName);
+        streamsProperties.put(KStreamConfig.INTERNAL_TOPIC_PREFIX, appName);
+
         streamsProperties.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, EXACTLY_ONCE_V2);
 
         List.of(
@@ -69,7 +74,9 @@ public class KStreamConfig {
                 StreamsConfig.STATE_DIR_CONFIG,
                 StreamsConfig.NUM_STANDBY_REPLICAS_CONFIG,
                 StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS_CONFIG,
-                ExtendedProcessorContext.SEQUENCER_NAMESPACE
+                ExtendedProcessorContext.SEQUENCER_NAMESPACE,
+                KStreamConfig.MANAGED_TOPIC_PREFIX,
+                KStreamConfig.INTERNAL_TOPIC_PREFIX
         ).forEach(propName -> {
             String propValue = getKafkaStreamProperty(propName, env);
             if (propValue != null) {
@@ -92,7 +99,7 @@ public class KStreamConfig {
             }
         });
 
-        streamsProperties.put(StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE, appName + ".store");
+        streamsProperties.put(StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE, streamsProperties.get(KStreamConfig.INTERNAL_TOPIC_PREFIX) + ".store");
 
         return new KafkaStreamsConfiguration(streamsProperties);
     }
@@ -117,7 +124,7 @@ public class KStreamConfig {
     }
 
     public static class BoundedMemoryRocksDBConfig implements RocksDBConfigSetter {
-        Logger logger = LoggerFactory.getLogger(KStreamConfig.class);
+        static Logger logger = LoggerFactory.getLogger(KStreamConfig.class);
 
         private static long TOTAL_OFF_HEAP_MEMORY = 300;
         private static final String TOTAL_OFF_HEAP_MEMORY_CONFIG = "total.off.heap.memory.mb";
@@ -132,12 +139,11 @@ public class KStreamConfig {
         private static long MEMTABLE_SIZE = 16;
         private static final String MEMTABLE_SIZE_CONFIG = "memtable.size.mb";
 
-        Cache cache;
-        WriteBufferManager writeBufferManager;
+        static Cache cache;
+        static WriteBufferManager writeBufferManager;
+        static boolean inited = false;
 
-        boolean inited = false;
-
-        synchronized void initOnce() {
+        synchronized static void initOnce() {
             if (inited) {
                 return;
             }

@@ -1,7 +1,12 @@
 package com.limitium.gban.kscore.downstream;
 
+import com.limitium.gban.kscore.kstreamcore.audit.Audit;
+import com.limitium.gban.kscore.kstreamcore.audit.AuditWrapperSupplier;
 import com.limitium.gban.kscore.kstreamcore.downstream.state.Request;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
 
 import static com.limitium.gban.kscore.kstreamcore.downstream.DownstreamResendProcessor.RESEND_MODEL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -360,5 +365,39 @@ public class MainScenariosTest extends BaseDSTest {
 
         assertEquals(Request.RequestType.NEW, request3.type);
         assertEquals(Request.RequestState.ACKED, request3.state);
+    }
+
+    @Test
+    void testTraces() {
+        ProducerRecord<byte[], byte[]> producerRecord = new ProducerRecord<>(SOURCE.topic, null, SOURCE.keySerde.serializer().serialize(null, 10), SOURCE.valueSerde.serializer().serialize(null, 1L));
+        producerRecord.headers()
+                .add(AuditWrapperSupplier.AuditHeaders.TRACE, "xxxx-123-xxx".getBytes(StandardCharsets.UTF_8))
+                .add(AuditWrapperSupplier.AuditHeaders.USER, "aaa".getBytes(StandardCharsets.UTF_8))
+                .add(AuditWrapperSupplier.AuditHeaders.REASON, "bbb".getBytes(StandardCharsets.UTF_8));
+        send(producerRecord);
+
+        Audit audit1r = waitForRecordFrom(REQUESTS1_CL).value().wrapper();
+        Audit audit1o = waitForRecordFrom(ORIGINALS1_CL).value().wrapper();
+        Audit audit2r = waitForRecordFrom(REQUESTS2_CL).value().wrapper();
+        Audit audit2o = waitForRecordFrom(ORIGINALS2_CL).value().wrapper();
+        Outgoing ds1outNew = parseOutput(waitForRecordFrom(SINK1));
+
+        assertEquals(123, audit1r.traceId());
+        assertEquals(123, audit1o.traceId());
+        assertEquals(123, audit2r.traceId());
+        assertEquals(123, audit2o.traceId());
+
+
+        ProducerRecord<byte[], byte[]> producerRecordOver = new ProducerRecord<>(OVERRIDE1.topic, null, OVERRIDE1.keySerde.serializer().serialize(null, Long.parseLong(ds1outNew.refId())), OVERRIDE1.valueSerde.serializer().serialize(null, "111"));
+        producerRecordOver.headers()
+                .add(AuditWrapperSupplier.AuditHeaders.TRACE, "xxxx-321-xxx".getBytes(StandardCharsets.UTF_8))
+                .add(AuditWrapperSupplier.AuditHeaders.USER, "aaa".getBytes(StandardCharsets.UTF_8))
+                .add(AuditWrapperSupplier.AuditHeaders.REASON, "bbb".getBytes(StandardCharsets.UTF_8));
+        send(producerRecordOver);
+
+        audit1r = waitForRecordFrom(REQUESTS1_CL).value().wrapper();
+        Audit audit1ov = waitForRecordFrom(OVERRIDE1_CL).value().wrapper();
+        assertEquals(321, audit1r.traceId());
+        assertEquals(321, audit1ov.traceId());
     }
 }

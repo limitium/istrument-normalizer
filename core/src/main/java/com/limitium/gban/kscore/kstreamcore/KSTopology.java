@@ -340,10 +340,12 @@ public class KSTopology {
         Map<SinkDefinition<?, ?>, Set<ProcessorDefinition<?, ?, ?, ?>>> sinksForProcessors = new HashMap<>();
         Map<StoreBuilder<?>, Set<ProcessorDefinition<?, ?, ?, ?>>> storeForProcessors = new HashMap<>();
 
+        String topicPrefix = config.asProperties().getProperty(KStreamConfig.MANAGED_TOPIC_PREFIX);
+
         //Define axillary processors for injectable stores
         if (injectableStores != null) {
             injectableStores.forEach((store -> {
-                String injectTopic = config.asProperties().getProperty(StreamsConfig.InternalConfig.TOPIC_PREFIX_ALTERNATIVE) + "-" + store.name() + "-inject";
+                String injectTopic = topicPrefix + ".store-" + store.name() + "-inject";
                 Topic topic = new Topic(injectTopic, getStoreSerde(store, "keySerde"), getStoreSerde(store, "valueSerde"));
 
                 createProcessor(new ProcessorDefinition(this, () -> new KSInjectProcessor(store))
@@ -359,8 +361,6 @@ public class KSTopology {
                 .flatMap((processorDefinition) -> processorDefinition.downstreams.stream())
                 .collect(Collectors.toSet());
 
-        String appName = config.asProperties().getProperty(StreamsConfig.APPLICATION_ID_CONFIG);
-
         //Define axillary processors around downstream
         downstreamDefinitions.forEach(downstreamDefinition -> {
             if (downstreamDefinition.replyDefinition != null) {
@@ -371,19 +371,19 @@ public class KSTopology {
             }
             createProcessor(new ProcessorDefinition(this, () -> new DownstreamOverrideProcessor(downstreamDefinition.name))
                     .withCustomName("DownstreamOverrideProcessor-" + downstreamDefinition.name)
-                    .withSource(new Topic(appName + ".downstream-" + downstreamDefinition.name + "-override", Serdes.Long(), downstreamDefinition.requestDataSerde))
+                    .withSource(new Topic(topicPrefix + ".downstream-" + downstreamDefinition.name + "-override", Serdes.Long(), downstreamDefinition.requestDataSerde))
                     .withDownstream(downstreamDefinition));
             createProcessor(new ProcessorDefinition(this, () -> new DownstreamResendProcessor(downstreamDefinition.name))
                     .withCustomName("DownstreamResendProcessor-" + downstreamDefinition.name)
-                    .withSource(new Topic(appName + ".downstream-" + downstreamDefinition.name + "-resend", Serdes.Long(), Serdes.String()))
+                    .withSource(new Topic(topicPrefix + ".downstream-" + downstreamDefinition.name + "-resend", Serdes.Long(), Serdes.String()))
                     .withDownstream(downstreamDefinition));
             createProcessor(new ProcessorDefinition(this, () -> new DownstreamTerminateProcessor(downstreamDefinition.name))
                     .withCustomName("DownstreamTerminateProcessor-" + downstreamDefinition.name)
-                    .withSource(new Topic(appName + ".downstream-" + downstreamDefinition.name + "-terminate", Serdes.Long(), Serdes.Long()))
+                    .withSource(new Topic(topicPrefix + ".downstream-" + downstreamDefinition.name + "-terminate", Serdes.Long(), Serdes.Long()))
                     .withDownstream(downstreamDefinition));
             createProcessor(new ProcessorDefinition(this, () -> new DownstreamForceAckProcessor(downstreamDefinition.name))
                     .withCustomName("DownstreamForceAckProcessor-" + downstreamDefinition.name)
-                    .withSource(new Topic(appName + ".downstream-" + downstreamDefinition.name + "-forceack", Serdes.String(), Serdes.String()))
+                    .withSource(new Topic(topicPrefix + ".downstream-" + downstreamDefinition.name + "-forceack", Serdes.String(), Serdes.String()))
                     .withDownstream(downstreamDefinition));
         });
 
