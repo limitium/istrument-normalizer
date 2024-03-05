@@ -12,6 +12,7 @@ import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
+import org.apache.kafka.streams.state.Stores2;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -62,14 +63,14 @@ public class KSInjectorProcessorTest extends BaseKStreamApplicationTests {
         @Bean
         public static KStreamInfraCustomizer.KStreamKSTopologyBuilder provideTopology() {
             return builder -> {
-                StoreBuilder<KeyValueStore<Integer, Integer>> store = Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore("kv"), Serdes.Integer(), Serdes.Integer());
+                StoreBuilder<KeyValueStore<Integer, Integer>> store = Stores2.keyValueStoreBuilder(Stores.persistentKeyValueStore("kv"), Serdes.Integer(), Serdes.Integer())
+                        .addInjector();
 
                 builder
                         .addProcessor(SumProcessor::new)
                         .withSource(SOURCE)
                         .withStores(store)
-                        .done()
-                        .addInjectors(store);
+                        .done();
             };
 
         }

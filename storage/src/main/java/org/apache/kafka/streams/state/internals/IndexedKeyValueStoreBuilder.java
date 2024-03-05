@@ -16,13 +16,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class IndexedKeyValueStoreBuilder<K, V> extends KeyValueStoreBuilder<K, V> {
-    protected final KeyValueBytesStoreSupplier storeSupplier;
+public class IndexedKeyValueStoreBuilder<K, V> extends InjectableKeyValueStoreBuilder<K, V, KeyValueStore<K,V>> {
     protected final HashMap<String, IndexData<K,V>> uniqIndexes;
     protected final HashMap<String, Function<V, String>> nonUniqIndexes;
     public IndexedKeyValueStoreBuilder(KeyValueBytesStoreSupplier storeSupplier, Serde keySerde, Serde valueSerde, Time time) {
         super(storeSupplier, keySerde, valueSerde, time);
-        this.storeSupplier = storeSupplier;
         this.uniqIndexes = new HashMap<>();
         this.nonUniqIndexes = new HashMap<>();
     }

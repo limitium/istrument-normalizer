@@ -7,6 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.annotation.AliasFor;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestExecutionListeners;
@@ -45,4 +46,7 @@ public @interface KafkaTest {
     Class<?>[] configs() default {
             KStreamApplication.class, BaseKStreamApplicationTests.BaseKafkaTestConfig.class
     };
+
+    @AliasFor(annotation = EmbeddedKafka.class, attribute = "adminTimeout")
+    int adminTimeout() default EmbeddedKafkaBroker.DEFAULT_ADMIN_TIMEOUT * 3;
 }

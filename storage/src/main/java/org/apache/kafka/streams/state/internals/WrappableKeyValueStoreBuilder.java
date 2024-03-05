@@ -11,18 +11,15 @@ import org.apache.kafka.streams.state.internals.WrapperSupplier.WrapperSupplierF
 import java.util.Objects;
 
 @SuppressWarnings("rawtypes")
-public class WrappableKeyValueStoreBuilder<K, V, W, PC extends ProcessorContext> extends AbstractStoreBuilder<K, WrapperValue<W, V>, WrappableMeteredKeyValueStore<K, V, W, PC>> {
+public class WrappableKeyValueStoreBuilder<K, V, W, PC extends ProcessorContext> extends InjectableKeyValueStoreBuilder<K, WrapperValue<W, V>, WrappableMeteredKeyValueStore<K, V, W, PC>> {
 
     private final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory;
 
-    private final KeyValueBytesStoreSupplier storeSupplier;
-
     public WrappableKeyValueStoreBuilder(KeyValueBytesStoreSupplier storeSupplier, Serde<K> keySerde, Serde<V> valueSerde, Serde<W> wrapperSerde, WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory, Time time) {
-        super(storeSupplier.name(), keySerde, new WrapperValueSerde<>(wrapperSerde, valueSerde), time);
+        super(storeSupplier, keySerde, new WrapperValueSerde<>(wrapperSerde, valueSerde), time);
         Objects.requireNonNull(storeSupplier, "storeSupplier can't be null");
         Objects.requireNonNull(storeSupplier.metricsScope(), "storeSupplier's metricsScope can't be null");
         Objects.requireNonNull(wrapperSupplierFactory, "wrapperSupplierFactory can't be null");
-        this.storeSupplier = storeSupplier;
         this.wrapperSupplierFactory = wrapperSupplierFactory;
     }
 

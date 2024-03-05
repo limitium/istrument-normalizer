@@ -14,6 +14,7 @@ import org.apache.kafka.streams.processor.api.ProcessorSupplier;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.internals.AbstractStoreBuilder;
 import org.apache.kafka.streams.state.internals.IndexedKeyValueStoreBuilder;
+import org.apache.kafka.streams.state.internals.InjectableKeyValueStoreBuilder;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
 
 import javax.annotation.Nonnull;
@@ -33,7 +34,6 @@ public class KSTopology {
     final Topology topology;
     private final KafkaStreamsConfiguration config;//@todo: hash app.name to sequencer.namespace
     final Set<ProcessorDefinition<?, ?, ?, ?>> processors = new HashSet<>();
-    private Set<StoreBuilder<?>> injectableStores;
 
     public KSTopology(Topology topology, KafkaStreamsConfiguration config) {
         this.topology = topology;
@@ -320,17 +320,6 @@ public class KSTopology {
     }
 
     /**
-     * Add injectors to stores, that allows direct store modification via source topic {application_name}.store-{store_name}-inject
-     *
-     * @param stores
-     * @return
-     */
-    public KSTopology addInjectors(StoreBuilder<?>... stores) {
-        this.injectableStores = Arrays.stream(stores).collect(Collectors.toSet());
-        return this;
-    }
-
-    /**
      * Shouldn't be called directly.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -341,20 +330,6 @@ public class KSTopology {
         Map<StoreBuilder<?>, Set<ProcessorDefinition<?, ?, ?, ?>>> storeForProcessors = new HashMap<>();
 
         String topicPrefix = config.asProperties().getProperty(KStreamConfig.MANAGED_TOPIC_PREFIX);
-
-        //Define axillary processors for injectable stores
-        if (injectableStores != null) {
-            injectableStores.forEach((store -> {
-                String injectTopic = topicPrefix + ".store-" + store.name() + "-inject";
-                Topic topic = new Topic(injectTopic, getStoreSerde(store, "keySerde"), getStoreSerde(store, "valueSerde"));
-
-                createProcessor(new ProcessorDefinition(this, () -> new KSInjectProcessor(store))
-                        .withCustomName("KSInjectProcessor-" + store.name())
-                        .withSource(topic)
-                        .withStores(store));
-            }));
-        }
-
 
         //Collect all downstream from all mentions
         Set<DownstreamDefinition<?, ?, ?>> downstreamDefinitions = processors.stream()
@@ -387,6 +362,23 @@ public class KSTopology {
                     .withDownstream(downstreamDefinition));
         });
 
+
+        processors.stream()
+                .flatMap(processorDefinition -> processorDefinition.stores.stream())
+                .collect(Collectors.toSet())
+                .forEach(store -> {
+                    if (store instanceof InjectableKeyValueStoreBuilder<?, ?, ?> injectable) {
+                        if (injectable.isInjectable()) {
+                            String injectTopic = topicPrefix + ".store-" + store.name() + "-inject";
+                            Topic topic = new Topic(injectTopic, getStoreSerde(store, "keySerde"), getStoreSerde(store, "valueSerde"));
+
+                            createProcessor(new ProcessorDefinition(this, () -> new KSInjectProcessor(store))
+                                    .withCustomName("KSInjectProcessor-" + store.name())
+                                    .withSource(topic)
+                                    .withStores(store));
+                        }
+                    }
+                });
         //Connect dowstreams stores to related processors
         processors.stream().
                 filter(processorDefinition -> !processorDefinition.downstreams.isEmpty())
@@ -397,6 +389,7 @@ public class KSTopology {
                             .toArray(StoreBuilder[]::new);
                     processorDefinition.withStores(downstreamsStores);
                 });
+
 
         processors.forEach((processor -> {
             processor.sources.forEach(source -> {
