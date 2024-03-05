@@ -6,7 +6,6 @@ import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessor;
 import com.limitium.gban.kscore.kstreamcore.processor.ProcessorMeta;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 import org.apache.kafka.streams.processor.TopicNameExtractor;

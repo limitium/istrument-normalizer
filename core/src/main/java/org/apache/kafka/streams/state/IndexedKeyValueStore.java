@@ -16,20 +16,10 @@
  */
 package org.apache.kafka.streams.state;
 
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.streams.processor.StateRestoreListener;
-import org.apache.kafka.streams.processor.StateStore;
-import org.apache.kafka.streams.processor.StateStoreContext;
-import org.apache.kafka.streams.processor.api.ProcessorContext;
-import org.apache.kafka.streams.processor.internals.RecordBatchingStateRestoreCallback;
 import org.apache.kafka.streams.state.internals.IndexedKeyValueStoreBuilder;
-import org.apache.kafka.streams.state.internals.IndexedMeteredKeyValueStore;
 
-import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
-import static org.apache.kafka.common.annotation.InterfaceStability.Evolving;
 
 /**
  * A key-value store that supports put/get/delete, range queries and uniq index lookup.

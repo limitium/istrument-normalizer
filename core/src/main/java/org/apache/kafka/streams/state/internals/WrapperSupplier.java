@@ -1,7 +1,6 @@
 package org.apache.kafka.streams.state.internals;
 
 import org.apache.kafka.streams.processor.api.ProcessorContext;
-import org.apache.kafka.streams.state.WrappedIndexedKeyValueStore;
 import org.apache.kafka.streams.state.WrappedKeyValueStore;
 
 /**
