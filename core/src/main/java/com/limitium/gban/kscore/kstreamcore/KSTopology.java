@@ -362,6 +362,19 @@ public class KSTopology {
         });
 
 
+        //Connect dowstreams stores to related processors
+        processors.stream().
+                filter(processorDefinition -> !processorDefinition.downstreams.isEmpty())
+                .forEach(processorDefinition -> {
+                    StoreBuilder[] downstreamsStores = processorDefinition.downstreams
+                            .stream()
+                            .flatMap(downstreamDefinition -> downstreamDefinition.buildOrGetStores().stream())
+                            .toArray(StoreBuilder[]::new);
+                    processorDefinition.withStores(downstreamsStores);
+                });
+
+
+        //add injectors
         processors.stream()
                 .flatMap(processorDefinition -> processorDefinition.stores.stream())
                 .collect(Collectors.toSet())
@@ -378,17 +391,6 @@ public class KSTopology {
                         }
                     }
                 });
-        //Connect dowstreams stores to related processors
-        processors.stream().
-                filter(processorDefinition -> !processorDefinition.downstreams.isEmpty())
-                .forEach(processorDefinition -> {
-                    StoreBuilder[] downstreamsStores = processorDefinition.downstreams
-                            .stream()
-                            .flatMap(downstreamDefinition -> downstreamDefinition.buildOrGetStores().stream())
-                            .toArray(StoreBuilder[]::new);
-                    processorDefinition.withStores(downstreamsStores);
-                });
-
 
         processors.forEach((processor -> {
             processor.sources.forEach(source -> {

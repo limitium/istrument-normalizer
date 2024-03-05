@@ -1,5 +1,8 @@
 package org.apache.kafka.streams.state;
 
+import com.limitium.gban.kscore.kstreamcore.audit.Audit;
+import com.limitium.gban.kscore.kstreamcore.audit.AuditWrapperSupplier;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
@@ -126,10 +129,10 @@ public class Stores2 {
      * @param <PC>       processor context type
      */
     public static <K, V, W, PC extends ProcessorContext> WrappableKeyValueStoreBuilder<K, V, W, PC> wrappableKeyValueStoreBuilder(final KeyValueBytesStoreSupplier supplier,
-                                                                                                                           final Serde<K> keySerde,
-                                                                                                                           final Serde<V> valueSerde,
-                                                                                                                           final Serde<W> wrapperSerde,
-                                                                                                                           final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory
+                                                                                                                                  final Serde<K> keySerde,
+                                                                                                                                  final Serde<V> valueSerde,
+                                                                                                                                  final Serde<W> wrapperSerde,
+                                                                                                                                  final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory
     ) {
         Objects.requireNonNull(supplier, "supplier cannot be null");
         return new WrappableKeyValueStoreBuilder<>(supplier, keySerde, valueSerde, wrapperSerde, wrapperSupplierFactory, Time.SYSTEM);
@@ -156,12 +159,62 @@ public class Stores2 {
      * @param <PC>       processor context type
      */
     public static <K, V, W, PC extends ProcessorContext> WrappableIndexedKeyValueStoreBuilder<K, V, W, PC> wrappableIndexedKeyValueStoreBuilder(final KeyValueBytesStoreSupplier supplier,
-                                                                                                                                         final Serde<K> keySerde,
-                                                                                                                                         final Serde<V> valueSerde,
-                                                                                                                                         final Serde<W> wrapperSerde,
-                                                                                                                                         final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory
+                                                                                                                                                final Serde<K> keySerde,
+                                                                                                                                                final Serde<V> valueSerde,
+                                                                                                                                                final Serde<W> wrapperSerde,
+                                                                                                                                                final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory
     ) {
         Objects.requireNonNull(supplier, "supplier cannot be null");
         return new WrappableIndexedKeyValueStoreBuilder<>(supplier, keySerde, valueSerde, wrapperSerde, wrapperSupplierFactory, Time.SYSTEM);
+    }
+
+    /**
+     * Creates a auditable {@link WrappableKeyValueStoreBuilder}
+     * <p>
+     * The provided supplier should <strong>not</strong> be a supplier for
+     * {@link TimestampedKeyValueStore TimestampedKeyValueStores}.
+     * <p>
+     *
+     * @param supplier   a {@link KeyValueBytesStoreSupplier} (cannot be {@code null})
+     * @param keySerde   the key serde to use
+     * @param valueSerde the value serde to use; if the serialized bytes is {@code null} for put operations,
+     *                   it is treated as delete
+     *
+     * @return an instance of a {@link WrappableKeyValueStoreBuilder} that can build a {@link WrappableMeteredKeyValueStore}
+     * @param <K>        key type
+     * @param <V>        value type
+     */
+    @SuppressWarnings("rawtypes")
+    public static <K, V> WrappableKeyValueStoreBuilder<K, V, Audit, ExtendedProcessorContext> auditableKeyValueStoreBuilder(final KeyValueBytesStoreSupplier supplier,
+                                                                                                                            final Serde<K> keySerde,
+                                                                                                                            final Serde<V> valueSerde
+    ) {
+        WrappableKeyValueStoreBuilder<K, V, Audit, ExtendedProcessorContext> builder = wrappableKeyValueStoreBuilder(supplier, keySerde, valueSerde, Audit.AuditSerde(), AuditWrapperSupplier::new);
+        return (WrappableKeyValueStoreBuilder<K, V, Audit, ExtendedProcessorContext>) builder.addInjector();
+    }
+
+    /**
+     * Creates an auditable {@link WrappableIndexedKeyValueStoreBuilder}
+     * <p>
+     * The provided supplier should <strong>not</strong> be a supplier for
+     * {@link TimestampedKeyValueStore TimestampedKeyValueStores}.
+     * <p>
+     *
+     * @param supplier   a {@link KeyValueBytesStoreSupplier} (cannot be {@code null})
+     * @param keySerde   the key serde to use
+     * @param valueSerde the value serde to use; if the serialized bytes is {@code null} for put operations,
+     *                   it is treated as delete
+     *
+     * @return an instance of a {@link WrappableIndexedKeyValueStoreBuilder} that can build a {@link WrappableMeteredKeyValueStore}
+     * @param <K>        key type
+     * @param <V>        value type
+     */
+    @SuppressWarnings("rawtypes")
+    public static <K, V> WrappableIndexedKeyValueStoreBuilder<K, V, Audit, ExtendedProcessorContext> auditableIndexedKeyValueStoreBuilder(final KeyValueBytesStoreSupplier supplier,
+                                                                                                                                                final Serde<K> keySerde,
+                                                                                                                                                final Serde<V> valueSerde
+    ) {
+        WrappableIndexedKeyValueStoreBuilder<K, V, Audit, ExtendedProcessorContext> builder = wrappableIndexedKeyValueStoreBuilder(supplier, keySerde, valueSerde, Audit.AuditSerde(), AuditWrapperSupplier::new);
+        return (WrappableIndexedKeyValueStoreBuilder<K, V, Audit, ExtendedProcessorContext>) builder.addInjector();
     }
 }

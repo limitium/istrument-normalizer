@@ -1,9 +1,12 @@
 package com.limitium.gban.kscore.downstream;
 
+import com.limitium.gban.kscore.kstreamcore.Topic;
 import com.limitium.gban.kscore.kstreamcore.audit.Audit;
 import com.limitium.gban.kscore.kstreamcore.downstream.state.Request;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrapperValueSerde;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 
 public class EdgeScenariosTest extends BaseDSTest {
+
+    private static final Topic<Long, WrapperValue<Audit,String>> INJECT = new Topic<>("core-app.store-downstream-ds1-request_data_originals-inject", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
 
     @Test
     void testMultipleRetries() {
@@ -275,5 +280,48 @@ public class EdgeScenariosTest extends BaseDSTest {
         assertEquals(2, override32.value().wrapper().version());
         assertEquals("3333", override32.value().value());
 
+    }
+    @Test
+    void testInjectRequestOriginals() {
+        send(SOURCE, 0, 1, 1L);
+
+        Outgoing ds1outNewOrig = parseOutput(waitForRecordFrom(SINK1));
+        Outgoing ds2outNewOrig = parseOutput(waitForRecordFrom(SINK2));
+        Outgoing ds3outNewOrig = parseOutput(waitForRecordFrom(SINK3));
+
+        assertEquals("new", ds1outNewOrig.requestType());
+        assertEquals("1", ds1outNewOrig.refId());
+        assertEquals("1", ds1outNewOrig.refVer());
+        assertEquals("ds1", ds1outNewOrig.dsId());
+        assertEquals("rd1>1|1", ds1outNewOrig.payload());
+
+        assertEquals("new", ds2outNewOrig.requestType());
+        assertEquals("1", ds2outNewOrig.refId());
+        assertEquals("1", ds2outNewOrig.refVer());
+        assertEquals("ds2", ds2outNewOrig.dsId());
+        assertEquals("rd2>1|1", ds2outNewOrig.payload());
+
+        assertEquals("new", ds3outNewOrig.requestType());
+        assertEquals("1", ds3outNewOrig.refId());
+        assertEquals("1", ds3outNewOrig.refVer());
+        assertEquals("ds3", ds3outNewOrig.dsId());
+        assertEquals("rd3>1|1", ds3outNewOrig.payload());
+
+        ConsumerRecord<Long, WrapperValue<Audit, String>> original = waitForRecordFrom(ORIGINALS1_CL);
+
+        assertEquals(1,original.value().wrapper().version());
+        assertEquals(0,original.value().wrapper().partition());
+        assertEquals("rd1>1|1",original.value().value());
+
+        send(INJECT,1L,new WrapperValue<>(new Audit(3,3,0,123,321,"qqq","aaa",false), "ZZZ"));
+
+        original = waitForRecordFrom(ORIGINALS1_CL);
+
+        assertEquals(3,original.value().wrapper().traceId());
+        assertEquals(3,original.value().wrapper().version());
+        assertEquals(0,original.value().wrapper().partition());
+        assertEquals(123,original.value().wrapper().createdAt());
+        assertEquals("qqq",original.value().wrapper().modifiedBy());
+        assertEquals("ZZZ",original.value().value());
     }
 }
