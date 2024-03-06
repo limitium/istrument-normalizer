@@ -34,6 +34,8 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
     private final ProcessorMeta<KIn, VIn, KOut, VOut> processorMeta;
     private Record<KIn, VIn> incomingRecord;
 
+    private int sequencesCounter = 0;
+    private long startProcessing = 0;
 
     public ExtendedProcessorContext(ProcessorContext<KOut, VOut> context, ProcessorMeta<KIn, VIn, KOut, VOut> processorMeta) {
         super(context);
@@ -76,6 +78,7 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
      * @return a new sequence
      */
     public long getNextSequence() {
+        sequencesCounter++;
         return sequencer.getNext();
     }
 
@@ -198,8 +201,14 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
         return recordMetadata().map(RecordMetadata::partition).orElse(-1);
     }
 
-    protected void updateIncomingRecord(Record<KIn, VIn> incomingRecord) {
+    protected void beginProcessing(Record<KIn, VIn> incomingRecord) {
         this.incomingRecord = incomingRecord;
+        this.sequencesCounter = 0;
+        this.startProcessing = System.nanoTime();
+    }
+
+    public void endProcessing() {
+        logger.info("Processed record with key: {}, generated sequences: {}, elapsed: {} ms", incomingRecord.key(), sequencesCounter, String.format("%.2f", (System.nanoTime() - this.startProcessing) * 1f / 1_000_000));
     }
 
     @SuppressWarnings("unchecked")

@@ -20,7 +20,7 @@ public class BaseProcessor<KIn, VIn, KOut, VOut> implements org.apache.kafka.str
     @Override
     public void process(Record<KIn, VIn> record) {
         logger.info("Incoming message {}-{} {}, updates extendedContext {}", extendedProcessorContext.getTopic(), extendedProcessorContext.getPartition(), record, extendedProcessorContext);
-        extendedProcessorContext.updateIncomingRecord(record);
+        extendedProcessorContext.beginProcessing(record);
         try {
             extendedProcessor.process(record);
         } catch (Exception e) {
@@ -29,6 +29,8 @@ public class BaseProcessor<KIn, VIn, KOut, VOut> implements org.apache.kafka.str
                 throw e;
             }
             extendedProcessorContext.sendToDLQ(record, e);
+        }finally {
+            extendedProcessorContext.endProcessing();
         }
     }
 

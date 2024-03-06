@@ -29,8 +29,8 @@ public class AuditWrapperSupplierTest {
         }
 
         @Override
-        public void updateIncomingRecord(Record incomingRecord) {
-            super.updateIncomingRecord(incomingRecord);
+        public void beginProcessing(Record incomingRecord) {
+            super.beginProcessing(incomingRecord);
         }
     }
 
@@ -132,7 +132,7 @@ public class AuditWrapperSupplierTest {
 
         Record incomingRecord = new Record(null, null, 0L);
         incomingRecord.headers().add(AuditWrapperSupplier.AuditHeaders.TRACE, value);
-        context.updateIncomingRecord(incomingRecord);
+        context.beginProcessing(incomingRecord);
 
         return AuditWrapperSupplier.extractTraceId(context);
     }
