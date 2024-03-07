@@ -22,6 +22,11 @@ class WrappedIndexedKeyValueDecorator<S extends IndexedMeteredKeyValueStore<K, W
     }
 
     @Override
+    public K getUniqKey(String indexName, String indexKey) {
+        return getWrapped().getUniqKey(indexName, indexKey);
+    }
+
+    @Override
     public Stream<WrapperValue<W, V>> getNonUnique(String indexName, String indexKey) {
         return getWrapped().getNonUnique(indexName, indexKey);
     }

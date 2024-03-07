@@ -102,6 +102,22 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
     }
 
     @Override
+    public K getUniqKey(String indexName, String indexKey) {
+        Objects.requireNonNull(indexName, "indexName cannot be null");
+        Objects.requireNonNull(indexKey, "indexKey cannot be null");
+
+        lock.readLock().lock();
+        if(!indexesBuilt){
+            throw new RuntimeException("Indexes of "+name()+" were not built, call IndexedKeyValueStore.onPostInit() from Processor#init() method")
+        }
+        try{
+            return maybeMeasureLatency(()->lookupUniqKey(indexName,indexKey),time,lookupUniqIndexSensor);
+        }finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
     public Stream<V> getNonUnique(String indexName, String indexKey) {
         Objects.requireNonNull(indexName, "indexName cannot be null");
         Objects.requireNonNull(indexKey, "indexKey cannot be null");
