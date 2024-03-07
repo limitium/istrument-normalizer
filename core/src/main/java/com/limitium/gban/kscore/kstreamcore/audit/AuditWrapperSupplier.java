@@ -33,7 +33,7 @@ public class AuditWrapperSupplier<K, V> extends WrapperSupplier<K, V, Audit, Ext
     public Audit generate(K key, V value) {
         Audit audit = store.getWrapper(key);
         int version = 0;
-        long createdAt = context.currentSystemTimeMs();
+        long createdAt = context.currentLocalTimeMs();
         if (audit != null) {
             version = audit.version();
             createdAt = audit.createdAt();
@@ -51,7 +51,7 @@ public class AuditWrapperSupplier<K, V> extends WrapperSupplier<K, V, Audit, Ext
                 ++version,
                 context.getPartition(),
                 createdAt,
-                context.currentSystemTimeMs(),
+                context.currentLocalTimeMs(),
                 modifiedBy,
                 reason,
                 value == null

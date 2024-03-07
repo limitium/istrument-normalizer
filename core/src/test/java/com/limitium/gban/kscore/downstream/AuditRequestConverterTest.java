@@ -28,7 +28,7 @@ public class AuditRequestConverterTest {
         WrapperValueSerde<Audit, Request> wrapperValueSerde = WrapperValueSerde.create(Audit.AuditSerde(), Request.RequestSerde());
         WrapperValue<Audit, Request> wrapperValue = new WrapperValue<>(
                 new Audit(1, 2, 3, 4L, 5L, null, null, false),
-                new Request(1L, "qwe", Request.RequestType.NEW, 2L, 3, 4L, 5, 6));
+                new Request(1L, "qwe", Request.RequestType.NEW, 2L, 3, 4L, 5, 6, 123L));
         SchemaAndValue schemaAndValue = auditStringConverter.toConnectData(null, wrapperValueSerde.serializer().serialize(null, wrapperValue));
 
         byte[] bytes = auditStringConverter.fromConnectData(null, schemaAndValue.schema(), schemaAndValue.value());

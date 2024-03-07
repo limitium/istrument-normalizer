@@ -100,7 +100,7 @@ public class Downstream<RequestData, Kout, Vout> {
             request.state = isAck ? Request.RequestState.ACKED : Request.RequestState.NACKED;
             request.respondedCode = code;
             request.respondedMessage = answer;
-            request.respondedAt = System.currentTimeMillis();
+            request.respondedAt = extendedProcessorContext.currentLocalTimeMs();
             request.externalId = externalId;
             request.externalVersion = externalVersion;
         }
@@ -119,7 +119,7 @@ public class Downstream<RequestData, Kout, Vout> {
         Request request = auditRequest.value();
         request.state = Request.RequestState.ACKED;
         request.respondedMessage = "force acked";
-        request.respondedAt = System.currentTimeMillis();
+        request.respondedAt = extendedProcessorContext.currentLocalTimeMs();
 
         requests.putValue(request.getStoreKey(), request);
     }
@@ -164,7 +164,7 @@ public class Downstream<RequestData, Kout, Vout> {
             logger.info("{},{},{} non pending terminated", referenceId, requestId, request.state);
         }
         request.state = Request.RequestState.TERMINATED;
-        request.respondedAt = System.currentTimeMillis();
+        request.respondedAt = extendedProcessorContext.currentLocalTimeMs();
         requests.putValue(request.getStoreKey(), request);
     }
 
@@ -318,7 +318,8 @@ public class Downstream<RequestData, Kout, Vout> {
                 effectiveRequest.referenceVersion,
                 requestContext.referenceId,
                 requestContext.referenceVersion,
-                requestContext.overrideVersion);
+                requestContext.overrideVersion,
+                extendedProcessorContext.currentLocalTimeMs());
     }
 
     private long generateNextId() {

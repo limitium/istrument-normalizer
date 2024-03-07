@@ -98,4 +98,7 @@ public class ProcessorContextComposer<KOut, VOut> implements ProcessorContext<KO
     public long currentStreamTimeMs() {
         return context.currentStreamTimeMs();
     }
+    public long currentLocalTimeMs() {
+        return System.currentTimeMillis();
+    }
 }

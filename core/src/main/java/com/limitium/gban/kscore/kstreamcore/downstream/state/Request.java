@@ -24,7 +24,7 @@ public class Request {
     public String externalId;
     public int externalVersion;
 
-    public Request(long id, String correlationId, Request.RequestType requestType, long effectiveReferenceId, int effectiveVersion, long referenceId, int referenceVersion, int overrideVersion) {
+    public Request(long id, String correlationId, Request.RequestType requestType, long effectiveReferenceId, int effectiveVersion, long referenceId, int referenceVersion, int overrideVersion, long createdAt) {
         this.id = id;
         this.correlationId = correlationId;
         this.type = requestType;
@@ -33,7 +33,7 @@ public class Request {
         this.referenceId = referenceId;
         this.referenceVersion = referenceVersion;
         this.overrideVersion = overrideVersion;
-        this.createdAt = System.currentTimeMillis();
+        this.createdAt = createdAt;
         this.state = Request.RequestState.PENDING;
     }
 

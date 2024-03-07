@@ -40,7 +40,7 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
     public ExtendedProcessorContext(ProcessorContext<KOut, VOut> context, ProcessorMeta<KIn, VIn, KOut, VOut> processorMeta) {
         super(context);
         this.processorMeta = processorMeta;
-        sequencer = new Sequencer(context::currentSystemTimeMs, (Integer) context.appConfigs().getOrDefault(SEQUENCER_NAMESPACE, 0), context.taskId().partition());
+        sequencer = new Sequencer(this::currentLocalTimeMs, (Integer) context.appConfigs().getOrDefault(SEQUENCER_NAMESPACE, 0), context.taskId().partition());
     }
 
     Map<String, StateStore> stores = new HashMap<>();

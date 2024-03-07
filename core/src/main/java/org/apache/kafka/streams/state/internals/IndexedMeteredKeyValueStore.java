@@ -108,7 +108,7 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
 
         lock.readLock().lock();
         if(!indexesBuilt){
-            throw new RuntimeException("Indexes of "+name()+" were not built, call IndexedKeyValueStore.onPostInit() from Processor#init() method")
+            throw new RuntimeException("Indexes of "+name()+" were not built, call IndexedKeyValueStore.onPostInit() from Processor#init() method");
         }
         try{
             return maybeMeasureLatency(()->lookupUniqKey(indexName,indexKey),time,lookupUniqIndexSensor);
