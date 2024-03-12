@@ -1,6 +1,7 @@
 package com.limitium.gban.kscore.kstreamcore.processor;
 
 import com.limitium.gban.bibliotheca.sequencer.Sequencer;
+import com.limitium.gban.kscore.kstreamcore.Broadcast;
 import com.limitium.gban.kscore.kstreamcore.Downstream;
 import com.limitium.gban.kscore.kstreamcore.KSTopology;
 import com.limitium.gban.kscore.kstreamcore.Topic;
@@ -12,6 +13,7 @@ import org.apache.kafka.streams.processor.StateStore;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.processor.api.RecordMetadata;
+import org.apache.kafka.streams.processor.internals.PartitionProvider;
 import org.apache.kafka.streams.state.IndexedKeyValueStore;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.WrappedIndexedKeyValueStore;
@@ -26,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorContextComposer<KOut, VOut> {
     Logger logger = LoggerFactory.getLogger(getClass());
@@ -37,10 +40,14 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
     private int sequencesCounter = 0;
     private long startProcessing = 0;
 
+    private final PartitionProvider partitionProvider;
+
     public ExtendedProcessorContext(ProcessorContext<KOut, VOut> context, ProcessorMeta<KIn, VIn, KOut, VOut> processorMeta) {
         super(context);
         this.processorMeta = processorMeta;
-        sequencer = new Sequencer(this::currentLocalTimeMs, (Integer) context.appConfigs().getOrDefault(SEQUENCER_NAMESPACE, 0), context.taskId().partition());
+        this.sequencer = new Sequencer(this::currentLocalTimeMs, (Integer) context.appConfigs().getOrDefault(SEQUENCER_NAMESPACE, 0), context.taskId().partition());
+        //@todo add broadcasts to processor meta and populate partitions data on startup
+        this.partitionProvider = new PartitionProvider(context);
     }
 
     Map<String, StateStore> stores = new HashMap<>();
@@ -102,6 +109,25 @@ public class ExtendedProcessorContext<KIn, VIn, KOut, VOut> extends ProcessorCon
     @SuppressWarnings({"unchecked", "rawtypes"})
     public <KOutl, VOutl> void send(Topic<KOutl, VOutl> topic, Record<KOutl, VOutl> record) {
         forward((Record) record, KSTopology.TopologyNameGenerator.sinkName(topic));
+    }
+
+    /**
+     * Broadcast message to all topic partitions
+     *
+     * @param broadcast broadcast definition
+     * @param value     message to send
+     * @param <VOutl>   topic value type
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public <VOutl> void broadcast(Broadcast<VOutl> broadcast, VOutl value) {
+        int partitions = partitionProvider.getPartitionsCount(broadcast.topic().topic);
+        if (partitions < 1) {
+            throw new RuntimeException("At least one partition must exists for topic " + broadcast.topic().topic);
+        }
+        for (int partition = 0; partition < partitions; partition++) {
+            Record<Integer, VOutl> record = new Record<>(partition, value, currentLocalTimeMs(), Optional.ofNullable(incomingRecord).map(Record::headers).orElse(null));
+            send(broadcast.topic(), record);
+        }
     }
 
     public boolean hasDLQ() {

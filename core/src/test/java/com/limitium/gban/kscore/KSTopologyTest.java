@@ -1,6 +1,6 @@
 package com.limitium.gban.kscore;
 
-import com.limitium.gban.kscore.kstreamcore.DLQTransformer;
+import com.limitium.gban.kscore.kstreamcore.Broadcast;
 import com.limitium.gban.kscore.kstreamcore.KStreamInfraCustomizer;
 import com.limitium.gban.kscore.kstreamcore.Topic;
 import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessor;
@@ -9,24 +9,23 @@ import com.limitium.gban.kscore.test.BaseKStreamApplicationTests;
 import com.limitium.gban.kscore.test.KafkaTest;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @KafkaTest(
         topics = {"test.in.topic.1"},
         consumers = {
                 "test.out.topic.1",
                 "test.out.topic.2",
+                "test.out.broadcast.1",
                 "test.out.dlq.1"
         },
         configs = {
@@ -39,7 +38,10 @@ class KSTopologyTest extends BaseKStreamApplicationTests {
     public static final Topic<Integer, Long> SOURCE = new Topic<>("test.in.topic.1", Serdes.Integer(), Serdes.Long());
     public static final Topic<String, String> SINK1 = new Topic<>("test.out.topic.1", Serdes.String(), Serdes.String());
     public static final Topic<String, String> SINK2 = new Topic<>("test.out.topic.2", Serdes.String(), Serdes.String());
+    public static final Topic<Integer, String> BROADCAST_TOPIC = new Topic<>("test.out.broadcast.1", Serdes.Integer(), Serdes.String());
+    public static final Broadcast<String> BROADCAST = new Broadcast<>(BROADCAST_TOPIC);
     public static final Topic<Integer, String> DLQ = new Topic<>("test.out.dlq.1", Serdes.Integer(), Serdes.String());
+    public static final int BORADCAST_KEY_TRIGGER = -13;
 
     @Configuration
     public static class TopologyConfig {
@@ -56,6 +58,10 @@ class KSTopologyTest extends BaseKStreamApplicationTests {
 
             @Override
             public void process(Record<Integer, Long> record) {
+                if (record.key() == BORADCAST_KEY_TRIGGER) {
+                    context.broadcast(BROADCAST, "B13");
+                    return;
+                }
                 if (record.value() < 0) {
                     context.sendToDLQ(record, new RuntimeException("negative"));
                     return;
@@ -82,6 +88,7 @@ class KSTopologyTest extends BaseKStreamApplicationTests {
                         .withStores(store)
                         .withSink(SINK1)
                         .withSink(SINK2)
+                        .withBroadcast(BROADCAST)
                         .withDLQ(DLQ, (failed, extendedProcessorContext, errorMessage, exception) -> failed.withValue(errorMessage))
                         .done();
             };
@@ -111,5 +118,13 @@ class KSTopologyTest extends BaseKStreamApplicationTests {
 
         assertEquals(1, out.key());
         assertEquals("negative", out.value());
+    }
+
+    @Test
+    void testBroadcast() {
+        send(SOURCE, BORADCAST_KEY_TRIGGER, 777L);
+        ConsumerRecord<Integer, String> b1 = waitForRecordFrom(BROADCAST_TOPIC);
+        ConsumerRecord<Integer, String> b2 = waitForRecordFrom(BROADCAST_TOPIC);
+        assertNotEquals(b1.partition(), b2.partition());
     }
 }

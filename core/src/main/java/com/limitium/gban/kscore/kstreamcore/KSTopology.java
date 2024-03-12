@@ -64,16 +64,68 @@ public class KSTopology {
 
     /**
      * Extended sink definition
-     *
-     * @param topic
-     * @param topicNameExtractor
-     * @param streamPartitioner
-     * @param <K>
-     * @param <V>
      */
-    public record SinkDefinition<K, V>(@Nonnull Topic<K, V> topic,
-                                       @Nullable TopicNameExtractor<K, V> topicNameExtractor,
-                                       @Nullable StreamPartitioner<K, V> streamPartitioner) {
+    public static class SinkDefinition<K, V> {
+        @Nonnull
+        private final Topic<K, V> topic;
+        @Nullable
+        private final TopicNameExtractor<K, V> topicNameExtractor;
+        @Nullable
+        private final StreamPartitioner<K, V> streamPartitioner;
+
+        /**
+         * @param topic
+         * @param topicNameExtractor
+         * @param streamPartitioner
+         * @param <K>
+         * @param <V>
+         */
+        public SinkDefinition(@Nonnull Topic<K, V> topic,
+                              @Nullable TopicNameExtractor<K, V> topicNameExtractor,
+                              @Nullable StreamPartitioner<K, V> streamPartitioner) {
+            this.topic = topic;
+            this.topicNameExtractor = topicNameExtractor;
+            this.streamPartitioner = streamPartitioner;
+        }
+
+        @Nonnull
+        public Topic<K, V> topic() {
+            return topic;
+        }
+
+        @Nullable
+        public TopicNameExtractor<K, V> topicNameExtractor() {
+            return topicNameExtractor;
+        }
+
+        @Nullable
+        public StreamPartitioner<K, V> streamPartitioner() {
+            return streamPartitioner;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) return true;
+            if (obj == null || obj.getClass() != this.getClass()) return false;
+            var that = (SinkDefinition) obj;
+            return Objects.equals(this.topic, that.topic) &&
+                    Objects.equals(this.topicNameExtractor, that.topicNameExtractor) &&
+                    Objects.equals(this.streamPartitioner, that.streamPartitioner);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(topic, topicNameExtractor, streamPartitioner);
+        }
+
+        @Override
+        public String toString() {
+            return "SinkDefinition[" +
+                    "topic=" + topic + ", " +
+                    "topicNameExtractor=" + topicNameExtractor + ", " +
+                    "streamPartitioner=" + streamPartitioner + ']';
+        }
+
     }
 
     /**
@@ -188,6 +240,12 @@ public class KSTopology {
 
         public ProcessorDefinition<kI, vI, kO, vO> withSink(SinkDefinition<? extends kO, ? extends vO> sink) {
             sinks.add(sink);
+            return this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public ProcessorDefinition<kI, vI, kO, vO> withBroadcast(Broadcast<? extends vO> broadcast) {
+            sinks.add((SinkDefinition<? extends kO, ? extends vO>) broadcast);
             return this;
         }
 
