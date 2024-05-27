@@ -22,6 +22,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.io.Resource;
 import org.springframework.kafka.test.EmbeddedKafkaBroker;
+import org.springframework.kafka.test.EmbeddedKafkaKraftBroker;
+import org.springframework.kafka.test.EmbeddedKafkaZKBroker;
 import org.springframework.test.context.ContextCustomizer;
 import org.springframework.test.context.MergedContextConfiguration;
 import org.springframework.util.Assert;
@@ -68,7 +70,7 @@ class EmbeddedKafkaContextCustomizer implements ContextCustomizer {
 						.toArray(String[]::new);
 
 		int[] ports = setupPorts();
-		EmbeddedKafkaBroker embeddedKafkaBroker = new EmbeddedKafkaBroker(this.embeddedKafka.count(),
+		EmbeddedKafkaBroker embeddedKafkaBroker = new EmbeddedKafkaZKBroker(this.embeddedKafka.count(),
 					this.embeddedKafka.controlledShutdown(),
 					this.embeddedKafka.partitions(),
 					topics)

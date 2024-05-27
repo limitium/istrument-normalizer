@@ -162,7 +162,7 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
                 public String generate(long requestId, Request.RequestType requestType, String rd, Long traceId, int partition) {
                     return String.valueOf(requestId);
                 }
-            }, (toOverride, override) -> toOverride + "+" + override, new NewCancelConverter<>() {
+            }, new NewCancelConverter<>() {
                 @Override
                 public Record<String, String> newRequest(String correlationId, long effectiveReferenceId, int effectiveReferenceVersion, String rd) {
                     return new Record<>(correlationId, String.join(",", "new", "ds1", String.valueOf(effectiveReferenceId), String.valueOf(effectiveReferenceVersion), rd), System.currentTimeMillis());
@@ -177,14 +177,15 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
                     new DownstreamDefinition.ReplyDefinition<>(new KSTopology.SourceDefinition<>(new Topic<>("reply.ds1", Serdes.String(), Serdes.String()), false), (record, requestsAware) -> {
                         String[] parts = record.value().split(",");
                         requestsAware.replied(record.key(), Boolean.parseBoolean(parts[0]), parts[1], parts[2]);
-                    }));
+                    }),
+                    (toOverride, override) -> toOverride + "+" + override);
 
             DownstreamDefinition<String, String, String> ds2 = new DownstreamDefinition<>("ds2", Serdes.String(), new CorrelationIdGenerator<>() {
                 @Override
                 public String generate(long requestId, Request.RequestType requestType, String rd, Long traceId, int partition) {
                     return String.valueOf(requestId);
                 }
-            }, (toOverride, override) -> toOverride + "+" + override, new AmendConverter<>() {
+            }, new AmendConverter<>() {
                 @Override
                 public Record<String, String> amendRequest(String correlationId, long effectiveReferenceId, int effectiveReferenceVersion, String rd) {
                     return new Record<>(correlationId, String.join(",", "amend", "ds2", String.valueOf(effectiveReferenceId), String.valueOf(effectiveReferenceVersion), rd), System.currentTimeMillis());
@@ -201,7 +202,8 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
                 }
             },
                     new KSTopology.SinkDefinition<>(SINK2, null, (topic, key, value, numPartitions) -> Sequencer.getPartition(Long.parseLong(key))),
-                    null);
+                    null,
+                    (toOverride, override) -> toOverride + "+" + override);
 
 
             DownstreamDefinition<String, String, String> ds3 = new DownstreamDefinition<>("ds3", Serdes.String(), new CorrelationIdGenerator<>() {
@@ -209,7 +211,7 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
                 public String generate(long requestId, Request.RequestType requestType, String rd, Long traceId, int partition) {
                     return String.valueOf(requestId);
                 }
-            }, (toOverride, override) -> toOverride + "+" + override, new AmendConverter<>() {
+            }, new AmendConverter<>() {
                 @Override
                 public Record<String, String> amendRequest(String correlationId, long effectiveReferenceId, int effectiveReferenceVersion, String rd) {
                     return new Record<>(correlationId, String.join(",", "amend", "ds3", String.valueOf(effectiveReferenceId), String.valueOf(effectiveReferenceVersion), rd), System.currentTimeMillis());
@@ -229,7 +231,8 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
                     new DownstreamDefinition.ReplyDefinition<>(new KSTopology.SourceDefinition<>(new Topic<>("reply.ds3", Serdes.String(), Serdes.String()), false), (record, requestsAware) -> {
                         String[] parts = record.value().split(",");
                         requestsAware.replied(record.key(), Boolean.parseBoolean(parts[0]), parts[1], parts[2]);
-                    }));
+                    }),
+                    null);
 
 
             return builder -> {

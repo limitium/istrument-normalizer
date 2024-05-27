@@ -13,6 +13,7 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
 import org.apache.kafka.streams.state.Stores2;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -74,6 +75,11 @@ public class KSInjectorProcessorTest extends BaseKStreamApplicationTests {
             };
 
         }
+    }
+
+    @BeforeEach
+    void setup(){
+        clearAllTopics();
     }
 
     @Test

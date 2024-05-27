@@ -9,8 +9,7 @@ import org.apache.kafka.streams.state.internals.WrapperValue;
 import org.apache.kafka.streams.state.internals.WrapperValueSerde;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class EdgeScenariosTest extends BaseDSTest {
@@ -219,7 +218,7 @@ public class EdgeScenariosTest extends BaseDSTest {
         assertEquals("1", ds3outAmend.refId());
         assertEquals("2", ds3outAmend.refVer());
         assertEquals("ds3", ds3outAmend.dsId());
-        assertEquals("rd3>1|1+333", ds3outAmend.payload());
+        assertEquals("333", ds3outAmend.payload());
 
         ConsumerRecord<Long, WrapperValue<Audit, String>> override11 = waitForRecordFrom(OVERRIDE1_CL);
         ConsumerRecord<Long, WrapperValue<Audit, String>> override21 = waitForRecordFrom(OVERRIDE2_CL);
@@ -264,7 +263,7 @@ public class EdgeScenariosTest extends BaseDSTest {
         assertEquals("1", ds3outAmend.refId());
         assertEquals("3", ds3outAmend.refVer());
         assertEquals("ds3", ds3outAmend.dsId());
-        assertEquals("rd3>1|1+3333", ds3outAmend.payload());
+        assertEquals("3333", ds3outAmend.payload());
 
 
         ConsumerRecord<Long, WrapperValue<Audit, String>> override12 = waitForRecordFrom(OVERRIDE1_CL);
@@ -323,5 +322,182 @@ public class EdgeScenariosTest extends BaseDSTest {
         assertEquals(123,original.value().wrapper().createdAt());
         assertEquals("qqq",original.value().wrapper().modifiedBy());
         assertEquals("ZZZ",original.value().value());
+    }
+
+    @Test
+    void testDeleteOverride() {
+        send(SOURCE, 0, 1, 1L);
+
+        Outgoing ds1outNewOrig = parseOutput(waitForRecordFrom(SINK1));
+        Outgoing ds2outNewOrig = parseOutput(waitForRecordFrom(SINK2));
+        Outgoing ds3outNewOrig = parseOutput(waitForRecordFrom(SINK3));
+
+        assertEquals("new", ds1outNewOrig.requestType());
+        assertEquals("1", ds1outNewOrig.refId());
+        assertEquals("1", ds1outNewOrig.refVer());
+        assertEquals("ds1", ds1outNewOrig.dsId());
+        assertEquals("rd1>1|1", ds1outNewOrig.payload());
+
+        assertEquals("new", ds2outNewOrig.requestType());
+        assertEquals("1", ds2outNewOrig.refId());
+        assertEquals("1", ds2outNewOrig.refVer());
+        assertEquals("ds2", ds2outNewOrig.dsId());
+        assertEquals("rd2>1|1", ds2outNewOrig.payload());
+
+        assertEquals("new", ds3outNewOrig.requestType());
+        assertEquals("1", ds3outNewOrig.refId());
+        assertEquals("1", ds3outNewOrig.refVer());
+        assertEquals("ds3", ds3outNewOrig.dsId());
+        assertEquals("rd3>1|1", ds3outNewOrig.payload());
+
+        send(OVERRIDE1, 0, Long.parseLong(ds1outNewOrig.refId()), "111");
+        send(OVERRIDE2, 0, Long.parseLong(ds2outNewOrig.refId()), "222");
+        send(OVERRIDE3, 0, Long.parseLong(ds3outNewOrig.refId()), "333");
+
+        Outgoing ds1outCancel = parseOutput(waitForRecordFrom(SINK1));
+        assertEquals("cancel", ds1outCancel.requestType());
+        assertEquals("1", ds1outCancel.refId());
+        assertEquals("1", ds1outCancel.refVer());
+        assertEquals("ds1", ds1outCancel.dsId());
+        assertEquals("-", ds1outCancel.payload());
+
+        Outgoing ds1outNew = parseOutput(waitForRecordFrom(SINK1));
+        assertEquals("new", ds1outNew.requestType());
+        assertNotEquals("1", ds1outNew.refId());
+        assertEquals("1", ds1outNew.refVer());
+        assertEquals("ds1", ds1outNew.dsId());
+        assertEquals("rd1>1|1+111", ds1outNew.payload());
+
+        Outgoing ds2outAmend = parseOutput(waitForRecordFrom(SINK2));
+        assertEquals("amend", ds2outAmend.requestType());
+        assertEquals("1", ds2outAmend.refId());
+        assertEquals("2", ds2outAmend.refVer());
+        assertEquals("ds2", ds2outAmend.dsId());
+        assertEquals("rd2>1|1+222", ds2outAmend.payload());
+
+        Outgoing ds3outAmend = parseOutput(waitForRecordFrom(SINK3));
+        assertEquals("amend", ds3outAmend.requestType());
+        assertEquals("1", ds3outAmend.refId());
+        assertEquals("2", ds3outAmend.refVer());
+        assertEquals("ds3", ds3outAmend.dsId());
+        assertEquals("333", ds3outAmend.payload());
+
+        ConsumerRecord<Long, WrapperValue<Audit, String>> override11 = waitForRecordFrom(OVERRIDE1_CL);
+        ConsumerRecord<Long, WrapperValue<Audit, String>> override21 = waitForRecordFrom(OVERRIDE2_CL);
+        ConsumerRecord<Long, WrapperValue<Audit, String>> override31 = waitForRecordFrom(OVERRIDE3_CL);
+
+        assertEquals(1, override11.value().wrapper().version());
+        assertEquals("111", override11.value().value());
+
+        assertEquals(1, override21.value().wrapper().version());
+        assertEquals("222", override21.value().value());
+
+        assertEquals(1, override31.value().wrapper().version());
+        assertEquals("333", override31.value().value());
+
+        send(SOURCE, 0, 1, 2L);
+
+        ds1outCancel = parseOutput(waitForRecordFrom(SINK1));
+        assertEquals("cancel", ds1outCancel.requestType());
+        assertNotEquals("1", ds1outCancel.refId()); //generated
+        assertEquals("1", ds1outCancel.refVer());
+        assertEquals("ds1", ds1outCancel.dsId());
+        assertEquals("-", ds1outCancel.payload());
+
+        ds1outNew = parseOutput(waitForRecordFrom(SINK1));
+        assertEquals("new", ds1outNew.requestType());
+        assertNotEquals("1", ds1outNew.refId());
+        assertEquals("1", ds1outNew.refVer());
+        assertEquals("ds1", ds1outNew.dsId());
+        assertEquals("rd1>2|2+111", ds1outNew.payload());
+
+        ds2outAmend = parseOutput(waitForRecordFrom(SINK2));
+        assertEquals("amend", ds2outAmend.requestType());
+        assertEquals("1", ds2outAmend.refId());
+        assertEquals("3", ds2outAmend.refVer());
+        assertEquals("ds2", ds2outAmend.dsId());
+        assertEquals("rd2>2|2+222", ds2outAmend.payload());
+
+        ensureEmptyTopic(SINK3);
+
+        send(OVERRIDE1, 0, Long.parseLong(ds1outNewOrig.refId()), null);
+        send(OVERRIDE2, 0, Long.parseLong(ds2outNewOrig.refId()), null);
+        send(OVERRIDE3, 0, Long.parseLong(ds3outNewOrig.refId()), null);
+
+        ds1outCancel = parseOutput(waitForRecordFrom(SINK1));
+        assertEquals("cancel", ds1outCancel.requestType());
+        assertNotEquals("1", ds1outCancel.refId()); //generated
+        assertEquals("1", ds1outCancel.refVer());
+        assertEquals("ds1", ds1outCancel.dsId());
+        assertEquals("-", ds1outCancel.payload());
+
+        ds1outNew = parseOutput(waitForRecordFrom(SINK1));
+        assertEquals("new", ds1outNew.requestType());
+        assertNotEquals("1", ds1outNew.refId());
+        assertEquals("1", ds1outNew.refVer());
+        assertEquals("ds1", ds1outNew.dsId());
+        assertEquals("rd1>2|2", ds1outNew.payload());
+
+        ds2outAmend = parseOutput(waitForRecordFrom(SINK2));
+        assertEquals("amend", ds2outAmend.requestType());
+        assertEquals("1", ds2outAmend.refId());
+        assertEquals("4", ds2outAmend.refVer());
+        assertEquals("ds2", ds2outAmend.dsId());
+        assertEquals("rd2>2|2", ds2outAmend.payload());
+
+        ds3outAmend = parseOutput(waitForRecordFrom(SINK3));
+        assertEquals("amend", ds3outAmend.requestType());
+        assertEquals("1", ds3outAmend.refId());
+        assertEquals("3", ds3outAmend.refVer());
+        assertEquals("ds3", ds3outAmend.dsId());
+        assertEquals("rd3>2|2", ds3outAmend.payload());
+
+
+        ConsumerRecord<Long, WrapperValue<Audit, String>> override12 = waitForRecordFrom(OVERRIDE1_CL);
+        ConsumerRecord<Long, WrapperValue<Audit, String>> override22 = waitForRecordFrom(OVERRIDE2_CL);
+        ConsumerRecord<Long, WrapperValue<Audit, String>> override32 = waitForRecordFrom(OVERRIDE3_CL);
+
+        assertEquals(2, override12.value().wrapper().version());
+        assertEquals("111", override11.value().value());
+        assertTrue(override12.value().wrapper().removed());
+
+        assertEquals(2, override22.value().wrapper().version());
+        assertEquals("222", override22.value().value());
+        assertTrue(override22.value().wrapper().removed());
+
+        assertEquals(2, override32.value().wrapper().version());
+        assertEquals("333", override32.value().value());
+        assertTrue(override32.value().wrapper().removed());
+
+
+        send(SOURCE, 0, 1, 3L);
+
+        ds1outCancel = parseOutput(waitForRecordFrom(SINK1));
+        assertEquals("cancel", ds1outCancel.requestType());
+        assertNotEquals("1", ds1outCancel.refId()); //generated
+        assertEquals("1", ds1outCancel.refVer());
+        assertEquals("ds1", ds1outCancel.dsId());
+        assertEquals("-", ds1outCancel.payload());
+
+        ds1outNew = parseOutput(waitForRecordFrom(SINK1));
+        assertEquals("new", ds1outNew.requestType());
+        assertNotEquals("1", ds1outNew.refId());
+        assertEquals("1", ds1outNew.refVer());
+        assertEquals("ds1", ds1outNew.dsId());
+        assertEquals("rd1>3|3", ds1outNew.payload());
+
+        ds2outAmend = parseOutput(waitForRecordFrom(SINK2));
+        assertEquals("amend", ds2outAmend.requestType());
+        assertEquals("1", ds2outAmend.refId());
+        assertEquals("5", ds2outAmend.refVer());
+        assertEquals("ds2", ds2outAmend.dsId());
+        assertEquals("rd2>3|3", ds2outAmend.payload());
+
+        ds3outAmend = parseOutput(waitForRecordFrom(SINK3));
+        assertEquals("amend", ds3outAmend.requestType());
+        assertEquals("1", ds3outAmend.refId());
+        assertEquals("4", ds3outAmend.refVer());
+        assertEquals("ds3", ds3outAmend.dsId());
+        assertEquals("rd3>3|3", ds3outAmend.payload());
     }
 }

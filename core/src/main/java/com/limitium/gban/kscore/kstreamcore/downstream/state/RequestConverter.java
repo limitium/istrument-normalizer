@@ -25,6 +25,7 @@ public class RequestConverter implements WrappedConverter<Request> {
                 .field("RESPONDED_MESSAGE", Schema.OPTIONAL_STRING_SCHEMA)
                 .field("EXTERNAL_ID", Schema.OPTIONAL_STRING_SCHEMA)
                 .field("EXTERNAL_VERSION", Schema.OPTIONAL_INT32_SCHEMA)
+                .field("STORE_KEY", Schema.STRING_SCHEMA)
                 ;
     }
 
@@ -46,6 +47,7 @@ public class RequestConverter implements WrappedConverter<Request> {
                 .put("RESPONDED_MESSAGE", request.respondedMessage)
                 .put("EXTERNAL_ID", request.externalId)
                 .put("EXTERNAL_VERSION", request.externalVersion)
+                .put("STORE_KEY", request.getStoreKey())
         ;
     }
 

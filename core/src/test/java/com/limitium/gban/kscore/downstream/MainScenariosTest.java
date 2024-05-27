@@ -326,7 +326,7 @@ public class MainScenariosTest extends BaseDSTest {
         assertEquals("1", ds3outAmend.refId());
         assertEquals("2", ds3outAmend.refVer());
         assertEquals("ds3", ds3outAmend.dsId());
-        assertEquals("rd3>1|1+333", ds3outAmend.payload());
+        assertEquals("333", ds3outAmend.payload());
     }
 
     @Test

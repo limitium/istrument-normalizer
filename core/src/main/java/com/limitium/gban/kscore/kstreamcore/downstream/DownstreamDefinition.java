@@ -34,7 +34,7 @@ public class DownstreamDefinition<RequestData, KOut, VOut> {
 
     private Set<StoreBuilder<?>> builtStores;
 
-    public DownstreamDefinition(@Nonnull String name, @Nonnull Serde<RequestData> requestDataSerde, @Nonnull CorrelationIdGenerator<RequestData> correlationIdGenerator, @Nonnull RequestDataOverrider<RequestData> requestDataOverrider, @Nonnull NewCancelConverter<RequestData, KOut, VOut> requestConverter, @Nonnull KSTopology.SinkDefinition<? extends KOut, ? extends VOut> sink, @Nullable ReplyDefinition<?, ?> replyDefinition) {
+    public DownstreamDefinition(@Nonnull String name, @Nonnull Serde<RequestData> requestDataSerde, @Nonnull CorrelationIdGenerator<RequestData> correlationIdGenerator, @Nonnull NewCancelConverter<RequestData, KOut, VOut> requestConverter, @Nonnull KSTopology.SinkDefinition<? extends KOut, ? extends VOut> sink, @Nullable ReplyDefinition<?, ?> replyDefinition, @Nullable RequestDataOverrider<RequestData> requestDataOverrider) {
         this.name = name;
         this.requestDataSerde = requestDataSerde;
         this.correlationIdGenerator = correlationIdGenerator;

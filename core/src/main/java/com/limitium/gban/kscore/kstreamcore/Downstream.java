@@ -81,9 +81,15 @@ public class Downstream<RequestData, Kout, Vout> {
 
     public void send(Request.RequestType requestType, long referenceId, int referenceVersion, RequestData requestData) {
         logger.debug("{} sends {} for {}:{} with {}", name, requestType, referenceId, referenceVersion, requestData);
-        RequestContext<RequestData> requestContext = prepareRequestContext(requestType, referenceId, referenceVersion, requestData);
 
         requestDataOriginals.putValue(referenceId, requestData);
+
+        if (requestDataOverrides.get(referenceId) != null && requestDataOverrider == null) {
+            logger.info("Skip fully overridden sends");
+            return;
+        }
+        RequestContext<RequestData> requestContext = prepareRequestContext(requestType, referenceId, referenceVersion, requestData);
+
         processRequest(requestContext);
     }
 
@@ -125,13 +131,17 @@ public class Downstream<RequestData, Kout, Vout> {
     }
 
     public void updateOverride(long referenceId, RequestData override) {
-        logger.info("{} update override {} with {}", name,referenceId, override);
-        requestDataOverrides.putValue(referenceId, override);
+        logger.info("{} update override {} with {}", name, referenceId, override);
+        if (override == null) {
+            requestDataOverrides.delete(referenceId);
+        } else {
+            requestDataOverrides.putValue(referenceId, override);
+        }
         resendRequest(referenceId);
     }
 
     public void resendRequest(long referenceId) {
-        logger.info("{} resend last request for {}", name,referenceId);
+        logger.info("{} resend last request for {}", name, referenceId);
         processRequest(
                 restoreLastRequestContext(getLastRequest(referenceId)
                         .orElseThrow(() -> new RuntimeException("Unable to resend, noting was sent before")))
@@ -139,7 +149,7 @@ public class Downstream<RequestData, Kout, Vout> {
     }
 
     public void retryRequest(long referenceId) {
-        logger.info("{} retry last request for {}", name,referenceId);
+        logger.info("{} retry last request for {}", name, referenceId);
         Request request = getLastRequest(referenceId)
                 .orElseThrow(() -> new RuntimeException("Unable to resend, noting was sent before"));
 
@@ -154,7 +164,7 @@ public class Downstream<RequestData, Kout, Vout> {
     }
 
     public void terminateRequest(long referenceId, long requestId) {
-        logger.info("{} terminate request for {}, id:{}", name,referenceId, requestId);
+        logger.info("{} terminate request for {}, id:{}", name, referenceId, requestId);
         Request request = getPreviousRequest(referenceId)
                 .filter(r -> r.id == requestId)
                 .findFirst()
@@ -183,7 +193,10 @@ public class Downstream<RequestData, Kout, Vout> {
         if (auditRequestData != null) {
             RequestData requestDataOverride = auditRequestData.value();
             overrideVersion = auditRequestData.wrapper().version();
-            requestDataMerged = requestDataOverrider.override(requestData, requestDataOverride);
+            requestDataMerged = requestDataOverride;
+            if (requestDataOverrider != null) {
+                requestDataMerged = requestDataOverrider.override(requestData, requestDataOverride);
+            }
         }
 
         logger.debug("{} merged override v:{}, result {}", name, overrideVersion, requestDataMerged);
@@ -194,7 +207,7 @@ public class Downstream<RequestData, Kout, Vout> {
         calculateEffectiveRequests(requestContext).forEach(effectiveRequest -> {
             Request request = generateAndSendRequest(generateNextId(), requestContext, effectiveRequest);
 
-            logger.debug("{} sent request {}:{} {}:{},",name, request.type,request.correlationId,request.effectiveReferenceId,request.effectiveReferenceId);
+            logger.debug("{} sent request {}:{} {}:{},", name, request.type, request.correlationId, request.effectiveReferenceId, request.effectiveReferenceId);
             if (autoCommit) {
                 requestReplied(request.correlationId, true, null, null, null, 0);
                 logger.debug("{} autocommited request {}", name, request.correlationId);
@@ -207,7 +220,7 @@ public class Downstream<RequestData, Kout, Vout> {
 
         DownstreamReferenceState downstreamReferenceState = calculateDownstreamReferenceState(getLastNotNackedRequest(requestContext.referenceId));
 
-        logger.debug("{} downstream state {} {}:{}",name, downstreamReferenceState.state, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion);
+        logger.debug("{} downstream state {} {}:{}", name, downstreamReferenceState.state, downstreamReferenceState.effectiveReferenceId, downstreamReferenceState.effectiveReferenceVersion);
 
         switch (requestContext.requestType) {
             case NEW -> {

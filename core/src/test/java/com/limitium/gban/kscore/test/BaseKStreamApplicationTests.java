@@ -122,6 +122,21 @@ public class BaseKStreamApplicationTests {
                 }
             }
 
+            public List<ConsumerRecord<byte[], byte[]>> getAllRecordsFrom(String topic, int timeoutInMillis) {
+                assertTopic(topic);
+                try {
+                    List<ConsumerRecord<byte[], byte[]>> results = new ArrayList<>();
+                    long start = System.currentTimeMillis();
+                    long end = start + timeoutInMillis;
+                    while (System.currentTimeMillis() < end) {
+                        results.add(received.get(topic).poll(timeoutInMillis, TimeUnit.MILLISECONDS));
+                    }
+                    return results;
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
             public void ensureEmpty(String topic) {
                 assertTopic(topic);
                 try {
@@ -130,6 +145,18 @@ public class BaseKStreamApplicationTests {
                     assertNull(mustBeEmpty, "Topic `" + topic + "` is not empty");
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
+                }
+            }
+
+            public void clearTopic(String topic) {
+                assertTopic(topic);
+                LOGGER.info("Clearing topic + " + topic);
+                received.get(topic).clear();
+            }
+
+            public void clearAllTopics() {
+                for (String consumerTopic : consumerTopics) {
+                    clearTopic(consumerTopic);
                 }
             }
 
@@ -249,6 +276,14 @@ public class BaseKStreamApplicationTests {
 
     protected <K, V> ConsumerRecord<K, V> waitForRecordFrom(String topic, Serde<K> keySerde, Serde<V> valueSerde) {
         return createConsumedRecord(waitForRecordFrom(topic, DEFAULT_READ_TIMEOUT_SECONDS), keySerde, valueSerde);
+    }
+
+    protected List<ConsumerRecord<byte[], byte[]>> getAllRecordsFrom(String topic, int timeoutInMillis) {
+        return consumer.getAllRecordsFrom(topic, timeoutInMillis);
+    }
+
+    protected void clearAllTopics(){
+        consumer.clearAllTopics();
     }
 
     @NotNull
