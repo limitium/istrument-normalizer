@@ -1,9 +1,10 @@
 package com.limitium.gban.kscore;
 
-import com.limitium.gban.kscore.kstreamcore.DLQ;
-import com.limitium.gban.kscore.kstreamcore.DLQTransformer;
 import com.limitium.gban.kscore.kstreamcore.Topic;
-import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
+import com.limitium.gban.kscore.kstreamcore.dlq.DLQ;
+import com.limitium.gban.kscore.kstreamcore.dlq.DLQEnvelope;
+import com.limitium.gban.kscore.kstreamcore.dlq.DLQTopic;
+import com.limitium.gban.kscore.kstreamcore.dlq.PojoEnvelopedDLQ;
 import com.limitium.gban.kscore.kstreamcore.stateless.Converter;
 import com.limitium.gban.kscore.kstreamcore.stateless.Partitioner;
 import com.limitium.gban.kscore.test.BaseKStreamApplicationTests;
@@ -11,8 +12,6 @@ import com.limitium.gban.kscore.test.KafkaTest;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.processor.api.Record;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,13 +33,13 @@ class KSStatelessTopologyTest extends BaseKStreamApplicationTests {
 
     public static final Topic<Integer, Integer> SOURCE = new Topic<>("test.in.ss.1", Serdes.Integer(), Serdes.Integer());
     public static final Topic<Integer, Integer> SINK1 = new Topic<>("test.out.ss.1", Serdes.Integer(), Serdes.Integer());
-    public static final Topic<Integer, String> DLQ_TOPIC = new Topic<>("test.out.dlq.1", Serdes.Integer(), Serdes.String());
-    public static final DLQ<Integer, Integer, String> DLQ_MAIN = new DLQ<>(DLQ_TOPIC, (failed, extendedProcessorContext, errorMessage, exception) -> failed.withValue(errorMessage));
+    public static final DLQTopic<Integer> DLQ_TOPIC = DLQTopic.createFor(SOURCE, "test.out.dlq.1");
+    public static final PojoEnvelopedDLQ<Integer, Integer> DLQ_MAIN = new PojoEnvelopedDLQ<>(SOURCE, DLQ_TOPIC);
 
     @Configuration
     public static class ProcessorConfig {
 
-        interface StatelessProc extends Converter<Integer, Integer, Integer, Integer, String>, Partitioner<Integer, Integer, Integer, Integer, String> {
+        interface StatelessProc extends Converter<Integer, Integer, Integer, Integer, DLQEnvelope>, Partitioner<Integer, Integer, Integer, Integer, DLQEnvelope> {
         }
 
         @Bean
@@ -57,7 +56,7 @@ class KSStatelessTopologyTest extends BaseKStreamApplicationTests {
                 }
 
                 @Override
-                public DLQ<Integer, Integer, String> dlq() {
+                public DLQ<Integer, Integer, DLQEnvelope> dlq() {
                     return DLQ_MAIN;
                 }
 
@@ -106,9 +105,9 @@ class KSStatelessTopologyTest extends BaseKStreamApplicationTests {
     @Test
     void testDQL() {
         send(SOURCE, 4, -1);
-        ConsumerRecord<Integer, String> out = waitForRecordFrom(DLQ_TOPIC);
+        ConsumerRecord<Integer, DLQEnvelope> out = waitForRecordFrom(DLQ_TOPIC);
 
         assertEquals(4, out.key());
-        assertEquals("negative", out.value());
+        assertEquals("negative", out.value().message());
     }
 }

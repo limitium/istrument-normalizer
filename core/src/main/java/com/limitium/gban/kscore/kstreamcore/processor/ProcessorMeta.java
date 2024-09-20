@@ -1,6 +1,6 @@
 package com.limitium.gban.kscore.kstreamcore.processor;
 
-import com.limitium.gban.kscore.kstreamcore.DLQTransformer;
+import com.limitium.gban.kscore.kstreamcore.dlq.DLQTransformer;
 import com.limitium.gban.kscore.kstreamcore.Topic;
 import com.limitium.gban.kscore.kstreamcore.downstream.DownstreamDefinition;
 

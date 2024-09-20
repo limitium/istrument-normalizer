@@ -1,4 +1,4 @@
-package com.limitium.gban.kscore.kstreamcore;
+package com.limitium.gban.kscore.kstreamcore.dlq;
 
 import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;

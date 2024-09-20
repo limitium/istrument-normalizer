@@ -1,6 +1,6 @@
 package com.limitium.gban.kscore.kstreamcore.stateless;
 
-import com.limitium.gban.kscore.kstreamcore.DLQ;
+import com.limitium.gban.kscore.kstreamcore.dlq.DLQ;
 import com.limitium.gban.kscore.kstreamcore.Topic;
 
 /**
