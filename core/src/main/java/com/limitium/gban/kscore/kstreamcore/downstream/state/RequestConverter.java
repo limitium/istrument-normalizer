@@ -6,6 +6,8 @@ import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.streams.state.internals.WrappedConverter;
 
+import static com.limitium.gban.kscore.kstreamcore.primitive.PrimitiveNulls.primitiveFrom;
+
 public class RequestConverter implements WrappedConverter<Request> {
     @Override
     public SchemaBuilder fillSchema(SchemaBuilder builder) {
@@ -58,17 +60,17 @@ public class RequestConverter implements WrappedConverter<Request> {
                 struct.getString("CORRELATION_ID"),
                 Request.RequestType.valueOf(struct.getString("TYPE")),
                 Request.RequestState.valueOf(struct.getString("STATE")),
-                struct.getInt64("EFFECTIVE_REFERENCE_ID"),
-                struct.getInt32("EFFECTIVE_VERSION"),
-                struct.getInt64("REFERENCE_ID"),
-                struct.getInt32("REFERENCE_VERSION"),
-                struct.getInt32("OVERRIDE_VERSION"),
-                struct.getInt64("CREATED_AT"),
-                struct.getInt64("RESPONDED_AT"),
+                primitiveFrom(struct.getInt64("EFFECTIVE_REFERENCE_ID")),
+                primitiveFrom(struct.getInt32("EFFECTIVE_VERSION")),
+                primitiveFrom(struct.getInt64("REFERENCE_ID")),
+                primitiveFrom(struct.getInt32("REFERENCE_VERSION")),
+                primitiveFrom(struct.getInt32("OVERRIDE_VERSION")),
+                primitiveFrom(struct.getInt64("CREATED_AT")),
+                primitiveFrom(struct.getInt64("RESPONDED_AT")),
                 struct.getString("RESPONDED_CODE"),
                 struct.getString("RESPONDED_MESSAGE"),
                 struct.getString("EXTERNAL_ID"),
-                struct.getInt32("EXTERNAL_VERSION")
+                primitiveFrom(struct.getInt32("EXTERNAL_VERSION"))
         );
 
     }

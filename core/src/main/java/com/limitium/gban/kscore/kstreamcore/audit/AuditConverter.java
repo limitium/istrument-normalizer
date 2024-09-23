@@ -6,6 +6,8 @@ import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.streams.state.internals.WrappedConverter;
 
+import static com.limitium.gban.kscore.kstreamcore.primitive.PrimitiveNulls.primitiveFrom;
+
 public class AuditConverter implements WrappedConverter<Audit> {
 
     public static String prefix = "AUDIT__";
@@ -41,11 +43,11 @@ public class AuditConverter implements WrappedConverter<Audit> {
     @Override
     public Audit createObject(Schema schema, Struct struct) {
         return new Audit(
-                struct.getInt64(prefix + "TRACE_ID"),
-                struct.getInt32(prefix + "VERSION"),
-                struct.getInt32(prefix + "PARTITION"),
-                struct.getInt64(prefix + "CREATED_AT"),
-                struct.getInt64(prefix + "MODIFIED_AT"),
+                primitiveFrom(struct.getInt64(prefix + "TRACE_ID")),
+                primitiveFrom(struct.getInt32(prefix + "VERSION")),
+                primitiveFrom(struct.getInt32(prefix + "PARTITION")),
+                primitiveFrom(struct.getInt64(prefix + "CREATED_AT")),
+                primitiveFrom(struct.getInt64(prefix + "MODIFIED_AT")),
                 struct.getString(prefix + "MODIFIED_BY"),
                 struct.getString(prefix + "REASON"),
                 struct.getBoolean(prefix + "REMOVED")

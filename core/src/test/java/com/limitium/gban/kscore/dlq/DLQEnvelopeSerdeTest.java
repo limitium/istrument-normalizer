@@ -12,7 +12,7 @@ public class DLQEnvelopeSerdeTest {
     void testSerde() {
         DLQEnvelope.DLQEnvelopeSerde dlqEnvelopeSerde = new DLQEnvelope.DLQEnvelopeSerde();
 
-        DLQEnvelope dlqEnvelope = new DLQEnvelope(1, "hi", "1/2/3", "Class123", new byte[]{1, 2, 3}, "[1,2,3]", "topic1", 1, 1, "excpCls1", "key1", "subkey1", 123);
+        DLQEnvelope dlqEnvelope = new DLQEnvelope(1, "hi", "1/2/3", "Class123", "[1,2,3]", "topic1", 1, 1, "excpCls1", "key1", "subkey1", 123);
         byte[] bytes = dlqEnvelopeSerde.serializer().serialize(null, dlqEnvelope);
         DLQEnvelope deserialized = dlqEnvelopeSerde.deserializer().deserialize(null, bytes);
 
@@ -20,7 +20,6 @@ public class DLQEnvelopeSerdeTest {
         assertEquals(dlqEnvelope.message(), deserialized.message());
         assertEquals(dlqEnvelope.stacktrace(), deserialized.stacktrace());
         assertEquals(dlqEnvelope.payloadClass(), deserialized.payloadClass());
-        assertArrayEquals(dlqEnvelope.payloadBody(), deserialized.payloadBody());
         assertEquals(dlqEnvelope.payloadBodyJSON(), deserialized.payloadBodyJSON());
         assertEquals(dlqEnvelope.sourceTopic(), deserialized.sourceTopic());
         assertEquals(dlqEnvelope.sourcePartition(), deserialized.sourcePartition());
@@ -36,7 +35,7 @@ public class DLQEnvelopeSerdeTest {
     void testSerdeWithNulls() {
         DLQEnvelope.DLQEnvelopeSerde dlqEnvelopeSerde = new DLQEnvelope.DLQEnvelopeSerde();
 
-        DLQEnvelope dlqEnvelope = new DLQEnvelope(-1, null, null, null, null, null, null, -1, -1, null, null, null, -1);
+        DLQEnvelope dlqEnvelope = new DLQEnvelope(-1, null, null, null, null, null, -1, -1, null, null, null, -1);
         byte[] bytes = dlqEnvelopeSerde.serializer().serialize(null, dlqEnvelope);
         DLQEnvelope deserialized = dlqEnvelopeSerde.deserializer().deserialize(null, bytes);
 
@@ -44,7 +43,6 @@ public class DLQEnvelopeSerdeTest {
         assertEquals(dlqEnvelope.message(), deserialized.message());
         assertEquals(dlqEnvelope.stacktrace(), deserialized.stacktrace());
         assertEquals(dlqEnvelope.payloadClass(), deserialized.payloadClass());
-        assertArrayEquals(dlqEnvelope.payloadBody(), deserialized.payloadBody());
         assertEquals(dlqEnvelope.payloadBodyJSON(), deserialized.payloadBodyJSON());
         assertEquals(dlqEnvelope.sourceTopic(), deserialized.sourceTopic());
         assertEquals(dlqEnvelope.sourcePartition(), deserialized.sourcePartition());

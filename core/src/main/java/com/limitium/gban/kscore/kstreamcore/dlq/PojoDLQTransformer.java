@@ -2,8 +2,8 @@ package com.limitium.gban.kscore.kstreamcore.dlq;
 
 import com.google.gson.Gson;
 import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
-import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.processor.api.Record;
+import org.apache.kafka.streams.state.internals.WrapperValue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -16,13 +16,7 @@ import java.io.StringWriter;
  * @param <KIn> type of incoming record key
  * @param <VIn> type of incoming record value
  */
-public class PojoDLQTransformer<KIn, VIn> implements DLQTransformer<KIn, VIn, DLQEnvelope> {
-    private final Serde<VIn> pojoSerde;
-
-    public PojoDLQTransformer(Serde<VIn> pojoSerde) {
-        this.pojoSerde = pojoSerde;
-    }
-
+public class PojoDLQTransformer<KIn, VIn> implements DLQTransformer<KIn, VIn, WrapperValue<DLQEnvelope, VIn>> {
     /**
      * Transform failed incoming message into DLQ record.
      *
@@ -34,7 +28,7 @@ public class PojoDLQTransformer<KIn, VIn> implements DLQTransformer<KIn, VIn, DL
      */
     @Nonnull
     @Override
-    public Record<KIn, DLQEnvelope> transform(
+    public Record<KIn, WrapperValue<DLQEnvelope, VIn>> transform(
             @Nonnull Record<KIn, VIn> failed,
             @Nonnull ExtendedProcessorContext<KIn, VIn, ?, ?> extendedProcessorContext,
             @Nullable String errorMessage,
@@ -59,7 +53,6 @@ public class PojoDLQTransformer<KIn, VIn> implements DLQTransformer<KIn, VIn, DL
                 errorMessage,
                 sw.toString(),
                 failed.value().getClass().getCanonicalName(),
-                pojoSerde.serializer().serialize(extendedProcessorContext.getTopic(), failed.value()),
                 json,
                 extendedProcessorContext.getTopic(),
                 extendedProcessorContext.getPartition(),
@@ -70,6 +63,6 @@ public class PojoDLQTransformer<KIn, VIn> implements DLQTransformer<KIn, VIn, DL
                 extendedProcessorContext.currentLocalTimeMs()
         );
 
-        return failed.withValue(dlqEnvelope);
+        return failed.withValue(new WrapperValue<>(dlqEnvelope, failed.value()));
     }
 }

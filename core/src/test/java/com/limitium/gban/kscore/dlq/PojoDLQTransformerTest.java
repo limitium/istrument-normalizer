@@ -5,12 +5,12 @@ import com.limitium.gban.kscore.kstreamcore.dlq.DLQEnvelope;
 import com.limitium.gban.kscore.kstreamcore.dlq.DLQException;
 import com.limitium.gban.kscore.kstreamcore.dlq.PojoDLQTransformer;
 import org.apache.kafka.common.serialization.Serde;
-import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsMetrics;
 import org.apache.kafka.streams.processor.*;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.processor.api.RecordMetadata;
+import org.apache.kafka.streams.state.internals.WrapperValue;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -25,9 +25,9 @@ public class PojoDLQTransformerTest {
 
     @Test
     void testTransformer() {
-        PojoDLQTransformer<Long, String> transformer = new PojoDLQTransformer<>(Serdes.String());
+        PojoDLQTransformer<Long, String> transformer = new PojoDLQTransformer<>();
 
-        Record<Long, DLQEnvelope> transformed = transformer.transform(new Record<Long, String>(1L, "qwe", 1234), new TestableExtendedProcessorContext(new ProcessorContext() {
+        Record<Long, WrapperValue<DLQEnvelope, String>> transformed = transformer.transform(new Record<Long, String>(1L, "qwe", 1234), new TestableExtendedProcessorContext(new ProcessorContext() {
             @Override
             public void forward(Record record) {
 
@@ -111,14 +111,16 @@ public class PojoDLQTransformerTest {
 
         assertNotNull(transformed);
         assertEquals(1L, transformed.key());
-        assertInstanceOf(DLQEnvelope.class, transformed.value());
-        DLQEnvelope envelope = (DLQEnvelope) transformed.value();
+        assertInstanceOf(DLQEnvelope.class, transformed.value().wrapper());
+        DLQEnvelope envelope = (DLQEnvelope) transformed.value().wrapper();
 
         assertEquals("ERROR!", envelope.message());
         assertEquals("\"qwe\"", envelope.payloadBodyJSON());
         assertEquals("java.lang.String", envelope.payloadClass());
         assertEquals("key", envelope.exceptionKey());
         assertEquals("subkey", envelope.exceptionSubKey());
+
+        assertEquals("qwe", transformed.value().value());
     }
 
 }

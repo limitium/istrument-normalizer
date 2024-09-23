@@ -1,7 +1,9 @@
 package com.limitium.gban.kscore.kstreamcore.dlq;
 
-public class EnvelopedDLQ<KIn, VIn> extends DLQ<KIn, VIn, DLQEnvelope> {
-    public EnvelopedDLQ(DLQTopic<KIn> dlqTopic, DLQTransformer<KIn, VIn, DLQEnvelope> transformer) {
+import org.apache.kafka.streams.state.internals.WrapperValue;
+
+public class EnvelopedDLQ<KIn, VIn> extends DLQ<KIn, VIn, WrapperValue<DLQEnvelope, VIn>> {
+    public EnvelopedDLQ(DLQTopic<KIn, VIn> dlqTopic, DLQTransformer<KIn, VIn, WrapperValue<DLQEnvelope, VIn>> transformer) {
         super(dlqTopic, transformer);
     }
 }

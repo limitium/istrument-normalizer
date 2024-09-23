@@ -14,7 +14,6 @@ public record DLQEnvelope(
         String stacktrace, //exception.getStacktrace()
 
         String payloadClass, //payload fqn class
-        byte[] payloadBody, //payload raw bytes
         String payloadBodyJSON, //payload converted to JSON
 
         String sourceTopic, //Topic name of the current input record
@@ -26,7 +25,7 @@ public record DLQEnvelope(
         String exceptionSubKey, //DLQException.subkey, optional
         long failedAt // context.currentStreamTimeMs() - timestam of broken record coming into system
 ) {
-    public static DLQEnvelope.DLQEnvelopeSerde AuditSerde() {
+    public static DLQEnvelope.DLQEnvelopeSerde DLQEnvelopeSerde() {
         return new DLQEnvelope.DLQEnvelopeSerde();
     }
 
@@ -40,10 +39,8 @@ public record DLQEnvelope(
                     int fixFieldsLength =
                             3 * 8   //longs
                                     + 4     //int
-                                    + 4 * 9 //array + strings
+                                    + 4 * 8 //strings
                             ;
-
-                    byte[] payloadBodyBytes = envelope.payloadBody != null ? envelope.payloadBody : new byte[0];
 
                     byte[] messageBytes = envelope.message != null ? envelope.message.getBytes(StandardCharsets.UTF_8) : new byte[0];
                     byte[] stacktraceBytes = envelope.stacktrace != null ? envelope.stacktrace.getBytes(StandardCharsets.UTF_8) : new byte[0];
@@ -55,7 +52,6 @@ public record DLQEnvelope(
                     byte[] exceptionSubKeyBytes = envelope.exceptionSubKey != null ? envelope.exceptionSubKey.getBytes(StandardCharsets.UTF_8) : new byte[0];
 
                     int varyFieldsLength =
-                            payloadBodyBytes.length
                                     + messageBytes.length
                                     + stacktraceBytes.length
                                     + payloadClassBytes.length
@@ -72,8 +68,6 @@ public record DLQEnvelope(
                     bb.putInt(envelope.sourcePartition);
                     bb.putLong(envelope.sourceOffset);
                     bb.putLong(envelope.failedAt);
-
-                    putBytes(bb, payloadBodyBytes);
 
                     putBytes(bb, messageBytes);
                     putBytes(bb, stacktraceBytes);
@@ -106,7 +100,6 @@ public record DLQEnvelope(
                     long sourceOffset = bb.getLong();
                     long failedAt = bb.getLong();
 
-                    byte[] payloadBody = getBytes(bb);
 
                     String message = getString(bb);
                     String stacktrace = getString(bb);
@@ -122,7 +115,6 @@ public record DLQEnvelope(
                             message,
                             stacktrace,
                             payloadClass,
-                            payloadBody,
                             payloadBodyJSON,
                             sourceTopic,
                             sourcePartition,
