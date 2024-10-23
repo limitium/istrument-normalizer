@@ -8,7 +8,7 @@ import org.apache.kafka.streams.state.internals.WrappedConverter;
 
 import static com.limitium.gban.kscore.kstreamcore.primitive.PrimitiveNulls.primitiveFrom;
 
-public class DLQEnvelopeConverter implements WrappedConverter<DLQEnvelope> {
+public class DLQEnvelopeWrappedConverter implements WrappedConverter<DLQEnvelope> {
 
     public static String prefix = "DLQENVELOPE__";
 
