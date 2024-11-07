@@ -17,7 +17,7 @@ import org.apache.kafka.streams.state.Stores;
 import org.apache.kafka.streams.state.Stores2;
 import org.apache.kafka.streams.state.WrappedKeyValueStore;
 import org.apache.kafka.streams.state.internals.WrappedKeyValueStoreBuilder;
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 import org.apache.kafka.streams.state.internals.WrapperValueSerde;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 })
 class AuditWrapperTests extends BaseKStreamApplicationTests {
     public static final Topic<Long, String> SOURCE = new Topic<>("test.in.topic.1", Serdes.Long(), Serdes.String());
-    public static final Topic<Long, WrapperValue<Audit, String>> CHANGELOG = new Topic<>("core-app.store-kv-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
+    public static final Topic<Long, WrappedValue<Audit, String>> CHANGELOG = new Topic<>("core-app.store-kv-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
 
     private static class RecordSaver implements ExtendedProcessor<Long, String, Long, String> {
 
@@ -77,7 +77,7 @@ class AuditWrapperTests extends BaseKStreamApplicationTests {
     @Test
     void shouldAuditChanges() {
         send(SOURCE, 1L, "a");
-        ConsumerRecord<Long, WrapperValue<Audit, String>> changelog = waitForRecordFrom(CHANGELOG);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> changelog = waitForRecordFrom(CHANGELOG);
         long firstCreatedAt = changelog.value().wrapper().createdAt();
         long firstModifiedAt = changelog.value().wrapper().modifiedAt();
 
@@ -134,7 +134,7 @@ class AuditWrapperTests extends BaseKStreamApplicationTests {
                 .add(AuditWrapperSupplier.AuditHeaders.REASON, "bbb".getBytes(StandardCharsets.UTF_8));
         send(producerRecord);
 
-        ConsumerRecord<Long, WrapperValue<Audit, String>> changelog = waitForRecordFrom(CHANGELOG);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> changelog = waitForRecordFrom(CHANGELOG);
 
         assertEquals(10L, changelog.key());
         assertEquals("abc", changelog.value().value());

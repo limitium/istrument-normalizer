@@ -22,7 +22,7 @@ import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 import org.apache.kafka.streams.state.internals.WrapperValueSerde;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.annotation.DirtiesContext;
@@ -84,18 +84,18 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
     public static final Topic<Long, Long> TERMINATE1 = new Topic<>("core-app.downstream-ds1-terminate", Serdes.Long(), Serdes.Long());
     public static final Topic<String, String> FORCEACK1 = new Topic<>("core-app.downstream-ds1-forceack", Serdes.String(), Serdes.String());
     public static final Topic<String, String> SINK1 = new Topic<>("ds.out.1", Serdes.String(), Serdes.String());
-    public static final Topic<String, WrapperValue<Audit, Request>> REQUESTS1_CL = new Topic<>("core-app.store-downstream-ds1-requests-changelog", Serdes.String(), WrapperValueSerde.create(Audit.AuditSerde(), Request.RequestSerde()));
-    public static final Topic<Long, WrapperValue<Audit, String>> ORIGINALS1_CL = new Topic<>("core-app.store-downstream-ds1-request_data_originals-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
-    public static final Topic<Long, WrapperValue<Audit, String>> OVERRIDE1_CL = new Topic<>("core-app.store-downstream-ds1-request_data_overrides-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
+    public static final Topic<String, WrappedValue<Audit, Request>> REQUESTS1_CL = new Topic<>("core-app.store-downstream-ds1-requests-changelog", Serdes.String(), WrapperValueSerde.create(Audit.AuditSerde(), Request.RequestSerde()));
+    public static final Topic<Long, WrappedValue<Audit, String>> ORIGINALS1_CL = new Topic<>("core-app.store-downstream-ds1-request_data_originals-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
+    public static final Topic<Long, WrappedValue<Audit, String>> OVERRIDE1_CL = new Topic<>("core-app.store-downstream-ds1-request_data_overrides-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
 
     public static final Topic<Long, String> OVERRIDE2 = new Topic<>("core-app.downstream-ds2-override", Serdes.Long(), Serdes.String());
     public static final Topic<Long, String> RESEND2 = new Topic<>("core-app.downstream-ds2-resend", Serdes.Long(), Serdes.String());
     public static final Topic<Long, Long> TERMINATE2 = new Topic<>("core-app.downstream-ds2-terminate", Serdes.Long(), Serdes.Long());
     public static final Topic<String, String> FORCEACK2 = new Topic<>("core-app.downstream-ds2-forceack", Serdes.String(), Serdes.String());
     public static final Topic<String, String> SINK2 = new Topic<>("ds.out.2", Serdes.String(), Serdes.String());
-    public static final Topic<String, WrapperValue<Audit, Request>> REQUESTS2_CL = new Topic<>("core-app.store-downstream-ds2-requests-changelog", Serdes.String(), WrapperValueSerde.create(Audit.AuditSerde(), Request.RequestSerde()));
-    public static final Topic<Long, WrapperValue<Audit, String>> ORIGINALS2_CL = new Topic<>("core-app.store-downstream-ds2-request_data_originals-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
-    public static final Topic<Long, WrapperValue<Audit, String>> OVERRIDE2_CL = new Topic<>("core-app.store-downstream-ds2-request_data_overrides-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
+    public static final Topic<String, WrappedValue<Audit, Request>> REQUESTS2_CL = new Topic<>("core-app.store-downstream-ds2-requests-changelog", Serdes.String(), WrapperValueSerde.create(Audit.AuditSerde(), Request.RequestSerde()));
+    public static final Topic<Long, WrappedValue<Audit, String>> ORIGINALS2_CL = new Topic<>("core-app.store-downstream-ds2-request_data_originals-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
+    public static final Topic<Long, WrappedValue<Audit, String>> OVERRIDE2_CL = new Topic<>("core-app.store-downstream-ds2-request_data_overrides-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
     public static final Topic<String, String> REPLY3 = new Topic<>("reply.ds3", Serdes.String(), Serdes.String());
 
     public static final Topic<Long, String> OVERRIDE3 = new Topic<>("core-app.downstream-ds3-override", Serdes.Long(), Serdes.String());
@@ -103,9 +103,9 @@ public class BaseDSTest extends BaseKStreamApplicationTests {
     public static final Topic<Long, Long> TERMINATE3 = new Topic<>("core-app.downstream-ds3-terminate", Serdes.Long(), Serdes.Long());
     public static final Topic<String, String> FORCEACK3 = new Topic<>("core-app.downstream-ds3-forceack", Serdes.String(), Serdes.String());
     public static final Topic<String, String> SINK3 = new Topic<>("ds.out.3", Serdes.String(), Serdes.String());
-    public static final Topic<String, WrapperValue<Audit, Request>> REQUESTS3_CL = new Topic<>("core-app.store-downstream-ds3-requests-changelog", Serdes.String(), WrapperValueSerde.create(Audit.AuditSerde(), Request.RequestSerde()));
-    public static final Topic<Long, WrapperValue<Audit, String>> ORIGINALS3_CL = new Topic<>("core-app.store-downstream-ds3-request_data_originals-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
-    public static final Topic<Long, WrapperValue<Audit, String>> OVERRIDE3_CL = new Topic<>("core-app.store-downstream-ds3-request_data_overrides-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
+    public static final Topic<String, WrappedValue<Audit, Request>> REQUESTS3_CL = new Topic<>("core-app.store-downstream-ds3-requests-changelog", Serdes.String(), WrapperValueSerde.create(Audit.AuditSerde(), Request.RequestSerde()));
+    public static final Topic<Long, WrappedValue<Audit, String>> ORIGINALS3_CL = new Topic<>("core-app.store-downstream-ds3-request_data_originals-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
+    public static final Topic<Long, WrappedValue<Audit, String>> OVERRIDE3_CL = new Topic<>("core-app.store-downstream-ds3-request_data_overrides-changelog", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
 
     public static class TopologyConfig {
         public static class TestProcessor implements ExtendedProcessor<Integer, Long, String, String> {

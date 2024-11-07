@@ -31,7 +31,7 @@ public class TopologyProvider {
             try {
                 Record toSend = record;
                 if (statelessProcessorDefinition instanceof Converter processorDefinition) {
-                    toSend = processorDefinition.convert(record);
+                    toSend = processorDefinition.convert(record, context);
                     if (toSend == null) {
                         return;
                     }

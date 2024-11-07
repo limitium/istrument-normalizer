@@ -10,7 +10,7 @@ import org.apache.kafka.streams.processor.*;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.processor.api.RecordMetadata;
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -27,7 +27,7 @@ public class PojoDLQTransformerTest {
     void testTransformer() {
         PojoDLQTransformer<Long, String> transformer = new PojoDLQTransformer<>();
 
-        Record<Long, WrapperValue<DLQEnvelope, String>> transformed = transformer.transform(new Record<Long, String>(1L, "qwe", 1234), new TestableExtendedProcessorContext(new ProcessorContext() {
+        Record<Long, WrappedValue<DLQEnvelope, String>> transformed = transformer.transform(new Record<Long, String>(1L, "qwe", 1234), new TestableExtendedProcessorContext(new ProcessorContext() {
             @Override
             public void forward(Record record) {
 

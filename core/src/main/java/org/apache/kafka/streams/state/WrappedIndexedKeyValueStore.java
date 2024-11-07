@@ -17,8 +17,8 @@
 package org.apache.kafka.streams.state;
 
 
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 
-public interface WrappedIndexedKeyValueStore<K, V, W> extends WrappedKeyValueStore<K, V, W>, IndexedKeyValueStore<K, WrapperValue<W, V>> {
+public interface WrappedIndexedKeyValueStore<K, V, W> extends WrappedKeyValueStore<K, V, W>, IndexedKeyValueStore<K, WrappedValue<W, V>> {
 
 }

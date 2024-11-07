@@ -5,6 +5,7 @@ import com.limitium.gban.kscore.kstreamcore.dlq.DLQ;
 import com.limitium.gban.kscore.kstreamcore.dlq.DLQEnvelope;
 import com.limitium.gban.kscore.kstreamcore.dlq.DLQTopic;
 import com.limitium.gban.kscore.kstreamcore.dlq.PojoEnvelopedDLQ;
+import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import com.limitium.gban.kscore.kstreamcore.stateless.Converter;
 import com.limitium.gban.kscore.kstreamcore.stateless.Partitioner;
 import com.limitium.gban.kscore.test.BaseKStreamApplicationTests;
@@ -12,7 +13,7 @@ import com.limitium.gban.kscore.test.KafkaTest;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.processor.api.Record;
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,7 +41,7 @@ class KSStatelessTopologyTest extends BaseKStreamApplicationTests {
     @Configuration
     public static class ProcessorConfig {
 
-        interface StatelessProc extends Converter<Integer, Integer, Integer, Integer, WrapperValue<DLQEnvelope, Integer>>, Partitioner<Integer, Integer, Integer, Integer, WrapperValue<DLQEnvelope, Integer>> {
+        interface StatelessProc extends Converter<Integer, Integer, Integer, Integer, WrappedValue<DLQEnvelope, Integer>>, Partitioner<Integer, Integer, Integer, Integer, WrappedValue<DLQEnvelope, Integer>> {
         }
 
         @Bean
@@ -57,12 +58,12 @@ class KSStatelessTopologyTest extends BaseKStreamApplicationTests {
                 }
 
                 @Override
-                public DLQ<Integer, Integer, WrapperValue<DLQEnvelope, Integer>> dlq() {
+                public DLQ<Integer, Integer, WrappedValue<DLQEnvelope, Integer>> dlq() {
                     return DLQ_MAIN;
                 }
 
                 @Override
-                public Record<Integer, Integer> convert(Record<Integer, Integer> toConvert) throws ConvertException {
+                public Record<Integer, Integer> convert(Record<Integer, Integer> toConvert, ExtendedProcessorContext<Integer, Integer, Integer, Integer> notused) throws ConvertException {
                     if (toConvert.value() < 1) {
                         throw new ConvertException("negative");
                     }
@@ -106,7 +107,7 @@ class KSStatelessTopologyTest extends BaseKStreamApplicationTests {
     @Test
     void testDQL() {
         send(SOURCE, 4, -1);
-        ConsumerRecord<Integer, WrapperValue<DLQEnvelope, Integer>> out = waitForRecordFrom(DLQ_TOPIC);
+        ConsumerRecord<Integer, WrappedValue<DLQEnvelope, Integer>> out = waitForRecordFrom(DLQ_TOPIC);
 
         assertEquals(4, out.key());
         assertEquals("negative", out.value().wrapper().message());

@@ -16,7 +16,7 @@ import java.util.function.Function;
 
 
 @SuppressWarnings("rawtypes")
-public class WrappedIndexedMeteredKeyValueStore<K, V, W, PC extends ProcessorContext> extends IndexedMeteredKeyValueStore<K, WrapperValue<W, V>> implements WrappedIndexedKeyValueStore<K, V, W> {
+public class WrappedIndexedMeteredKeyValueStore<K, V, W, PC extends ProcessorContext> extends IndexedMeteredKeyValueStore<K, WrappedValue<W, V>> implements WrappedIndexedKeyValueStore<K, V, W> {
 
     private static final Logger logger = LoggerFactory.getLogger(WrappedIndexedMeteredKeyValueStore.class);
 
@@ -24,13 +24,13 @@ public class WrappedIndexedMeteredKeyValueStore<K, V, W, PC extends ProcessorCon
     private final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory;
     private WrapperSupplier<K, V, W, ?> wrapperSupplier;
 
-    WrappedIndexedMeteredKeyValueStore(final Map<String, Function<WrapperValue<W, V>, String>> uniqIndexes,
-                                       final Map<String, Function<WrapperValue<W, V>, String>> nonUniqIndexes,
+    WrappedIndexedMeteredKeyValueStore(final Map<String, Function<WrappedValue<W, V>, String>> uniqIndexes,
+                                       final Map<String, Function<WrappedValue<W, V>, String>> nonUniqIndexes,
                                        final KeyValueStore<Bytes, byte[]> inner,
                                        final String metricsScope,
                                        final Time time,
                                        final Serde<K> keySerde,
-                                       final Serde<WrapperValue<W, V>> valueSerde,
+                                       final Serde<WrappedValue<W, V>> valueSerde,
                                        final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory) {
         super(uniqIndexes, nonUniqIndexes, inner, metricsScope, time, keySerde, valueSerde);
         this.wrapperSupplierFactory = wrapperSupplierFactory;
@@ -38,25 +38,25 @@ public class WrappedIndexedMeteredKeyValueStore<K, V, W, PC extends ProcessorCon
 
     @Override
     public W getWrapper(K key) {
-        WrapperValue<W, V> wrapperValue = get(key);
-        if (wrapperValue == null) {
+        WrappedValue<W, V> wrappedValue = get(key);
+        if (wrappedValue == null) {
             return null;
         }
-        return wrapperValue.wrapper();
+        return wrappedValue.wrapper();
     }
 
     @Override
     public V getValue(K key) {
-        WrapperValue<W, V> wrapperValue = get(key);
-        if (wrapperValue == null) {
+        WrappedValue<W, V> wrappedValue = get(key);
+        if (wrappedValue == null) {
             return null;
         }
-        return wrapperValue.value();
+        return wrappedValue.value();
     }
 
     @Override
     public void putValue(K key, V value) {
-        put(key, new WrapperValue<>(wrapperSupplier.generate(key, value), value));
+        put(key, new WrappedValue<>(wrapperSupplier.generate(key, value), value));
     }
 
 

@@ -12,7 +12,7 @@ import org.apache.kafka.streams.state.internals.WrapperSupplier.WrapperSupplierF
 import java.util.Objects;
 
 @SuppressWarnings("rawtypes")
-public class WrappedKeyValueStoreBuilder<K, V, W, PC extends ProcessorContext> extends AbstractStoreBuilder<K, WrapperValue<W, V>, WrappedKeyValueStore<K, V, W>> {
+public class WrappedKeyValueStoreBuilder<K, V, W, PC extends ProcessorContext> extends AbstractStoreBuilder<K, WrappedValue<W, V>, WrappedKeyValueStore<K, V, W>> {
 
     private final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory;
 

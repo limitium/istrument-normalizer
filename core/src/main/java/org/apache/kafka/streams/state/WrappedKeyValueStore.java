@@ -18,7 +18,7 @@ package org.apache.kafka.streams.state;
 
 import jakarta.annotation.Nonnull;
 import org.apache.kafka.streams.errors.InvalidStateStoreException;
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 
 /**
  * A key-value store that supports put/get/delete, range queries and uniq index lookup.
@@ -27,7 +27,7 @@ import org.apache.kafka.streams.state.internals.WrapperValue;
  * @param <V> The value type
  * @param <W> The wrapper type
  */
-public interface WrappedKeyValueStore<K, V, W> extends KeyValueStore<K, WrapperValue<W, V>> {
+public interface WrappedKeyValueStore<K, V, W> extends KeyValueStore<K, WrappedValue<W, V>> {
 
     /**
      * Get the wrapper corresponding to this key.

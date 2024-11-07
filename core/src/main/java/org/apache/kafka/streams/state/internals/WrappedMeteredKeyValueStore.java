@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("rawtypes")
-public class WrappedMeteredKeyValueStore<K, V, W, PC extends ProcessorContext> extends MeteredKeyValueStore<K, WrapperValue<W, V>> implements WrappedKeyValueStore<K, V, W>, ProcessorPostInitListener<PC> {
+public class WrappedMeteredKeyValueStore<K, V, W, PC extends ProcessorContext> extends MeteredKeyValueStore<K, WrappedValue<W, V>> implements WrappedKeyValueStore<K, V, W>, ProcessorPostInitListener<PC> {
 
     private static final Logger logger = LoggerFactory.getLogger(WrappedMeteredKeyValueStore.class);
 
@@ -26,7 +26,7 @@ public class WrappedMeteredKeyValueStore<K, V, W, PC extends ProcessorContext> e
             final String metricsScope,
             final Time time,
             final Serde<K> keySerde,
-            final Serde<WrapperValue<W, V>> valueSerde,
+            final Serde<WrappedValue<W, V>> valueSerde,
             final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory) {
         super(inner, metricsScope, time, keySerde, valueSerde);
         this.wrapperSupplierFactory = wrapperSupplierFactory;
@@ -34,31 +34,31 @@ public class WrappedMeteredKeyValueStore<K, V, W, PC extends ProcessorContext> e
 
     @Override
     public W getWrapper(K key) {
-        WrapperValue<W, V> wrapperValue = get(key);
-        if (wrapperValue == null) {
+        WrappedValue<W, V> wrappedValue = get(key);
+        if (wrappedValue == null) {
             return null;
         }
-        return wrapperValue.wrapper();
+        return wrappedValue.wrapper();
     }
 
     @Override
     public V getValue(K key) {
-        WrapperValue<W, V> wrapperValue = get(key);
-        if (wrapperValue == null) {
+        WrappedValue<W, V> wrappedValue = get(key);
+        if (wrappedValue == null) {
             return null;
         }
-        return wrapperValue.value();
+        return wrappedValue.value();
     }
 
     @Override
-    public WrapperValue<W, V> delete(K key) {
-        put(key, new WrapperValue<>(wrapperSupplier.generate(key, null), getValue(key)));
+    public WrappedValue<W, V> delete(K key) {
+        put(key, new WrappedValue<>(wrapperSupplier.generate(key, null), getValue(key)));
         return super.delete(key);
     }
 
     @Override
     public void putValue(K key, @Nonnull V value) {
-        put(key, new WrapperValue<>(wrapperSupplier.generate(key, value), value));
+        put(key, new WrappedValue<>(wrapperSupplier.generate(key, value), value));
     }
 
     @Override

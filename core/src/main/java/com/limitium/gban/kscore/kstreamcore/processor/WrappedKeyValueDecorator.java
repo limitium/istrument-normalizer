@@ -6,10 +6,10 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.WrappedKeyValueStore;
 import org.apache.kafka.streams.state.internals.WrapperSupplier;
 import org.apache.kafka.streams.state.internals.WrapperSupplierFactoryAware;
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 
 @SuppressWarnings("rawtypes")
-class WrappedKeyValueDecorator<S extends KeyValueStore<K, WrapperValue<W, V>>, K, V, W> extends KeyValueReadWriteDecorator<K, WrapperValue<W, V>> implements WrappedKeyValueStore<K, V, W> {
+class WrappedKeyValueDecorator<S extends KeyValueStore<K, WrappedValue<W, V>>, K, V, W> extends KeyValueReadWriteDecorator<K, WrappedValue<W, V>> implements WrappedKeyValueStore<K, V, W> {
     protected final WrapperSupplier<K, V, W, ?> wrapperSupplier;
 
     public WrappedKeyValueDecorator(S store, WrapperSupplierFactoryAware<K, V, W, ExtendedProcessorContext> wrapperSupplierFactoryAware, ExtendedProcessorContext pc) {
@@ -19,30 +19,30 @@ class WrappedKeyValueDecorator<S extends KeyValueStore<K, WrapperValue<W, V>>, K
 
     @Override
     public W getWrapper(K key) {
-        WrapperValue<W, V> wrapperValue = get(key);
-        if (wrapperValue == null) {
+        WrappedValue<W, V> wrappedValue = get(key);
+        if (wrappedValue == null) {
             return null;
         }
-        return wrapperValue.wrapper();
+        return wrappedValue.wrapper();
     }
 
     @Override
     public V getValue(K key) {
-        WrapperValue<W, V> wrapperValue = get(key);
-        if (wrapperValue == null) {
+        WrappedValue<W, V> wrappedValue = get(key);
+        if (wrappedValue == null) {
             return null;
         }
-        return wrapperValue.value();
+        return wrappedValue.value();
     }
 
     @Override
     public void putValue(K key, @Nonnull V value) {
-        put(key, new WrapperValue<>(wrapperSupplier.generate(key, value), value));
+        put(key, new WrappedValue<>(wrapperSupplier.generate(key, value), value));
     }
 
     @Override
-    public WrapperValue<W, V> delete(K key) {
-        put(key, new WrapperValue<>(wrapperSupplier.generate(key, null), getValue(key)));
+    public WrappedValue<W, V> delete(K key) {
+        put(key, new WrappedValue<>(wrapperSupplier.generate(key, null), getValue(key)));
         return super.delete(key);
     }
 }

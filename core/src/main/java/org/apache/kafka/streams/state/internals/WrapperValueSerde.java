@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  * @param <W> wrapper type
  * @param <V> value type
  */
-public class WrapperValueSerde<W, V> implements Serde<WrapperValue<W, V>> {
+public class WrapperValueSerde<W, V> implements Serde<WrappedValue<W, V>> {
 
     private final WrapperAndValueSerializer<W, V> wrapperAndValueSerializer;
     private final WrapperAndValueDeserializer<W, V> wrapperAndValueDeserializer;
@@ -47,16 +47,16 @@ public class WrapperValueSerde<W, V> implements Serde<WrapperValue<W, V>> {
     }
 
     @Override
-    public Serializer<WrapperValue<W, V>> serializer() {
+    public Serializer<WrappedValue<W, V>> serializer() {
         return wrapperAndValueSerializer;
     }
 
     @Override
-    public Deserializer<WrapperValue<W, V>> deserializer() {
+    public Deserializer<WrappedValue<W, V>> deserializer() {
         return wrapperAndValueDeserializer;
     }
 
-    public static class WrapperAndValueSerializer<W, V> implements Serializer<WrapperValue<W, V>> {
+    public static class WrapperAndValueSerializer<W, V> implements Serializer<WrappedValue<W, V>> {
         public final Serializer<W> wrapperSerializer;
         public final Serializer<V> valueSerializer;
 
@@ -77,7 +77,7 @@ public class WrapperValueSerde<W, V> implements Serde<WrapperValue<W, V>> {
 
         @Override
         public byte[] serialize(final String topic,
-                                final WrapperValue<W, V> data) {
+                                final WrappedValue<W, V> data) {
             if (data == null) {
                 return null;
             }
@@ -115,7 +115,7 @@ public class WrapperValueSerde<W, V> implements Serde<WrapperValue<W, V>> {
         }
     }
 
-    public static class WrapperAndValueDeserializer<W, V> implements Deserializer<WrapperValue<W, V>> {
+    public static class WrapperAndValueDeserializer<W, V> implements Deserializer<WrappedValue<W, V>> {
         private final Deserializer<W> wrapperDeserializer;
         public final Deserializer<V> valueDeserializer;
 
@@ -134,7 +134,7 @@ public class WrapperValueSerde<W, V> implements Serde<WrapperValue<W, V>> {
         }
 
         @Override
-        public WrapperValue<W, V> deserialize(final String topic,
+        public WrappedValue<W, V> deserialize(final String topic,
                                               final byte[] wrapperAndValue) {
             if (wrapperAndValue == null) {
                 return null;
@@ -151,7 +151,7 @@ public class WrapperValueSerde<W, V> implements Serde<WrapperValue<W, V>> {
 
             final W wrapper = wrapperDeserializer.deserialize(topic, rawWrapper);
             final V value = valueDeserializer.deserialize(topic, rawValue);
-            return new WrapperValue<>(wrapper, value);
+            return new WrappedValue<>(wrapper, value);
         }
 
         @Override

@@ -3,7 +3,7 @@ package com.limitium.gban.kscore.kstreamcore.dlq;
 import com.google.gson.Gson;
 import com.limitium.gban.kscore.kstreamcore.processor.ExtendedProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -16,7 +16,7 @@ import java.io.StringWriter;
  * @param <KIn> type of incoming record key
  * @param <VIn> type of incoming record value
  */
-public class PojoDLQTransformer<KIn, VIn> implements DLQTransformer<KIn, VIn, WrapperValue<DLQEnvelope, VIn>> {
+public class PojoDLQTransformer<KIn, VIn> implements DLQTransformer<KIn, VIn, WrappedValue<DLQEnvelope, VIn>> {
     /**
      * Transform failed incoming message into DLQ record.
      *
@@ -28,7 +28,7 @@ public class PojoDLQTransformer<KIn, VIn> implements DLQTransformer<KIn, VIn, Wr
      */
     @Nonnull
     @Override
-    public Record<KIn, WrapperValue<DLQEnvelope, VIn>> transform(
+    public Record<KIn, WrappedValue<DLQEnvelope, VIn>> transform(
             @Nonnull Record<KIn, VIn> failed,
             @Nonnull ExtendedProcessorContext<KIn, VIn, ?, ?> extendedProcessorContext,
             @Nullable String errorMessage,
@@ -63,6 +63,6 @@ public class PojoDLQTransformer<KIn, VIn> implements DLQTransformer<KIn, VIn, Wr
                 extendedProcessorContext.currentLocalTimeMs()
         );
 
-        return failed.withValue(new WrapperValue<>(dlqEnvelope, failed.value()));
+        return failed.withValue(new WrappedValue<>(dlqEnvelope, failed.value()));
     }
 }

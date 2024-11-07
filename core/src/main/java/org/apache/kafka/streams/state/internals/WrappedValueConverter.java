@@ -26,8 +26,8 @@ public abstract class WrappedValueConverter<W, V> implements Converter {
             return null;
         }
         if (value instanceof Struct struct) {
-            WrapperValue<W, V> wrapperValue = new WrapperValue<>(wrapperConverter.createObject(schema, struct), valueConverter.createObject(schema, struct));
-            return wrapperValueSerde.serializer().serialize(topic, wrapperValue);
+            WrappedValue<W, V> wrappedValue = new WrappedValue<>(wrapperConverter.createObject(schema, struct), valueConverter.createObject(schema, struct));
+            return wrapperValueSerde.serializer().serialize(topic, wrappedValue);
         }
         return null;
     }
@@ -40,9 +40,9 @@ public abstract class WrappedValueConverter<W, V> implements Converter {
         Struct struct = null;
         if (value != null) {
             struct = new Struct(schema);
-            WrapperValue<W, V> wrapperValue = wrapperValueSerde.deserializer().deserialize(topic, value);
-            valueConverter.fillStruct(struct, wrapperValue.value());
-            wrapperConverter.fillStruct(struct, wrapperValue.wrapper());
+            WrappedValue<W, V> wrappedValue = wrapperValueSerde.deserializer().deserialize(topic, value);
+            valueConverter.fillStruct(struct, wrappedValue.value());
+            wrapperConverter.fillStruct(struct, wrappedValue.wrapper());
         }
         return new SchemaAndValue(schema, struct);
     }

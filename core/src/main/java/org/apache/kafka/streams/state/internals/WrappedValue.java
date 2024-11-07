@@ -22,5 +22,5 @@ package org.apache.kafka.streams.state.internals;
  * @param <W> wrapper type
  * @param <V> value type
  */
-public record WrapperValue<W, V>(W wrapper, V value) {
+public record WrappedValue<W, V>(W wrapper, V value) {
 }

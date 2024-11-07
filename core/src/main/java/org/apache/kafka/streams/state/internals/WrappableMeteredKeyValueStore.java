@@ -9,7 +9,7 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.internals.WrapperSupplier.WrapperSupplierFactory;
 
 @SuppressWarnings("rawtypes")
-public class WrappableMeteredKeyValueStore<K, V, W, PC extends ProcessorContext> extends MeteredKeyValueStore<K, WrapperValue<W, V>> implements WrapperSupplierFactoryAware<K, V, W, PC> {
+public class WrappableMeteredKeyValueStore<K, V, W, PC extends ProcessorContext> extends MeteredKeyValueStore<K, WrappedValue<W, V>> implements WrapperSupplierFactoryAware<K, V, W, PC> {
     private final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory;
 
     WrappableMeteredKeyValueStore(
@@ -17,7 +17,7 @@ public class WrappableMeteredKeyValueStore<K, V, W, PC extends ProcessorContext>
             final String metricsScope,
             final Time time,
             final Serde<K> keySerde,
-            final Serde<WrapperValue<W, V>> valueSerde,
+            final Serde<WrappedValue<W, V>> valueSerde,
             final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory) {
         super(inner, metricsScope, time, keySerde, valueSerde);
         this.wrapperSupplierFactory = wrapperSupplierFactory;

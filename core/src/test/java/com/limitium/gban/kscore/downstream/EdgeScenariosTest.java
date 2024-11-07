@@ -5,7 +5,7 @@ import com.limitium.gban.kscore.kstreamcore.audit.Audit;
 import com.limitium.gban.kscore.kstreamcore.downstream.state.Request;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 import org.apache.kafka.streams.state.internals.WrapperValueSerde;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class EdgeScenariosTest extends BaseDSTest {
 
-    private static final Topic<Long, WrapperValue<Audit,String>> INJECT = new Topic<>("core-app.store-downstream-ds1-request_data_originals-inject", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
+    private static final Topic<Long, WrappedValue<Audit,String>> INJECT = new Topic<>("core-app.store-downstream-ds1-request_data_originals-inject", Serdes.Long(), WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String()));
 
     @Test
     void testMultipleRetries() {
@@ -64,10 +64,10 @@ public class EdgeScenariosTest extends BaseDSTest {
         send(RESEND2, 0, Long.parseLong(ds2outNew.refId()), "");
         send(RESEND3, 0, Long.parseLong(ds3outNew.refId()), "");
 
-        WrapperValue<Audit, Request> request1a = waitForRecordFrom(REQUESTS1_CL).value();
-        WrapperValue<Audit, Request> request2a = waitForRecordFrom(REQUESTS2_CL).value();
-        WrapperValue<Audit, Request> request2aa = waitForRecordFrom(REQUESTS2_CL).value();
-        WrapperValue<Audit, Request> request3a = waitForRecordFrom(REQUESTS3_CL).value();
+        WrappedValue<Audit, Request> request1a = waitForRecordFrom(REQUESTS1_CL).value();
+        WrappedValue<Audit, Request> request2a = waitForRecordFrom(REQUESTS2_CL).value();
+        WrappedValue<Audit, Request> request2aa = waitForRecordFrom(REQUESTS2_CL).value();
+        WrappedValue<Audit, Request> request3a = waitForRecordFrom(REQUESTS3_CL).value();
 
         assertEquals(Request.RequestState.PENDING, request1a.value().state);
         assertEquals(2, request1a.wrapper().version());
@@ -106,10 +106,10 @@ public class EdgeScenariosTest extends BaseDSTest {
         send(RESEND2, 0, Long.parseLong(ds2outNew.refId()), "");
         send(RESEND3, 0, Long.parseLong(ds3outNew.refId()), "");
 
-        WrapperValue<Audit, Request> request1b = waitForRecordFrom(REQUESTS1_CL).value();
-        WrapperValue<Audit, Request> request2b = waitForRecordFrom(REQUESTS2_CL).value();
-        WrapperValue<Audit, Request> request2bb = waitForRecordFrom(REQUESTS2_CL).value();
-        WrapperValue<Audit, Request> request3b = waitForRecordFrom(REQUESTS3_CL).value();
+        WrappedValue<Audit, Request> request1b = waitForRecordFrom(REQUESTS1_CL).value();
+        WrappedValue<Audit, Request> request2b = waitForRecordFrom(REQUESTS2_CL).value();
+        WrappedValue<Audit, Request> request2bb = waitForRecordFrom(REQUESTS2_CL).value();
+        WrappedValue<Audit, Request> request3b = waitForRecordFrom(REQUESTS3_CL).value();
 
         assertEquals(Request.RequestState.PENDING, request1b.value().state);
         assertEquals(3, request1b.wrapper().version());
@@ -220,9 +220,9 @@ public class EdgeScenariosTest extends BaseDSTest {
         assertEquals("ds3", ds3outAmend.dsId());
         assertEquals("333", ds3outAmend.payload());
 
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override11 = waitForRecordFrom(OVERRIDE1_CL);
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override21 = waitForRecordFrom(OVERRIDE2_CL);
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override31 = waitForRecordFrom(OVERRIDE3_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override11 = waitForRecordFrom(OVERRIDE1_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override21 = waitForRecordFrom(OVERRIDE2_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override31 = waitForRecordFrom(OVERRIDE3_CL);
 
         assertEquals(1, override11.value().wrapper().version());
         assertEquals("111", override11.value().value());
@@ -266,9 +266,9 @@ public class EdgeScenariosTest extends BaseDSTest {
         assertEquals("3333", ds3outAmend.payload());
 
 
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override12 = waitForRecordFrom(OVERRIDE1_CL);
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override22 = waitForRecordFrom(OVERRIDE2_CL);
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override32 = waitForRecordFrom(OVERRIDE3_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override12 = waitForRecordFrom(OVERRIDE1_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override22 = waitForRecordFrom(OVERRIDE2_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override32 = waitForRecordFrom(OVERRIDE3_CL);
 
         assertEquals(2, override12.value().wrapper().version());
         assertEquals("1111", override12.value().value());
@@ -306,13 +306,13 @@ public class EdgeScenariosTest extends BaseDSTest {
         assertEquals("ds3", ds3outNewOrig.dsId());
         assertEquals("rd3>1|1", ds3outNewOrig.payload());
 
-        ConsumerRecord<Long, WrapperValue<Audit, String>> original = waitForRecordFrom(ORIGINALS1_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> original = waitForRecordFrom(ORIGINALS1_CL);
 
         assertEquals(1,original.value().wrapper().version());
         assertEquals(0,original.value().wrapper().partition());
         assertEquals("rd1>1|1",original.value().value());
 
-        send(INJECT,1L,new WrapperValue<>(new Audit(3,3,0,123,321,"qqq","aaa",false), "ZZZ"));
+        send(INJECT,1L,new WrappedValue<>(new Audit(3,3,0,123,321,"qqq","aaa",false), "ZZZ"));
 
         original = waitForRecordFrom(ORIGINALS1_CL);
 
@@ -382,9 +382,9 @@ public class EdgeScenariosTest extends BaseDSTest {
         assertEquals("ds3", ds3outAmend.dsId());
         assertEquals("333", ds3outAmend.payload());
 
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override11 = waitForRecordFrom(OVERRIDE1_CL);
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override21 = waitForRecordFrom(OVERRIDE2_CL);
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override31 = waitForRecordFrom(OVERRIDE3_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override11 = waitForRecordFrom(OVERRIDE1_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override21 = waitForRecordFrom(OVERRIDE2_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override31 = waitForRecordFrom(OVERRIDE3_CL);
 
         assertEquals(1, override11.value().wrapper().version());
         assertEquals("111", override11.value().value());
@@ -453,9 +453,9 @@ public class EdgeScenariosTest extends BaseDSTest {
         assertEquals("rd3>2|2", ds3outAmend.payload());
 
 
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override12 = waitForRecordFrom(OVERRIDE1_CL);
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override22 = waitForRecordFrom(OVERRIDE2_CL);
-        ConsumerRecord<Long, WrapperValue<Audit, String>> override32 = waitForRecordFrom(OVERRIDE3_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override12 = waitForRecordFrom(OVERRIDE1_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override22 = waitForRecordFrom(OVERRIDE2_CL);
+        ConsumerRecord<Long, WrappedValue<Audit, String>> override32 = waitForRecordFrom(OVERRIDE3_CL);
 
         assertEquals(2, override12.value().wrapper().version());
         assertEquals("111", override11.value().value());

@@ -17,7 +17,7 @@
 package org.apache.kafka.streams.state.wrapped;
 
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 import org.apache.kafka.streams.state.internals.WrapperValueSerde;
 import org.junit.jupiter.api.Test;
 
@@ -31,10 +31,10 @@ public class WrapperValueSerdeTest {
         byte[] b1 = {1, 2};
         byte[] b2 = {3, 4};
 
-        byte[] serialize = wrapperValueSerde.serializer().serialize(null, new WrapperValue<>(b1, b2));
+        byte[] serialize = wrapperValueSerde.serializer().serialize(null, new WrappedValue<>(b1, b2));
         assertArrayEquals(new byte[]{0, 0, 0, 2, 1, 2, 3, 4}, serialize);
 
-        WrapperValue<byte[], byte[]> deserialize = wrapperValueSerde.deserializer().deserialize(null, serialize);
+        WrappedValue<byte[], byte[]> deserialize = wrapperValueSerde.deserializer().deserialize(null, serialize);
         assertArrayEquals(b1, deserialize.wrapper());
         assertArrayEquals(b2, deserialize.value());
     }

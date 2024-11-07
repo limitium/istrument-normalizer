@@ -9,7 +9,7 @@ import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.streams.state.internals.WrappedConverter;
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 import org.apache.kafka.streams.state.internals.WrapperValueSerde;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -23,21 +23,21 @@ public class AuditValueConverterTest {
         AuditValueConverter<String> auditStringConverter = getStringAuditValueConverter();
 
         WrapperValueSerde<Audit, String> wrapperValueSerde = WrapperValueSerde.create(Audit.AuditSerde(), Serdes.String());
-        WrapperValue<Audit, String> wrapperValue = new WrapperValue<>(new Audit(1, 2, 3, 4L, 5L, null, null, false), "abc123");
-        SchemaAndValue schemaAndValue = auditStringConverter.toConnectData(null, wrapperValueSerde.serializer().serialize(null, wrapperValue));
+        WrappedValue<Audit, String> wrappedValue = new WrappedValue<>(new Audit(1, 2, 3, 4L, 5L, null, null, false), "abc123");
+        SchemaAndValue schemaAndValue = auditStringConverter.toConnectData(null, wrapperValueSerde.serializer().serialize(null, wrappedValue));
 
         byte[] bytes = auditStringConverter.fromConnectData(null, schemaAndValue.schema(), schemaAndValue.value());
 
-        WrapperValue<Audit, String> deserialized = wrapperValueSerde.deserializer().deserialize(null, bytes);
+        WrappedValue<Audit, String> deserialized = wrapperValueSerde.deserializer().deserialize(null, bytes);
 
-        assertEquals(wrapperValue.value(), deserialized.value());
-        assertEquals(wrapperValue.wrapper().traceId(), deserialized.wrapper().traceId());
-        assertEquals(wrapperValue.wrapper().version(), deserialized.wrapper().version());
-        assertEquals(wrapperValue.wrapper().createdAt(), deserialized.wrapper().createdAt());
-        assertEquals(wrapperValue.wrapper().modifiedAt(), deserialized.wrapper().modifiedAt());
-        assertEquals(wrapperValue.wrapper().modifiedBy(), deserialized.wrapper().modifiedBy());
-        assertEquals(wrapperValue.wrapper().reason(), deserialized.wrapper().reason());
-        assertEquals(wrapperValue.wrapper().removed(), deserialized.wrapper().removed());
+        assertEquals(wrappedValue.value(), deserialized.value());
+        assertEquals(wrappedValue.wrapper().traceId(), deserialized.wrapper().traceId());
+        assertEquals(wrappedValue.wrapper().version(), deserialized.wrapper().version());
+        assertEquals(wrappedValue.wrapper().createdAt(), deserialized.wrapper().createdAt());
+        assertEquals(wrappedValue.wrapper().modifiedAt(), deserialized.wrapper().modifiedAt());
+        assertEquals(wrappedValue.wrapper().modifiedBy(), deserialized.wrapper().modifiedBy());
+        assertEquals(wrappedValue.wrapper().reason(), deserialized.wrapper().reason());
+        assertEquals(wrappedValue.wrapper().removed(), deserialized.wrapper().removed());
     }
 
     @NotNull

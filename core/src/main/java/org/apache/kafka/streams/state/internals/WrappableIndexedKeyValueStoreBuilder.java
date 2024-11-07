@@ -12,7 +12,7 @@ import java.util.Objects;
 
 
 @SuppressWarnings("rawtypes")
-public class WrappableIndexedKeyValueStoreBuilder<K, V, W, PC extends ProcessorContext> extends IndexedKeyValueStoreBuilder<K, WrapperValue<W, V>> {
+public class WrappableIndexedKeyValueStoreBuilder<K, V, W, PC extends ProcessorContext> extends IndexedKeyValueStoreBuilder<K, WrappedValue<W, V>> {
 
     private final WrapperSupplierFactory<K, V, W, PC> wrapperSupplierFactory;
 

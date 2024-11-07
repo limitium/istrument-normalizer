@@ -16,7 +16,7 @@ import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.WrappedIndexedKeyValueStore;
 import org.apache.kafka.streams.state.WrappedKeyValueStore;
-import org.apache.kafka.streams.state.internals.WrapperValue;
+import org.apache.kafka.streams.state.internals.WrappedValue;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +95,7 @@ public class Downstream<RequestData, Kout, Vout> {
 
     public void requestReplied(String correlationId, boolean isAck, @Nullable String code, @Nullable String answer, @Nullable String externalId, int externalVersion) {
         logger.debug("{} receive reply {} acked:{}", name, correlationId, isAck);
-        WrapperValue<Audit, Request> auditRequest = requests.getUnique(DownstreamDefinition.STORE_REQUESTS_CORRELATION_INDEX_NAME, correlationId);
+        WrappedValue<Audit, Request> auditRequest = requests.getUnique(DownstreamDefinition.STORE_REQUESTS_CORRELATION_INDEX_NAME, correlationId);
         if (auditRequest == null) {
             logger.error("NOT_FOUND:REQUEST:{}", correlationId);
             return;
@@ -116,7 +116,7 @@ public class Downstream<RequestData, Kout, Vout> {
 
     public void forceAckRequest(String correlationId) {
         logger.info("{} force ack for {}", name, correlationId);
-        WrapperValue<Audit, Request> auditRequest = requests.getUnique(DownstreamDefinition.STORE_REQUESTS_CORRELATION_INDEX_NAME, correlationId);
+        WrappedValue<Audit, Request> auditRequest = requests.getUnique(DownstreamDefinition.STORE_REQUESTS_CORRELATION_INDEX_NAME, correlationId);
         if (auditRequest == null) {
             logger.error("NOT_FOUND:REQUEST:{}", correlationId);
             return;
@@ -189,7 +189,7 @@ public class Downstream<RequestData, Kout, Vout> {
     private RequestContext<RequestData> prepareRequestContext(Request.RequestType requestType, long referenceId, int referenceVersion, RequestData requestData) {
         RequestData requestDataMerged = requestData;
         int overrideVersion = -1;
-        WrapperValue<Audit, RequestData> auditRequestData = requestDataOverrides.get(referenceId);
+        WrappedValue<Audit, RequestData> auditRequestData = requestDataOverrides.get(referenceId);
         if (auditRequestData != null) {
             RequestData requestDataOverride = auditRequestData.value();
             overrideVersion = auditRequestData.wrapper().version();
@@ -282,7 +282,7 @@ public class Downstream<RequestData, Kout, Vout> {
      */
     @NotNull
     private Stream<Request> getPreviousRequest(long referenceId) {
-        KeyValueIterator<String, WrapperValue<Audit, Request>> prevRequests = requests.prefixScan(String.valueOf(referenceId), new StringSerializer());
+        KeyValueIterator<String, WrappedValue<Audit, Request>> prevRequests = requests.prefixScan(String.valueOf(referenceId), new StringSerializer());
 
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(prevRequests, Spliterator.ORDERED), false)
                 .onClose(prevRequests::close)
